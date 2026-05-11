@@ -1,0 +1,17 @@
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.hasi</groupId>
+    <artifactId>hasi-parent</artifactId>
+    <version>4.06</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>messenger</module>
+        <module>service</module>
+    </modules>
+    <properties>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
+        <java.version>25</java.version>
+    </properties>
+</project>
