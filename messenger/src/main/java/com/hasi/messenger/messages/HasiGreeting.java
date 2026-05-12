@@ -1,21 +1,15 @@
 package com.hasi.messenger.messages;
 
-public class HasiGreetings {
+import lombok.Getter;
 
-    private String name;
+@Getter
+public class HasiGreeting {
 
-    public HasiGreetings(){
-    }
+    private String content;
 
-    public HasiGreetings(String name){
-        this.name=name;
-    }
+    public HasiGreeting(){}
 
-    public String getName(){
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public HasiGreeting(String content){
+        this.content = content;
     }
 }

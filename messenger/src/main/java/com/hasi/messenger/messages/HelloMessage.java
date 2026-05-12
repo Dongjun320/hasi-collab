@@ -1,20 +1,17 @@
 package com.hasi.messenger.messages;
 
-public class GreetMessage {
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class HelloMessage {
     private String name;
 
-    public GreetMessage(){
+    public HelloMessage(){
     }
 
-    public GreetMessage(String name){
+    public HelloMessage(String name){
         this.name=name;
-    }
-
-    public String getName(){
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 }
