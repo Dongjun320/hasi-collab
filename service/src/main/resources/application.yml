@@ -1,0 +1,38 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/collaboration_db
+    username: hasi
+    password: hasi1234
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# 아래는 기능 개발 시 주석 풀어서 사용 (Ctrl + /)
+
+#  data:
+#    redis:
+#      host: localhost
+#      port: 6379
+#
+#  mail:
+#    host: smtp.gmail.com
+#    port: 587
+#    username: ${MAIL_USERNAME}
+#    password: ${MAIL_PASSWORD}
+#    properties:
+#      mail.smtp.auth: true
+#      mail.smtp.starttls.enable: true
+#
+#app:
+#  jwt:
+#    secret: ${JWT_SECRET}
+#    access-token-expiry: 3600
+#    refresh-token-expiry: 604800
