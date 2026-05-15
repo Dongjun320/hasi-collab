@@ -1,0 +1,10 @@
+{
+  "login": "로그인",
+  "register": "회원가입",
+  "logout": "로그아웃",
+  "workspace": "워크스페이스",
+  "channel": "채널",
+  "message": "메시지",
+  "send": "전송",
+  "settings": "설정"
+}

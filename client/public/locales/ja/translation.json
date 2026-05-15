@@ -1,0 +1,10 @@
+{
+  "login": "ログイン",
+  "register": "新規登録",
+  "logout": "ログアウト",
+  "workspace": "ワークスペース",
+  "channel": "チャンネル",
+  "message": "メッセージ",
+  "send": "送信",
+  "settings": "設定"
+}
