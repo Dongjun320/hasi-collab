@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info:
+  title: Service
+  description: Service는 Authentication/Authorization, RESTful API 등을 처리하는 백엔드 서비스입니다.
+  version: 1.0.0
+servers:
+  - url: 'https'
+paths:
+  /api/v1/messages:
+    $ref: "./paths/messages.yaml"
+
+components:
+  schemas:
+    Messages:
+      $ref: "./components/Message.yaml"

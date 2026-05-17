@@ -1,0 +1,51 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: hasi-messenger
+
+#  # ── PostgreSQL (service와 같은 DB 공유) ──────────────────
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/collaboration_db
+#    username: hasi
+#    password: hasi1234
+#    driver-class-name: org.postgresql.Driver
+#
+#  # ── JPA / Hibernate ───────────────────────────────────────
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+#    properties:
+#      hibernate:
+#        format_sql: true
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
+#
+#  # ── Redis (메시지 캐시, 온라인 상태) ──────────────────────
+#  data:
+#    redis:
+#      host: localhost
+#      port: 6379
+#
+## ── WebSocket STOMP ───────────────────────────────────────
+## ws://localhost:8081/ws 로 접속
+## 프론트엔드 socketClient.ts 설정과 맞춰야 함
+#websocket:
+#  endpoint: /ws
+#  allowed-origins: http://localhost:5173
+#
+## ── JWT 검증 (service와 동일한 시크릿 사용) ───────────────
+#spring.security.oauth2.resourceserver.jwt:
+#  issuer-uri: http://localhost:8080   # service에서 발급한 토큰 검증
+#
+#app:
+#  jwt:
+#    secret: ${JWT_SECRET}            # service와 반드시 동일한 값
+#
+## ── 로깅 ─────────────────────────────────────────────────
+#logging:
+#  level:
+#    com.hasi: DEBUG
+#    org.springframework.security: DEBUG
+#    org.springframework.web.socket: DEBUG
