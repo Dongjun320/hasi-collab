@@ -6,6 +6,10 @@ info:
 servers:
   - url: 'https'
 paths:
-  
-tags:
-  - name: user
+  /api/v1/messages:
+    $ref: "./paths/messages.yaml"
+
+components:
+  schemas:
+    Messages:
+      $ref: "./components/Message.yaml"

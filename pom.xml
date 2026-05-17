@@ -10,6 +10,7 @@
         <relativePath/>
     </parent>
 
+
     <groupId>com.hasi</groupId>
     <artifactId>hasi-collab</artifactId>
     <version>0.0.1-SNAPSHOT</version>
