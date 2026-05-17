@@ -56,4 +56,40 @@ PostgreSQL DB, Redis 등은 Docker 형태로 Railway에서 시작할 생각입�
 
 ## 프로젝트 구조
 
+## 초기 세팅 사항
+hasi-collab 초기 세팅 안내
+처음 시작하는 법
+1. 저장소 클론
+
+git clone [저장소 주소]
+cd hasi-collab
+2. Docker 실행 (PostgreSQL + Redis)
+
+docker compose up -d
+3. 프론트엔드 의존성 설치
+
+cd client
+npm install
+개발 시작하는 법
+프론트엔드만 작업할 때 (UI 작업)
+
+cd client
+npm run dev
+→ Docker, Spring Boot 안 켜도 됩니다. 더미 데이터로 UI 개발 가능합니다.
+→ 브라우저에서 http://localhost:5173 접속
+
+백엔드 작업하거나 API 연동할 때
+
+# 1. Docker 먼저 켜기
+docker compose up -d
+
+# 2. IntelliJ에서 ServiceApplication 또는 MessengerApplication 실행
+개발 환경 포트 정리
+서비스	포트
+프론트엔드 (Vite)	5173
+백엔드 (service)	8080
+메신저 (messenger)	8081
+PostgreSQL	5432
+Redis	6379
+
 ## Reference

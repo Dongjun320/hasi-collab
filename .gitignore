@@ -1,3 +1,24 @@
+# IDE
 .vscode
 .idea
+*.iml
+.DS_Store
+
+# 환경변수 / 시크릿
 .env
+.env.local
+.env.*.local
+**/application-secret.yml
+
+# Maven 빌드 산출물
+**/target/
+
+# Node
+**/node_modules/
+**/dist/
+**/.next/
+**/build/
+
+# 로그
+*.log
+logs/

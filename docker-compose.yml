@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: hasi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: collaboration_db
+      POSTGRES_USER: hasi
+      POSTGRES_PASSWORD: hasi1234
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: hasi-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
