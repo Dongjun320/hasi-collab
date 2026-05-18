@@ -1,7 +1,0 @@
-type: object
-required:
-  - id
-  - type
-properties:
-  id:
-    type: integer

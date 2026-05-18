@@ -12,3 +12,5 @@ components:
   schemas:
     Messages:
       $ref: "./components/Message.yaml"
+    Users:
+      $ref: "./components/User.yaml"
