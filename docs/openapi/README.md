@@ -43,6 +43,39 @@ HTTP API의 메서드에 관한 파일들을 저장(`GET`, `POST` 등)
 
 Schema의 경우 해당 component가 어떤 변수 및 타입을 가지고 있는지를 결정하는 것이라 생각하면 됩니다.
 
+### `parameters` vs `requestBody`
+
+`parameters`의 경우 Request의 메타데이터나 outer shell 등에 붙는 데이터입니다. 
+`in`에 따라 URL에 직접 붙을 수 있으며(`path`/`query`), HTTP 헤더(`heade`), 또는 cookie jar(`cookie`)에 위치할 수 있습니다. 
+모든 HTTP 메서드와 사용이 가능합니다.
+
+```
+parameters:
+  - name: userId
+    in: path
+    required: true
+    description: 유저 ID
+    schema:
+      type: string
+```
+
+`requestBody`의 경우 payload에 들어가는 내용으로 데이터를 생성/업데이트 하는 메서드에 사용됩니다. `POST`, `PUT`, `PATCH` 등에 사용되며
+HTTP 스펙 상, `GET`은 Request Body를 포함하면 안 되며 방화벽에 막힐 가능성이 높습니다.
+
+```
+requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              password:
+                type: string
+```
+
 ### 블록 재사용
 
 똑같은 내용을 여러 번 사용하여야 할 때 `$ref`를 사용 가능합니다.
