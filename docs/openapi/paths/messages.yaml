@@ -1,8 +1,0 @@
-delete:
-  summary: "메시지 오발송 방지 (Undo)"
-  tags:
-    - Message
-get:
-  summary: ""
-  tags:
-    - Message

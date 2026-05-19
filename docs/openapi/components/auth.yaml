@@ -1,0 +1,12 @@
+type: object
+required:
+  - id
+  - password
+description: "로그인 시 필요 정보"
+properties:
+  id:
+    type: string
+    description: "ID"
+  password:
+    type: string
+    description: "password"
