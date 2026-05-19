@@ -1,11 +1,11 @@
-import React from 'react';
+import { ReactNode } from 'react';
 
 // 가이드 문서에 정의된 ModalProps 인터페이스 적용
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
