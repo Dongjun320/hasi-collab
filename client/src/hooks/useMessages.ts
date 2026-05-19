@@ -1,5 +1,5 @@
-// 🔴 PM 담당 파일 — 역할③ 장윤찬이 채팅 화면에서 사용
-// ✅ 사용법: const { messages, sendMessage } = useMessages(channelId)
+// PM 담당 — 역할3번 채팅창에서 사용
+// const { messages, sendMessage } = useMessages(channelId)
 
 import { useEffect } from 'react'
 import { useChatStore } from '../store/chatStore'

@@ -1,4 +1,4 @@
-// 🔴 PM 담당 — 사용법: const { messages, addMessage } = useChatStore()
+// PM 담당 — 사용법: const { messages, addMessage } = useChatStore()
 
 import { create } from 'zustand'
 
