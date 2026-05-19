@@ -8,15 +8,23 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "../components/MessageRequestBodies.yaml"
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/LogInRequest"
       responses:
         '200':
           description: "로그인 성공"
-          content:
-            application/json:
-              schema:
-                $ref: "../components/MessageRequestBodies.yaml"
+#          content:
+#            application/json:
+#              schema:
+#                $ref: "../components/AuthResponseBodies.yaml#/components/schemas/LogInResponse"
         '401':
           description: "이메일 혹은 pw 틀림"
   /api/auth/logout:
     post:
+      summary: "refreshToken을 Redis 블랙리스트에 등록 (TTL = 남은 만료 시간)."
+      tags:
+        - Auth
+#      requestBody:
+#        content:
+#          application/json:
+#            schema:
+#              $ref: "../components/AuthRequestBodies.yaml"

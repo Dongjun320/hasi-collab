@@ -6,11 +6,17 @@
     - [components 서브디렉터리](#components-서브디렉터리)
     - [Bundling (파일 합치기)](#bundling-파일-합치기)
   - [OpenAPI 기초 문법](#openapi-기초-문법)
+    - [`parameters` vs `requestBody`](#parameters-vs-requestbody)
     - [블록 재사용](#블록-재사용)
-  - [코드 생성](#코드-생성)
+  - [코드 생성 및 사용](#코드-생성-및-사용)
+    - [Spring 코드](#spring-코드)
+    - [TypeScript 코드](#typescript-코드)
 
 
-웹 API를 OpenAPI를 사용하여 설계 후 
+Design-First로 프로젝트 서비스(`/service`, `/messenger`)의 웹 API를 OpenAPI를 사용하여 설계 후 자동으로 
+Spring Boot/TypeScript용 코드를 생성합니다. 
+
+`/service`의 RESTful API의 경우 openapi 포맷, `/messenger`의 WebSocket/STOMP의 경우 asyncapi 형식을 사용합니다.
 
 자세한 원문 내용 참고 원하시면:
 
@@ -26,15 +32,16 @@ merge conflict이 일어나므로 `paths/`와 `components/`에 원하는 파트 
 
 ### paths 서브디렉터리
 
-HTTP API의 메서드에 관한 파일들을 저장(`GET`, `POST` 등)
+HTTP API의 메서드에 관한 파일들을 저장(`GET`, `POST` 등).
 
 ### components 서브디렉터리
 
-재사용 가능한 component들을 저장(Schema 등).
+재사용 가능한 component들을 저장(Schema 등). HTTP Request/Response에 필요한 HTTP payload의 schema, 혹은 parameter를
+저장하는데 사용하면 좋습니다.
 
 ### Bundling (파일 합치기)
 
-연결된 OpenAPI 파일들을 하나의 publish할 파일로 합치는 것으로 [redocly](https://redocly.com/docs/cli/installation)를 사용합니다.
+연결된 OpenAPI 파일들을 하나의 publish할 파일로 합치는 것으로 [redocly](https://redocly.com/docs/cli/installation)를 사용합니다. 넣기는 했는데 저희는 안 쓸거 같습니다.
 
 ## OpenAPI 기초 문법
 
@@ -46,7 +53,7 @@ Schema의 경우 해당 component가 어떤 변수 및 타입을 가지고 있�
 ### `parameters` vs `requestBody`
 
 `parameters`의 경우 Request의 메타데이터나 outer shell 등에 붙는 데이터입니다. 
-`in`에 따라 URL에 직접 붙을 수 있으며(`path`/`query`), HTTP 헤더(`heade`), 또는 cookie jar(`cookie`)에 위치할 수 있습니다. 
+`in`에 따라 URL에 직접 붙을 수 있으며(`path`/`query`), HTTP 헤더(`header`), 또는 cookie jar(`cookie`)에 위치할 수 있습니다. 
 모든 HTTP 메서드와 사용이 가능합니다.
 
 ```
@@ -106,19 +113,58 @@ components:
           type: string
 ```
 
-## 코드 생성
+### 여러개의 path/component 있는 파일에서 하나 골라오기
 
-OpenAPI 파일의 내용이 수정 될 때마다 Java, TypeScript 코드를 생성 가능합니다.
+한 파일에 여러 개의 HTTP 메서드, `content`(`requestBody`, `response` 아래) 사용할 payload의 schema
+등을 설정할 수 있습니다. 그럴 경우, 하나의 엔드포인트 및 schema만을 선택하고 싶을시 파일명 뒤 `#`를 붙인 후 하위 태그를 `/`로 찾아가면 됩니다.
 
-TS의 경우(npm 설치 필요):
+만약 엔드포인트를 지정할시, 파일 내 `/`가 디렉터리 경로를 표시하는 것과 겹치므로 `~1`로 바꿔주어야 합니다.
 
-```bash
-npx openapi-typescript ./path/to/my/schema.yaml -o ./path/to/my/schema.d.ts
+```yaml
+# 상위 폴더의 components/AuthResponseBodies.yaml에서 components/schemas아래 있는 LogInResponse 블록을 가져옴
+$ref: "../components/AuthResponseBodies.yaml#/components/schemas/LogInResponse"
+
+# 현 폴더의 /paths/authEndpoints.yaml 에서 paths 태그 아래 있는 /api/auth/login 내용을 가져옴
+$ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1login"
 ```
 
-앞이 schema, `-o` 뒤가 아웃풋 파일
+컴파일 시 에러 날 경우 높은 확률로 OpenAPI에 구현 안 된 내용을 `$ref`로 불러 오려고 하는것 일테니 주석처리 혹은 구현 후 다시 컴파일 해보세요 
 
-참고자료:
+## 코드 생성 및 사용
 
-- Spring/Java 코드: [https://openapi-generator.tech/docs/plugins/](https://openapi-generator.tech/docs/plugins/)
+OpenAPI 파일의 내용　수정 후 Java, TypeScript 코드를 생성 가능합니다.
+
+Design-First 방식으로 API를 먼저 작성하여도, 백엔드 서비스별 구현이 다르면 Open API(Swagger)문서는 거짓말이 되고 클라이언트가 사용하기 힘드므로
+DTO와 컨트롤러 인터페이스의 경우 자동생성된 코드를 사용하는 것이 Best Practice입니다(라고 들었어요).
+
+참고하면 좋은 자료:
+
+- Spring/Java 코드: [openapi-generator](https://openapi-generator.tech/docs/plugins)
 - TS 코드: [openapi-typescript](https://openapi-ts.dev/introduction)
+
+### Spring 코드
+
+Spring의 경우 모듈별 pom.xml에 코드 생성 및 `src`에서의 인식을 위한 설정이 추가 되었습니다.
+
+`/target`의 경우 `.gitignore`에 자동 추가 되어 Git에 push 되지 않습니다. Maven으로 빌드를 하셔야 됩니다.
+
+`/service` 혹은 `/messenger` 위치에서 `./mvnw clean compile`을 실행하시면:
+
+- `/service`: `/docs/openapi/openapi.yaml` 기반으로, `/service/target/generated-sources/openapi/src/`에 생성함. 해당 디렉터리 내:
+  - `main/java/com.hasi.collab/api/`: 자동 생성된 Spring Controller 인터페이스 저장(Routing 레이어)
+  - `main/java/com.hasi.collab/model/`: 자동 생성된 Data Transfer Objects(DTO) 저장(HTTP Request/Response 페이로드)
+- `/messenger`: `/docs/openapi/asyncapi.yaml` 기반으로, `/messenger/target/generated-sources/asyncapi/src` 예정
+
+자동생성된 코드는 `/src`에서 인식 되도록 했습니다. 사용하실 때는 사용할 Java 파일에서 `import` 하시면 됩니다.
+
+```java
+import com.hasi.collab.api.ApiApi; //  api/에 저장된 ApiApi Controller 사용
+import com.hasi.collab.model.LogInRequest; // model에 저장된 LogInRequest DTO 사용
+```
+
+`/target`에 코드를 생성하고 이를 프로젝트에서 인식하게 한 방법의 경우 모듈별 pom.xml의 `execution`/`plugin`쪽 주석을 참고하시고
+변경 필요하시면 해당 파일 구조 수정하시면 됩니다!
+
+### TypeScript 코드
+
+TODO

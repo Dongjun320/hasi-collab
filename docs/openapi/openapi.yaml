@@ -1,18 +1,9 @@
 openapi: 3.0.0
 info:
   title: Service
-  description: Service는 Authentication/Authorization, RESTful API 등을 처리하는 백엔드 서비스입니다.
+  description: Service는 Authentication/Authorization, RESTful API, DB와의 연결 등을 처리하는 백엔드 서비스입니다.
   version: 1.0.0
 
 paths:
-  /api/v1/messages:
-    $ref: "./paths/messages.yaml"
-
   /api/auth/login:
-    $ref: "./paths/login.yaml"
-components:
-  schemas:
-    Messages:
-      $ref: "./components/Message.yaml"
-    Users:
-      $ref: "./components/User.yaml"
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1login"

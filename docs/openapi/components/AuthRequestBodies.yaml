@@ -1,23 +1,25 @@
-LogInRequest:
-  type: object
-  required:
-    - id
-    - password
-  description: "로그인 시 필요 정보"
-  properties:
-    id:
-      type: string
-      description: "ID"
-    password:
-      type: string
-      description: "password"
+components:
+  schemas:
+    LogInRequest:
+      type: object
+      required:
+        - id
+        - password
+      description: "로그인 시 필요 정보"
+      properties:
+        id:
+          type: string
+          description: "ID"
+        password:
+          type: string
+          description: "password"
 
-LogOutRequest:
-  type: object
-  required:
-    - refreshToken
-  description: "refreshToken을 Redis 블랙리스트에 등록 (TTL = 남은 만료 시간)"
-  properties:
-    refreshToken:
-      type: string
-      description: "Redis 블랙리스트에 등록할 Refresh 토큰"
+    LogOutRequest:
+      type: object
+      required:
+        - refreshToken
+      description: "refreshToken을 Redis 블랙리스트에 등록 (TTL = 남은 만료 시간)"
+      properties:
+        refreshToken:
+          type: string
+          description: "Redis 블랙리스트에 등록할 Refresh 토큰"
