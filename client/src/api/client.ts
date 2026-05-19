@@ -1,4 +1,3 @@
-// 🔴 PM 담당 파일 — 수정 시 김동준에게 문의
 // 모든 API 요청은 이 client를 통해 보냅니다
 
 import axios from 'axios'

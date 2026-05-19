@@ -1,5 +1,5 @@
-// 🔴 PM 담당 파일
-// ✅ 사용법: const { isSidebarOpen, toggleSidebar } = useUiStore()
+// PM 담당 파일
+// 사용법: const { isSidebarOpen, toggleSidebar } = useUiStore()
 
 import { create } from 'zustand'
 

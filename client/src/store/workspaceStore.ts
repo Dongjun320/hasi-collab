@@ -1,4 +1,4 @@
-// 🔴 PM 담당 — 사용법: const { currentWorkspace, channels } = useWorkspaceStore()
+// PM 담당 — 사용법: const { currentWorkspace, channels } = useWorkspaceStore()
 
 import { create } from 'zustand'
 

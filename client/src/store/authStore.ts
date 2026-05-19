@@ -1,4 +1,4 @@
-// 🔴 PM 담당 — 사용법: const { user, setAuth, clear } = useAuthStore()
+// PM 담당 — 사용법: const { user, setAuth, clear } = useAuthStore()
 
 import { create } from 'zustand'
 

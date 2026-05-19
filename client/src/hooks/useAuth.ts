@@ -1,5 +1,4 @@
-// 🔴 PM 담당 파일
-// ✅ 사용법: const { user, isLoggedIn } = useAuth()
+// 사용법: const { user, isLoggedIn } = useAuth()
 
 import { useAuthStore } from '../store/authStore'
 

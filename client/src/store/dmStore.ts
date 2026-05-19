@@ -1,4 +1,4 @@
-// 🔴 PM 담당 — 사용법: const { dmMessages, addDmMessage } = useDmStore()
+// PM 담당 — 사용법: const { dmMessages, addDmMessage } = useDmStore()
 
 import { create } from 'zustand'
 
