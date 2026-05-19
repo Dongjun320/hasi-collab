@@ -167,4 +167,66 @@ import com.hasi.collab.model.LogInRequest; // model에 저장된 LogInRequest DT
 
 ### TypeScript 코드
 
-TODO
+`openapi-typescript` + `openapi-fetch` 두 패키지를 함께 사용합니다.
+
+| 패키지 | 역할 |
+|---|---|
+| `openapi-typescript` | `openapi.yaml` → `src/types/openapi.ts` 타입 자동 생성 |
+| `openapi-fetch` | 생성된 타입 기반으로 API 호출 (타입 자동 적용) |
+
+#### 설치
+
+`/client` 위치에서 한 번만 실행하면 됩니다.
+
+```bash
+npm install
+```
+
+#### 타입 자동 생성
+
+`npm run dev` 또는 `npm run build` 실행 시 타입 생성이 자동으로 먼저 실행됩니다.
+
+수동으로 생성만 하고 싶을 때:
+
+```bash
+npm run generate:api
+```
+
+생성 위치: `client/src/types/openapi.ts` (자동 생성 파일 — 직접 수정 금지, `.gitignore` 처리됨)
+
+#### API 호출 방법
+
+`src/api/client.ts`에 `openapi-fetch` 인스턴스가 세팅되어 있습니다. JWT 토큰 자동 첨부, 401 자동 처리가 포함되어 있습니다.
+
+**별도의 api 파일을 만들 필요 없이** store나 컴포넌트에서 바로 import해서 사용합니다.
+
+```ts
+import { api } from '../api/client'
+
+// POST 요청
+const { data, error } = await api.POST('/api/auth/login', {
+  body: { id: 'user@example.com', password: '1234' }
+})
+
+// GET 요청
+const { data, error } = await api.GET('/api/workspaces', {})
+
+// GET 요청 — path parameter 있을 때
+const { data, error } = await api.GET('/api/workspaces/{id}', {
+  params: { path: { id: 1 } }
+})
+```
+
+`body`, `params` 모두 `openapi.yaml`에 정의된 타입으로 자동 체크됩니다. 잘못된 필드를 넣으면 에디터에서 빨간 줄로 즉시 표시됩니다.
+
+#### 새 API 추가 시 워크플로우
+
+```
+1. openapi.yaml에 새 엔드포인트 추가
+        ↓
+2. npm run dev 실행 (타입 자동 갱신)
+        ↓
+3. store 또는 컴포넌트에서 api.GET / api.POST 등으로 바로 호출
+```
+
+`openapi.yaml`이 수정될 때마다 `npm run dev`를 재실행하면 타입이 자동으로 갱신됩니다.
