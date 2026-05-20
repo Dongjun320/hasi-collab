@@ -1,8 +1,8 @@
-import { ReactNode } from 'react';
+import React from 'react';
 
 // 가이드 문서에 정의된 BadgeProps 인터페이스 적용
 interface BadgeProps {
-  children: ReactNode;
+  children: React.ReactNode;
   variant?: "success" | "warn" | "danger" | "default";
 }
 
