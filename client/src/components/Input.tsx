@@ -1,4 +1,4 @@
-import React from 'react';
+import { ChangeEvent } from 'react';
 
 // 가이드 문서에 정의된 InputProps 인터페이스 적용
 interface InputProps {
@@ -6,7 +6,7 @@ interface InputProps {
   type?: string;
   placeholder?: string;
   value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (e: ChangeEvent<HTMLInputElement>) => void; // ✅ React.ChangeEvent -> ChangeEvent로 수정
   disabled?: boolean;
   error?: string;
 }

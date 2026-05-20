@@ -1,5 +1,5 @@
 // src/components/common/Avatar.tsx
-import React from 'react';
+
 
 interface AvatarProps {
   src?: string; // 이미지가 없을 수도 있으니 ?(선택) 처리

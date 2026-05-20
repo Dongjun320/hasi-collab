@@ -1,5 +1,5 @@
 // src/components/common/Toast.tsx
-import React, { useEffect } from 'react';
+import { useEffect } from 'react'; // ✅ 불필요한 React 기본 임포트 제거 및 named import만 사용
 
 interface ToastProps {
   message: string;
@@ -38,7 +38,8 @@ const Toast = ({
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] animate-[fadeInUp_0.3s_ease]">
+    // ✅ 임의 값(Arbitrary value) 대신 tailwind.config에 등록된 클래스명 사용
+    <div className="fixed bottom-6 right-6 z-[100] animate-fadeInUp">
       <div className={`bg-[#1e1e1e] text-white px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 min-w-[280px] ${typeStyles[type]}`}>
         <span className="font-medium text-sm flex-1">{message}</span>
         <button 
