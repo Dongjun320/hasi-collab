@@ -197,6 +197,7 @@ const ComponentTestPage = () => {
 
       {toast.open && (
         <Toast
+          isOpen={toast.open}
           type={toast.type}
           message={toast.message}
           onClose={() => setToast((prev) => ({ ...prev, open: false }))}
