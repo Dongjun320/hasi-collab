@@ -1,7 +1,114 @@
 components:
   schemas:
-    400:
 
-    401:
+    # 공통 에러 응답 구조 정립했습니다 - PM
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - data
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          nullable: true
+          example: null
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: "에러 코드"
+              example: "AUTH_001"
+            message:
+              type: string
+              description: "클라이언트에 표시할 메시지"
+              example: "이메일 또는 비밀번호가 틀렸습니다"
 
-    500:
+    # ── AUTH 에러 ────────────────────────────────────────────────────
+
+    Auth001Error:
+      description: "AUTH_001 | 401 | 이메일 또는 비밀번호 오류"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "AUTH_001"
+          message: "이메일 또는 비밀번호가 틀렸습니다"
+
+    Auth002Error:
+      description: "AUTH_002 | 403 | 이메일 미인증 상태로 로그인"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "AUTH_002"
+          message: "이메일 인증이 필요합니다"
+
+    Auth003Error:
+      description: "AUTH_003 | 401 | 토큰 만료 / 잘못된 토큰"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "AUTH_003"
+          message: "토큰이 만료되었습니다"
+
+    Auth004Error:
+      description: "AUTH_004 | 403 | 접근 권한 없음"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "AUTH_004"
+          message: "접근 권한이 없습니다"
+
+    Auth005Error:
+      description: "AUTH_005 | 409 | 이미 사용 중인 이메일"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "AUTH_005"
+          message: "이미 사용 중인 이메일입니다"
+
+    # ── VERIFY 에러 ──────────────────────────────────────────────────
+
+    Verify001Error:
+      description: "VERIFY_001 | 400 | 인증코드 오류 / 만료"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "VERIFY_001"
+          message: "코드가 틀렸거나 만료되었습니다"
+
+    # ── VALID 에러 ───────────────────────────────────────────────────
+
+    Valid001Error:
+      description: "VALID_001 | 400 | 입력값 검증 실패 — message를 입력 필드 하단에 표시"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "VALID_001"
+          message: "이메일 형식이 올바르지 않습니다"
