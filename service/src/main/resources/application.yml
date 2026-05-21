@@ -34,5 +34,6 @@ spring:
 #app:
     jwt:
       secret: ${JWT_SECRET}
+#     secret: hasi-secret-key-must-be-32-characters-long // ai가 추천해준 보안규정
 #    access-token-expiry: 3600
 #    refresh-token-expiry: 604800
