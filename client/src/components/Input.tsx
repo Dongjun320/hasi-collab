@@ -6,7 +6,7 @@ interface InputProps {
   type?: string;
   placeholder?: string;
   value?: string;
-  onChange?: (e: ChangeEvent<HTMLInputElement>) => void; // ✅ React.ChangeEvent -> ChangeEvent로 수정
+  onChange?: (e: ChangeEvent<HTMLInputElement>) => void; //  React.ChangeEvent -> ChangeEvent로 수정
   disabled?: boolean;
   error?: string;
 }

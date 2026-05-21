@@ -13,7 +13,7 @@ export default {
         },
       },
       animation: {
-        fadeInUp: 'fadeInUp 0.3s ease', // ✅ Toast와 Modal에서 이 클래스명을 사용합니다.
+        fadeInUp: 'fadeInUp 0.3s ease', // Toast와 Modal에서 이 클래스명을 사용
       },
     },
   },

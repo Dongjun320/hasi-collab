@@ -48,7 +48,7 @@ const ComponentTestPage = () => {
             {/* 2. 이미지와 이름이 모두 있는 경우 */}
             <Avatar src="https://i.pravatar.cc/150?img=1" name="User 1" />
 
-            {/* 3. 사이즈(size) 속성까지 활용해본 경우 */}
+            {/* 3. 사이즈(size) 속성을 활용해본 경우 */}
             <Avatar src="https://i.pravatar.cc/150?img=3" name="User 2" size="lg" />
             <Avatar name="Admin" size="sm" />
             
