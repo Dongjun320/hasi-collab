@@ -1,6 +1,12 @@
 server:
   port: 8080
 
+# 테스트용 하드코딩 JWT.
+jwt:
+  secret: 1234567890987654323456789087654323456789
+  access-token-expiry: 3600
+  refresh-token-expiry: 604800
+
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/collaboration_db
@@ -17,11 +23,11 @@ spring:
 
 # 아래는 기능 개발 시 주석 풀어서 사용 (Ctrl + /)
 
-#  data:
-#    redis:
-#      host: localhost
-#      port: 6379
-#
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 #  mail:
 #    host: smtp.gmail.com
 #    port: 587
@@ -30,10 +36,10 @@ spring:
 #    properties:
 #      mail.smtp.auth: true
 #      mail.smtp.starttls.enable: true
-#
+
 #app:
-    jwt:
-      secret: ${JWT_SECRET}
+#    jwt:
+#      secret: ${JWT_SECRET}
 #     secret: hasi-secret-key-must-be-32-characters-long // ai가 추천해준 보안규정
 #    access-token-expiry: 3600
 #    refresh-token-expiry: 604800
