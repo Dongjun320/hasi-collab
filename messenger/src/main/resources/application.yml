@@ -22,11 +22,11 @@ spring:
 #        format_sql: true
 #        dialect: org.hibernate.dialect.PostgreSQLDialect
 #
-#  # ── Redis (메시지 캐시, 온라인 상태) ──────────────────────
-#  data:
-#    redis:
-#      host: localhost
-#      port: 6379
+  # ── Redis (메시지 캐시, 온라인 상태) ──────────────────────
+  data:
+    redis:
+      host: localhost
+      port: 6379
 #
 ## ── WebSocket STOMP ───────────────────────────────────────
 ## ws://localhost:8081/ws 로 접속
