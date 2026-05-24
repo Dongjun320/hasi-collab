@@ -1,8 +1,8 @@
 // src/components/common/Avatar.tsx
-import React from 'react';
+
 
 interface AvatarProps {
-  src?: string; // 이미지가 없을 수도 있으니 ?(선택) 처리
+  src?: string; //  ?(선택) 처리
   name: string; // 이니셜을 추출하기 위해 필수
   size?: "sm" | "md" | "lg";
 }

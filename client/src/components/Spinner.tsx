@@ -1,5 +1,5 @@
 // src/components/common/Spinner.tsx
-import React from 'react';
+
 
 interface SpinnerProps {
   size?: "sm" | "md" | "lg";
@@ -10,7 +10,7 @@ const Spinner = ({ size = "md", fullScreen = false }: SpinnerProps) => {
   // 크기별 Tailwind 클래스 매핑
   const sizeStyles = {
     sm: "w-5 h-5 border-2",
-    md: "w-8 h-8 border-3",
+    md: "w-8 h-8 border-[3px]",
     lg: "w-12 h-12 border-4",
   };
 
