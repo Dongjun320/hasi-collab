@@ -1,8 +1,8 @@
-import React from 'react';
+import { ReactNode } from 'react';
 
 // 가이드 문서에 정의된 ButtonProps 인터페이스 적용
 interface ButtonProps {
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: "primary" | "danger" | "ghost";
   disabled?: boolean;
   onClick?: () => void;
