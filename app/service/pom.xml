@@ -7,7 +7,7 @@
         <groupId>com.hasi</groupId>
         <artifactId>hasi-collab</artifactId>
         <version>0.0.1-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>service</artifactId>
@@ -134,7 +134,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/../docs/openapi/openapi.yaml</inputSpec>
+                            <inputSpec>${project.basedir}/../../docs/openapi/openapi.yaml</inputSpec>
                             <generatorName>spring</generatorName>
                             <configOptions>
                                 <interfaceOnly>true</interfaceOnly>
