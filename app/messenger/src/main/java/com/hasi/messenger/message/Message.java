@@ -1,11 +1,9 @@
-package com.hasi.service.message;
+package com.hasi.messenger.message;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-
-import java.time.LocalDateTime;
 
 /**
  * Message Entity 입니다.

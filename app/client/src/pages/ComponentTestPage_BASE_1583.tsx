@@ -32,7 +32,7 @@ const ComponentTestPage = () => {
       setSpinnerFullScreen(false)
     }, 2000)
   }
->>>>>>> dev
+>>>>>>> 8a2c7d794a010fb488cdcdf24907a3045981c4f8
 
   return (
     <div className="min-h-screen bg-gray-50 p-8 relative">
