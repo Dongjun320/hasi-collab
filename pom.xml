@@ -17,8 +17,8 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>service</module>
-        <module>messenger</module>
+        <module>app/service</module>
+        <module>app/messenger</module>
     </modules>
 
     <properties>
