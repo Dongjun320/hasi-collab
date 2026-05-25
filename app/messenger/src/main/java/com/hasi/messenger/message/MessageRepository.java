@@ -1,4 +1,4 @@
-package com.hasi.service.message;
+package com.hasi.messenger.message;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
