@@ -14,6 +14,8 @@ const ComponentTestPage = () => {
   const [inputValue, setInputValue] = useState('')
   const [errorInput, setErrorInput] = useState('')
 
+<<<<<<< HEAD
+=======
   // 새로 추가된 상태
   const [spinnerFullScreen, setSpinnerFullScreen] = useState(false)
   const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' | 'warning' }>({
@@ -30,6 +32,7 @@ const ComponentTestPage = () => {
       setSpinnerFullScreen(false)
     }, 2000)
   }
+>>>>>>> 8a2c7d794a010fb488cdcdf24907a3045981c4f8
 
   return (
     <div className="min-h-screen bg-gray-50 p-8 relative">
