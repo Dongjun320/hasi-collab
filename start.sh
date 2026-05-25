@@ -11,8 +11,8 @@ docker compose up -d
 # Root의 .package.json
 npm install
 # /client의 .package.json
-cd "$ROOT_DIR/client" && npm install
+cd "$ROOT_DIR/app/client" && npm install
 # /service의 maven 컴파일
-cd "$ROOT_DIR/service" && ./mvnw clean compile
+cd "$ROOT_DIR/app/service" && ./mvnw clean compile
 # /messenger의 maven 컴파일
-cd "$ROOT_DIR/messenger" && ./mvnw clean compile
+cd "$ROOT_DIR/app/messenger" && ./mvnw clean compile
