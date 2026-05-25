@@ -6,6 +6,7 @@ import Modal from '../components/Modal'
 import Toast from '../components/Toast'
 import './LoginPage.css' 
 import hasiImg from './Hasi.png' 
+import LoadingPopup from '../components/LoadingPopup' //5.25 추가 김상현
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -14,6 +15,8 @@ const LoginPage = () => {
   // 로그인 폼
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loadingOpen, setLoadingOpen] = useState(false) // 5.25 추가 김상현
+
 
   // 회원가입 모달 폼
   const [signUpOpen, setSignUpOpen] = useState(false)
@@ -58,7 +61,7 @@ const LoginPage = () => {
     triggerToast("ログインが完了しました。", "success") // 로그인이 완료되었습니다.
     
     setTimeout(() => {
-      navigate('/channel') 
+      setLoadingOpen(true)  //5.25 수정 김상현
     }, 1200)
   }
 
@@ -118,6 +121,7 @@ const LoginPage = () => {
       triggerToast("一致するデータがありません。", "error") // 데이터가 없습니다.
     }
   }
+
 
   return (
     // 배경을 파스텔 그린 그라데이션으로 변경 (from-emerald-50 to-teal-100)
@@ -266,6 +270,9 @@ const LoginPage = () => {
       </Modal>
 
       {/* ── 4. 글로벌 알림 영역 ── */}
+      {loadingOpen && (
+        <LoadingPopup onFinish={() => navigate('/channel')} /> //5.25 추가 김상현
+      )}
       {toast.open && (
         <Toast
           isOpen={toast.open}
