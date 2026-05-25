@@ -157,7 +157,7 @@ export default function LoadingScreenWhite() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="w-full h-full flex items-center justify-center bg-[#2C3434] overflow-hidden rounded-3xl">
+      <div className="w-full h-full flex items-center justify-center bg-[#2C3434] overflow-hidden rounded-2xl">
         {/* 배경 방사광 */}
         <div
           className="pointer-events-none fixed inset-0"

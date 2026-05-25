@@ -271,7 +271,7 @@ const LoginPage = () => {
 
       {/* ── 4. 글로벌 알림 영역 ── */}
       {loadingOpen && (
-        <LoadingPopup onFinish={() => navigate('/channel')} /> //5.25 추가 김상현
+        <LoadingPopup onFinish={() => navigate('/channel/1')} /> //5.25 추가 김상현
       )}
       {toast.open && (
         <Toast
