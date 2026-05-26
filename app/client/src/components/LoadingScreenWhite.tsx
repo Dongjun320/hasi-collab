@@ -101,7 +101,7 @@ export default function LoadingScreenWhite() {
     }, 550)
 
     // 흐르는 점 — 아치 곡선 위를 따라 이동
-    const layer    = dotsLayerRef.current
+    const layer    = dotsLayerRef.current!
     const archPath = archRef.current
     if (!archPath) return
 
