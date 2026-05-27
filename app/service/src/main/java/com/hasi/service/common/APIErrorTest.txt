@@ -1,5 +1,0 @@
-// 에러 던질 때
-throw new ApiException(ErrorCode.AUTH_001);
-
-// 성공 응답할 때
-return ResponseEntity.ok(ApiResponse.ok(데이터));
