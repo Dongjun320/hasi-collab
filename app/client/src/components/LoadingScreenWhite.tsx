@@ -11,9 +11,8 @@ const PILLARS = [
   { x: 290, y2: 114, cls: 'lsw-p6' },
 ] as const
 
-// #5DF2CE 민트 → #ffffff 흰색
 const C0 = [93,  242, 206]
-const C1 = [255, 255, 255]
+const C1 = [255, 235, 59]
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 const eio  = (t: number) => 0.5 - Math.cos(Math.PI * t) / 2
 
@@ -82,7 +81,7 @@ export default function LoadingScreenWhite() {
         if (!ch) return
         const xOff = ch.getBoundingClientRect().left - logoRect.left
         const s = ch.style as unknown as Record<string, string>
-        s.backgroundImage      = 'linear-gradient(90deg, #5DF2CE 0%, #a8f5e5 55%, #ffffff 100%)'
+        s.backgroundImage      = 'linear-gradient(90deg, #5DF2CE 0%, #a8f5e5 55%, #FFEB3B 100%)'
         s.backgroundSize       = `${logoRect.width}px 100%`
         s.backgroundPosition   = `-${xOff}px 0`
         s.webkitBackgroundClip = 'text'
@@ -183,7 +182,7 @@ export default function LoadingScreenWhite() {
             <defs>
               <linearGradient id="lsw-grad-white" x1="20" y1="0" x2="340" y2="0" gradientUnits="userSpaceOnUse">
                 <stop offset="0%"   stopColor="#5DF2CE" />
-                <stop offset="100%" stopColor="#ffffff" />
+                <stop offset="100%" stopColor="#DDEB3B" />
               </linearGradient>
               <filter id="lsw-glow-white" x="-15%" y="-40%" width="130%" height="180%">
                 <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="b" />

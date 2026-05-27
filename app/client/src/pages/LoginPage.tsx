@@ -111,21 +111,6 @@ const LoginPage = () => {
     }
   }
 
-<<<<<<< HEAD:app/client/src/pages/LoginPage.tsx
-
-  return (
-    // 배경을 파스텔 그린 그라데이션으로 변경 (from-emerald-50 to-teal-100)
-    <div className="min-h-screen bg-gradient-to-br from-[#f0fdf4] to-[#ccfbf1] flex items-center justify-center p-4 relative overflow-hidden">
-      
-      {/* 배경 구름 애니메이션 엘리먼트 */}
-      <div className="clouds">
-        <div className="cloud cloud1"></div>
-        <div className="cloud cloud2"></div>
-        <div className="cloud cloud3"></div>
-      </div>
-=======
- // ... (위쪽 상태 관리 및 함수 코드는 기존과 동일)
->>>>>>> origin/ParkKyutae-branch:client/src/pages/LoginPage.tsx
 
   return (
     // 배경색 클래스 수정: bg-gradient-to-r from-emerald-800 to-emerald-100
@@ -259,13 +244,10 @@ const LoginPage = () => {
         </div>
       </Modal>
 
-<<<<<<< HEAD:app/client/src/pages/LoginPage.tsx
       {/* ── 4. 글로벌 알림 영역 ── */}
       {loadingOpen && (
         <LoadingPopup onFinish={() => navigate('/channel/1')} /> //5.25 추가 김상현
       )}
-=======
->>>>>>> origin/ParkKyutae-branch:client/src/pages/LoginPage.tsx
       {toast.open && (
         <Toast
           isOpen={toast.open}
