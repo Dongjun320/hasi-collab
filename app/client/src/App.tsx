@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import LoginPage from './pages/LoginPage' // 1. 로그인 페이지 컴포넌트를 import 합니다.
 import ChannelPage from './pages/ChannelPage'
@@ -15,6 +16,14 @@ function App() {
       </Routes>
     </BrowserRouter>
   )
+=======
+import { RouterProvider } from 'react-router-dom'
+import { router } from "./routes"
+
+
+function App() {
+  return <RouterProvider router={router} />
+>>>>>>> SH
 }
 
 export default App

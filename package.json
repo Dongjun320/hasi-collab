@@ -3,5 +3,8 @@
     "@redocly/cli": "^2.30.6",
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.5.0"
   }
 }

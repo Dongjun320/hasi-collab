@@ -13,23 +13,17 @@ const ComponentTestPage = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [errorInput, setErrorInput] = useState('')
-
-  // 새로 추가된 상태
-  const [spinnerFullScreen, setSpinnerFullScreen] = useState(false)
   const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' | 'warning' }>({
     open: false,
     message: '',
     type: 'info',
   })
-
-  // 풀스크린 스피너 테스트용 헬퍼 함수
+  const [spinnerFullScreen, setSpinnerFullScreen] = useState(false)
   const handleFullScreenSpinner = () => {
     setSpinnerFullScreen(true)
-    // 2초 후 자동으로 닫히도록 설정
-    setTimeout(() => {
-      setSpinnerFullScreen(false)
-    }, 2000)
+    setTimeout(() => setSpinnerFullScreen(false), 2000)
   }
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-8 relative">

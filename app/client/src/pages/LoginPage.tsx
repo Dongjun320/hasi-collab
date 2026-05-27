@@ -4,8 +4,8 @@ import Button from '../components/Button'
 import Input from '../components/Input'
 import Modal from '../components/Modal'
 import Toast from '../components/Toast'
-// import './LoginPage.css' // CSS 파일 내용을 모두 지웠다면 이 줄도 삭제하거나 주석 처리하세요.
-import hasiImg from './Hasi.png' 
+import hasiImg from './Hasi.png'
+import LoadingPopup from '../components/LoadingPopup'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -13,6 +13,8 @@ const LoginPage = () => {
   // ── 1. 상태 관리 (State) ──
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loadingOpen, setLoadingOpen] = useState(false) // 5.25 추가 김상현
+
 
   const [signUpOpen, setSignUpOpen] = useState(false)
   const [signUpEmail, setSignUpEmail] = useState('')
@@ -52,7 +54,7 @@ const LoginPage = () => {
     triggerToast("ログインが完了しました。", "success")
     
     setTimeout(() => {
-      navigate('/channel') 
+      setLoadingOpen(true)  //5.25 수정 김상현
     }, 1200)
   }
 
@@ -108,7 +110,6 @@ const LoginPage = () => {
     }
   }
 
- // ... (위쪽 상태 관리 및 함수 코드는 기존과 동일)
 
   return (
     // 배경색 클래스 수정: bg-gradient-to-r from-emerald-800 to-emerald-100
@@ -242,6 +243,10 @@ const LoginPage = () => {
         </div>
       </Modal>
 
+      {/* ── 4. 글로벌 알림 영역 ── */}
+      {loadingOpen && (
+        <LoadingPopup onFinish={() => navigate('/WorkspaceHome')} /> //5.25 추가 김상현
+      )}
       {toast.open && (
         <Toast
           isOpen={toast.open}
