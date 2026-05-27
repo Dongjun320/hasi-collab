@@ -1,4 +1,4 @@
-/* 떠다니는 구름 애니메이션 효과 */
+/* 떠다니는 구름 애니메이션 효과
 .clouds {
   position: absolute;
   top: 0;
@@ -38,4 +38,4 @@
 @keyframes float {
   0% { transform: translateX(-200px); }
   100% { transform: translateX(100vw); }
-}
+} */
