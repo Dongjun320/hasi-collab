@@ -3,60 +3,59 @@ import { useEffect, useRef } from 'react'
 const CHARS = ['H', 'A', 'S', 'I'] as const
 
 const PILLARS = [
-  { x: 70,  y2: 114, cls: 'ls-p1' },
-  { x: 115, y2: 98,  cls: 'ls-p2' },
-  { x: 160, y2: 91,  cls: 'ls-p3' },
-  { x: 200, y2: 91,  cls: 'ls-p4' },
-  { x: 245, y2: 98,  cls: 'ls-p5' },
-  { x: 290, y2: 114, cls: 'ls-p6' },
+  { x: 70,  y2: 114, cls: 'lsw-p1' },
+  { x: 115, y2: 98,  cls: 'lsw-p2' },
+  { x: 160, y2: 91,  cls: 'lsw-p3' },
+  { x: 200, y2: 91,  cls: 'lsw-p4' },
+  { x: 245, y2: 98,  cls: 'lsw-p5' },
+  { x: 290, y2: 114, cls: 'lsw-p6' },
 ] as const
 
-// #5DF2CE 민트 → #F0F76E 라임
 const C0 = [93,  242, 206]
 const C1 = [240, 247, 110]
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 const eio  = (t: number) => 0.5 - Math.cos(Math.PI * t) / 2
 
 const CSS = `
-  @keyframes ls-char-in {
+  @keyframes lsw-char-in {
     to { opacity: 1; transform: translateY(0); }
   }
-  @keyframes ls-draw {
+  @keyframes lsw-draw {
     to { stroke-dashoffset: 0; }
   }
-  @keyframes ls-fade-in {
+  @keyframes lsw-fade-in {
     to { opacity: 1; }
   }
-  @keyframes ls-logo-pulse {
+  @keyframes lsw-logo-pulse {
     0%, 100% { filter: brightness(1); }
     50%      { filter: brightness(1.25) drop-shadow(0 0 8px rgba(93,242,206,0.4)); }
   }
-  .ls-char {
+  .lsw-char {
     display: inline-block;
     opacity: 0;
     transform: translateY(22px);
-    animation: ls-char-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards 0s;
+    animation: lsw-char-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards 0s;
   }
-  .ls-beam {
+  .lsw-beam {
     stroke-dasharray: 320;
     stroke-dashoffset: 320;
-    animation: ls-draw 0.75s ease-out forwards 0s;
+    animation: lsw-draw 0.75s ease-out forwards 0s;
   }
-  .ls-arch {
-    animation: ls-draw 0.75s ease-in-out forwards 0s;
+  .lsw-arch {
+    animation: lsw-draw 0.75s ease-in-out forwards 0s;
   }
-  .ls-p1 { stroke-dasharray: 26; stroke-dashoffset: 26; animation: ls-draw .75s ease forwards 0s; }
-  .ls-p2 { stroke-dasharray: 42; stroke-dashoffset: 42; animation: ls-draw .75s ease forwards 0s; }
-  .ls-p3 { stroke-dasharray: 49; stroke-dashoffset: 49; animation: ls-draw .75s ease forwards 0s; }
-  .ls-p4 { stroke-dasharray: 49; stroke-dashoffset: 49; animation: ls-draw .75s ease forwards 0s; }
-  .ls-p5 { stroke-dasharray: 42; stroke-dashoffset: 42; animation: ls-draw .75s ease forwards 0s; }
-  .ls-p6 { stroke-dasharray: 26; stroke-dashoffset: 26; animation: ls-draw .75s ease forwards 0s; }
-  .ls-logo-pulse {
-    animation: ls-logo-pulse 2.8s ease-in-out infinite 1.2s;
+  .lsw-p1 { stroke-dasharray: 26; stroke-dashoffset: 26; animation: lsw-draw .75s ease forwards 0s; }
+  .lsw-p2 { stroke-dasharray: 42; stroke-dashoffset: 42; animation: lsw-draw .75s ease forwards 0s; }
+  .lsw-p3 { stroke-dasharray: 49; stroke-dashoffset: 49; animation: lsw-draw .75s ease forwards 0s; }
+  .lsw-p4 { stroke-dasharray: 49; stroke-dashoffset: 49; animation: lsw-draw .75s ease forwards 0s; }
+  .lsw-p5 { stroke-dasharray: 42; stroke-dashoffset: 42; animation: lsw-draw .75s ease forwards 0s; }
+  .lsw-p6 { stroke-dasharray: 26; stroke-dashoffset: 26; animation: lsw-draw .75s ease forwards 0s; }
+  .lsw-logo-pulse {
+    animation: lsw-logo-pulse 2.8s ease-in-out infinite 1.2s;
   }
-  .ls-status {
+  .lsw-status {
     opacity: 0;
-    animation: ls-fade-in .3s ease forwards 0.5s;
+    animation: lsw-fade-in .3s ease forwards 0.5s;
   }
 `
 
@@ -75,7 +74,7 @@ export default function LoadingScreenLime() {
       archRef.current.style.strokeDashoffset = `${len}`
     }
 
-    // 글자별 그라디언트 주입 (민트→라임)
+    // 글자별 그라디언트 주입 (민트→흰색)
     if (logoRef.current) {
       const logoRect = logoRef.current.getBoundingClientRect()
       charRefs.current.forEach(ch => {
@@ -101,7 +100,7 @@ export default function LoadingScreenLime() {
     }, 550)
 
     // 흐르는 점 — 아치 곡선 위를 따라 이동
-    const layer    = dotsLayerRef.current
+    const layer    = dotsLayerRef.current!
     const archPath = archRef.current
     if (!archPath) return
 
@@ -157,7 +156,7 @@ export default function LoadingScreenLime() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="fixed inset-0 flex items-center justify-center bg-[#2C3434] overflow-hidden">
+      <div className="w-full h-full flex items-center justify-center bg-[#2C3434] overflow-hidden rounded-2xl">
         {/* 배경 방사광 */}
         <div
           className="pointer-events-none fixed inset-0"
@@ -166,12 +165,12 @@ export default function LoadingScreenLime() {
 
         <div className="relative flex flex-col items-center gap-9">
           {/* 로고 */}
-          <div ref={logoRef} className="ls-logo-pulse text-[38px] font-bold tracking-[10px]">
+          <div ref={logoRef} className="lsw-logo-pulse text-[38px] font-bold tracking-[10px]">
             {CHARS.map((ch, i) => (
               <span
                 key={ch}
                 ref={el => { charRefs.current[i] = el }}
-                className="ls-char"
+                className="lsw-char"
               >
                 {ch}
               </span>
@@ -181,11 +180,11 @@ export default function LoadingScreenLime() {
           {/* 브릿지 SVG */}
           <svg width="360" height="160" viewBox="0 0 360 160" fill="none" className="block overflow-visible">
             <defs>
-              <linearGradient id="ls-grad-lime" x1="20" y1="0" x2="340" y2="0" gradientUnits="userSpaceOnUse">
+              <linearGradient id="lsw-grad-white" x1="20" y1="0" x2="340" y2="0" gradientUnits="userSpaceOnUse">
                 <stop offset="0%"   stopColor="#5DF2CE" />
                 <stop offset="100%" stopColor="#F0F76E" />
               </linearGradient>
-              <filter id="ls-glow-lime" x="-15%" y="-40%" width="130%" height="180%">
+              <filter id="lsw-glow-white" x="-15%" y="-40%" width="130%" height="180%">
                 <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="b" />
                 <feMerge>
                   <feMergeNode in="b" />
@@ -194,23 +193,23 @@ export default function LoadingScreenLime() {
               </filter>
             </defs>
 
-            <g filter="url(#ls-glow-lime)">
-              <line className="ls-beam"
+            <g filter="url(#lsw-glow-white)">
+              <line className="lsw-beam"
                 x1="20" y1="140" x2="340" y2="140"
-                stroke="url(#ls-grad-lime)" strokeWidth="4" strokeLinecap="round"
+                stroke="url(#lsw-grad-white)" strokeWidth="4" strokeLinecap="round"
               />
               <path
                 ref={archRef}
-                className="ls-arch"
+                className="lsw-arch"
                 d="M 20 140 Q 180 40 340 140"
-                stroke="url(#ls-grad-lime)" strokeWidth="4" strokeLinecap="round"
+                stroke="url(#lsw-grad-white)" strokeWidth="4" strokeLinecap="round"
               />
               {PILLARS.map(({ x, y2, cls }) => (
                 <line
                   key={x}
                   className={cls}
                   x1={x} y1="140" x2={x} y2={y2}
-                  stroke="url(#ls-grad-lime)" strokeWidth="3" strokeLinecap="round"
+                  stroke="url(#lsw-grad-white)" strokeWidth="3" strokeLinecap="round"
                 />
               ))}
             </g>
@@ -221,7 +220,7 @@ export default function LoadingScreenLime() {
           {/* 상태 텍스트 */}
           <div
             ref={statusRef}
-            className="ls-status text-xs tracking-[3.5px] text-[#6A8A8A] uppercase"
+            className="lsw-status text-xs tracking-[3.5px] text-[#6A8A8A] uppercase"
           >
             팀을 연결하는 중...
           </div>

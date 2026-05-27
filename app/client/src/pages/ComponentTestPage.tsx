@@ -13,6 +13,16 @@ const ComponentTestPage = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [errorInput, setErrorInput] = useState('')
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' | 'warning' }>({
+    open: false,
+    message: '',
+    type: 'info',
+  })
+  const [spinnerFullScreen, setSpinnerFullScreen] = useState(false)
+  const handleFullScreenSpinner = () => {
+    setSpinnerFullScreen(true)
+    setTimeout(() => setSpinnerFullScreen(false), 2000)
+  }
 
 
   return (

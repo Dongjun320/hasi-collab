@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
-//import LoadingScreenLime from "./LoadingScreenLime";
-import LoadingScreenWhite from "./LoadingScreenWhite";
+import LoadingScreenLime from "./LoadingScreenLime";
 
 interface Props {
     onFinish: () => void
@@ -44,7 +43,7 @@ export default function LoadingPopup({ onFinish }: Props) {
                     className="popup-scale-in rounded-2xl overflow-hidden shadow-2xl"
                     style={{ width: 480, height: 320 }}
                 >
-                   <LoadingScreenWhite />
+                   <LoadingScreenLime />
                 </div>
             </div>
         </>
