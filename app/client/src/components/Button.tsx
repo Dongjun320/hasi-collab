@@ -17,7 +17,7 @@ const Button = ({
   type = "button",
 }: ButtonProps) => {
   const variantStyles = {
-    primary: "bg-blue-500 text-white hover:bg-blue-600",
+    primary: "bg-emerald-400 text-white hover:bg-emerald-400",
     danger:  "bg-red-500 text-white hover:bg-red-600",
     ghost:   "bg-gray-100 text-gray-700 hover:bg-gray-200",
   };
