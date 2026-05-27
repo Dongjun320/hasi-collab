@@ -4,9 +4,8 @@ import Button from '../components/Button'
 import Input from '../components/Input'
 import Modal from '../components/Modal'
 import Toast from '../components/Toast'
-// import './LoginPage.css' // CSS 파일 내용을 모두 지웠다면 이 줄도 삭제하거나 주석 처리하세요.
-import hasiImg from './Hasi.png' 
-import LoadingPopup from '../components/LoadingPopup' //5.25 추가 김상현
+import hasiImg from './Hasi.png'
+import LoadingPopup from '../components/LoadingPopup'
 
 const LoginPage = () => {
   const navigate = useNavigate()

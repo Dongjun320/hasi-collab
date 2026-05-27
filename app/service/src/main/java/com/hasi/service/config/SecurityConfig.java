@@ -18,6 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final JwtFilter JwtFilter;
     // https://www.baeldung.com/spring-security-deactivate에서 가져온 개발용 Spring 끄기
+    private final CustomOAuth2UserService oAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -27,6 +29,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers(
                                         "/api/v1/auth/login",
+                                        "/oauth2/**",
+                                        "/login/oauth2/**",
                                         "/ws/",
                                         "/auth/**",
                                         "/swagger-ui/**",
@@ -34,7 +38,13 @@ public class SecurityConfig {
                                 ).permitAll()
                                 .anyRequest().authenticated()
                 )
-                .addFilterBefore(JwtFilter, UsernamePasswordAuthenticationFilter.class); // ← 추가
+                .oauth2Login(oauth2 -> oauth2
+                    .userInfoEndpoint(userInfo -> userInfo
+                        .userService(oAuth2UserService)
+                    )
+                        .successHandler(oAuth2SuccessHandler)
+                )
+                .addFilterBefore(JwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
