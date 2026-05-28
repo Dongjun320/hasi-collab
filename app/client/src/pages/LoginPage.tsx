@@ -161,7 +161,9 @@ const LoginPage = () => {
           <div className="flex flex-col gap-2.5 w-full mt-auto mb-2">
             
             {/* Google Button */}
-            <button className="relative flex items-center justify-center w-full py-2.5 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 transition duration-200">
+            <button
+                onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/google'}
+                className="relative flex items-center justify-center w-full py-2.5 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 transition duration-200">
               <div className="absolute left-5 flex items-center">
                 <svg viewBox="0 0 24 24" className="w-5 h-5">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -174,7 +176,9 @@ const LoginPage = () => {
             </button>
 
            {/* Amazon Button (수정완료: 제공해주신 고해상도 SVG 적용) */}
-            <button className="relative flex items-center justify-center w-full py-2.5 bg-[#131921] rounded-full shadow-sm hover:bg-[#232f3e] transition duration-200">
+            <button
+                onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/amazon'}
+                className="relative flex items-center justify-center w-full py-2.5 bg-[#131921] rounded-full shadow-sm hover:bg-[#232f3e] transition duration-200">
               <div className="absolute left-5 flex items-center">
                 {/* JSX 문법에 맞게 속성(fillRule 등)을 변환하고, 사이즈를 다른 버튼과 어울리게 맞췄습니다. */}
                 <svg viewBox="0 0 512 512" className="w-[22px] h-[22px]">
@@ -196,7 +200,9 @@ const LoginPage = () => {
             </button>
             
             {/* Line Button (수정완료: 하얀 말풍선 + 초록색 텍스트) */}
-            <button className="relative flex items-center justify-center w-full py-2.5 bg-[#06C755] rounded-full shadow-sm hover:bg-[#05b34c] transition duration-200">
+            <button
+                onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/line'}
+                className="relative flex items-center justify-center w-full py-2.5 bg-[#06C755] rounded-full shadow-sm hover:bg-[#05b34c] transition duration-200">
               <div className="absolute left-5 flex items-center">
                 <svg viewBox="0 0 24 24" className="w-[22px] h-[22px]">
                   <path d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" fill="#ffffff"/>
@@ -207,7 +213,9 @@ const LoginPage = () => {
             </button>
             
             {/* X Button (수정완료: 공식 비율 로고) */}
-            <button className="relative flex items-center justify-center w-full py-2.5 bg-black rounded-full shadow-sm hover:bg-zinc-900 transition duration-200">
+            <button
+                onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/twitter'}
+                className="relative flex items-center justify-center w-full py-2.5 bg-black rounded-full shadow-sm hover:bg-zinc-900 transition duration-200">
               <div className="absolute left-5 flex items-center">
                 <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] text-white" fill="currentColor">
                   <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/>

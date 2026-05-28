@@ -10,10 +10,13 @@ import { CalendarPage } from "./pages/CalendarPage.tsx";
 import { ThreadsPage } from "./pages/ThreadsPage.tsx";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
+import OAuth2RedirectPage from "./pages/OAuth2RedirectPage.tsx";
 
 export const router = createBrowserRouter([
   { path: "/",
     element: <LoginPage /> },
+  { path: "/oauth2/redirect",
+    element: <OAuth2RedirectPage />},
   { path: "/channel/:channelId",
     element: <ChannelsPage /> },
   { path: "/ComponentTestPage",
