@@ -26,6 +26,12 @@ const LoginPage = () => {
   const [findOpen, setFindOpen] = useState(false)
   const [findName, setFindName] = useState('')
   const [findPhone, setFindPhone] = useState('')
+  
+  const [signUpNickname, setSignUpNickname] = useState('')
+  const [isNicknameVerified, setIsNicknameVerified] = useState(false)
+
+  // 테스트용 가상 중복 닉네임 데이터
+  const mockNicknames = ['admin', 'test', 'hasi']
 
   const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' | 'warning' }>({
     open: false,
@@ -44,6 +50,54 @@ const LoginPage = () => {
     setToast({ open: true, message, type })
   }
 
+const handleCheckNickname = () => {
+  if (!signUpNickname.trim()) {
+    triggerToast("닉네임을 입력해주세요.", "warning")
+    return
+  }
+  
+  if (mockNicknames.includes(signUpNickname)) {
+    // 중복일 경우
+    triggerToast("중복된 닉네임입니다.", "error")
+    setIsNicknameVerified(false)
+  } else {
+    // 사용 가능할 경우
+    triggerToast("사용가능한 닉네임입니다.", "success")
+    setIsNicknameVerified(true)
+  }
+  const handleSignUpSubmit = () => {
+  // 닉네임 입력 여부도 함께 검사하도록 수정
+  if (!signUpEmail.trim() || !signUpPw.trim() || !signUpPwConfirm.trim() || !signUpNickname.trim()) {
+    triggerToast("すべての情報を入力してください。", "warning")
+    return
+  }
+  if (!isVerified) {
+    triggerToast("E-mail認証を完了してください。", "warning")
+    return
+  }
+  // 닉네임 중복 확인 여부 검사 추가
+  if (!isNicknameVerified) {
+    triggerToast("닉네임 중복 확인을 완료해주세요.", "warning")
+    return
+  }
+  if (signUpPw !== signUpPwConfirm) {
+    triggerToast("パスワードが一致しません。", "error")
+    return
+  }
+  
+  triggerToast("会員登録が完了しました。", "success")
+  setSignUpOpen(false)
+  setSignUpEmail('')
+  setSignUpPw('')
+  setSignUpPwConfirm('')
+  setSignUpCode('')
+  setSignUpNickname('') // 닉네임 초기화 추가
+  
+  setIsCodeSent(false)
+  setIsVerified(false)
+  setIsNicknameVerified(false) // 닉네임 인증 상태 초기화 추가
+}
+}
   const handleLogin = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
@@ -224,6 +278,8 @@ const LoginPage = () => {
       {/* ── 3. 모달 영역 ── */}
       <Modal isOpen={signUpOpen} onClose={() => setSignUpOpen(false)} title="新規会員登録">
         <div className="flex flex-col gap-4">
+          
+          {/* 1. 이메일 입력 블록 */}
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <Input 
@@ -241,6 +297,8 @@ const LoginPage = () => {
               </Button>
             </div>
           </div>
+
+          {/* 2. 인증코드 입력 블록 */}
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <Input 
@@ -257,7 +315,32 @@ const LoginPage = () => {
                 {isVerified ? "認証完了" : "認証確認"}
               </Button>
             </div>
+          </div> {/* <--- 인증코드 블록이 끝나는 여기 바로 아래에 삽입합니다. */}
+
+          {/* ──────────────── 심어줄 닉네임 입력 및 중복 확인 영역 ──────────────── */}
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Input 
+                label="닉네임" 
+                type="text" 
+                placeholder="닉네임을 입력해주세요" 
+                value={signUpNickname}
+                onChange={(e) => {
+                  setSignUpNickname(e.target.value)
+                  setIsNicknameVerified(false)
+                }}
+                disabled={isNicknameVerified}
+              />
+            </div>
+            <div className="mb-[2px]">
+              <Button onClick={handleCheckNickname} disabled={isNicknameVerified}>
+                {isNicknameVerified ? "확인 완료" : "확인"}
+              </Button>
+            </div>
           </div>
+          {/* ────────────────────────────────────────────────────────────────── */}
+
+          {/* 3. 패스워드 입력란 (여기 위쪽에 위치하게 됩니다) */}
           <Input 
             label="パスワード" 
             type="password" 
@@ -272,13 +355,13 @@ const LoginPage = () => {
             value={signUpPwConfirm}
             onChange={(e) => setSignUpPwConfirm(e.target.value)}
           />
+          
           <div className="flex gap-2 justify-end mt-4">
             <Button variant="ghost" onClick={() => setSignUpOpen(false)}>キャンセル</Button>
             <Button onClick={handleSignUpSubmit}>登録する</Button>
           </div>
         </div>
       </Modal>
-
       <Modal isOpen={findOpen} onClose={() => setFindOpen(false)} title="E-mail / パスワードをお忘れの方">
         <div className="flex flex-col gap-4">
           <Input 
