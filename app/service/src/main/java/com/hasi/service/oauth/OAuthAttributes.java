@@ -37,7 +37,7 @@ public class OAuthAttributes {
         return OAuthAttributes.builder()
                 .providerId((String) attrs.get("userId"))
                 .provider("line")
-                .name((String) attrs.get("name"))
+                .name((String) attrs.get("displayName"))
                 .email(null)
                 .build();
     }

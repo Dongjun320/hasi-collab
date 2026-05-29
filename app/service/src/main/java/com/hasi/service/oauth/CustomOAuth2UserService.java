@@ -20,10 +20,12 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     @Override
     public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationException {
 
-        OAuth2User oAuth2User = new DefaultOAuth2UserService().loadUser(request);
-
-        // 어떤 플랫폼인지 (google, line, twitter, amazon)
         String provider = request.getClientRegistration().getRegistrationId();
+
+        OAuth2User oAuth2User;
+
+        oAuth2User = new DefaultOAuth2UserService().loadUser(request);
+
 
         // 플랫폼별 응답 파싱
         OAuthAttributes attributes = OAuthAttributes.of(provider, oAuth2User.getAttributes());
