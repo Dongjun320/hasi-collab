@@ -29,6 +29,7 @@ public class MailController {
         try {
             return ResponseEntity.ok(mailService.fetchMails(accountId, limit));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().build();
         }
     }
