@@ -24,7 +24,7 @@ const MailPage = () => {
     const fetchMails = async () => {
         setLoading(true)
         try {
-            const res = await fetch('http://localhost:8080/api/v1/mail/accounts/7/mails?limit=30', {
+            const res = await fetch('http://localhost:8080/api/v1/mail/accounts/2/mails?limit=30', {
                 headers: {
                     Authorization: `Bearer ${JSON.parse(localStorage.getItem('hasi-auth') || '{}')?.state?.accessToken}`
                 }

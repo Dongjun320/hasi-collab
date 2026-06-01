@@ -24,11 +24,9 @@ export const router = createBrowserRouter([
     element: <ComponentTestPage /> },
   { path: "/WorkspaceHome",
     element: <WorkspaceHome /> },
-  { path: "/Workspace/mail",
-    element : <MailPage />},
 
   {
-    path: "/Workspace",
+    path: "/workspace",
     Component: WorkspaceLayout,
     children: [
       { index: true, Component: ChannelsPage },
@@ -40,6 +38,7 @@ export const router = createBrowserRouter([
       { path: "calendar", Component: CalendarPage },
       { path: "profile", Component: ProfilePage },
       { path: "settings", Component: SettingsPage },
+      { path: "mail", Component: MailPage },
     ],
   },
 ]);

@@ -9,6 +9,7 @@
 .env.local
 .env.*.local
 **/application-secret.yml
+postgres_data/
 
 # Maven 빌드 산출물
 **/target/

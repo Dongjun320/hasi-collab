@@ -19,7 +19,7 @@ const QUICK_ITEMS = [
   { icon: Calendar,      label: "달력",   to: "/workspace/calendar" },
   { icon: User,          label: "내정보", to: "/workspace/profile" },
   { icon: Phone,         label: "전화",   to: "#" },
-  { icon: Mail,          label: "메일",   to: "#" },
+  { icon: Mail,          label: "메일",   to: "/workspace/mail" },
 ];
 
 export function WorkspaceLayout() {

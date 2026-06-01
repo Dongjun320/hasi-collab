@@ -310,7 +310,7 @@ const LoginPage = () => {
 
       {/* ── 4. 글로벌 알림 영역 ── */}
       {loadingOpen && (
-        <LoadingPopup onFinish={() => navigate('/WorkspaceHome')} /> 
+        <LoadingPopup onFinish={() => navigate('/WorkspaceHome')} />
       )}
       {toast.open && (
         <Toast
