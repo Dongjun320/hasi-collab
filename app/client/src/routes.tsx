@@ -11,6 +11,7 @@ import { ThreadsPage } from "./pages/ThreadsPage.tsx";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
 import OAuth2RedirectPage from "./pages/OAuth2RedirectPage.tsx";
+import MailPage from "./pages/MailPage.tsx";
 
 export const router = createBrowserRouter([
   { path: "/",
@@ -23,9 +24,11 @@ export const router = createBrowserRouter([
     element: <ComponentTestPage /> },
   { path: "/WorkspaceHome",
     element: <WorkspaceHome /> },
+  { path: "/Workspace/mail",
+    element : <MailPage />},
 
   {
-    path: "/workspace",
+    path: "/Workspace",
     Component: WorkspaceLayout,
     children: [
       { index: true, Component: ChannelsPage },
