@@ -1,0 +1,10 @@
+openapi: 3.0.0
+info:
+  title: Service To Messenger
+  description: Service에서 Messenger로의 Request입니다.
+  version: 1.0.0
+paths:
+  /api/messages/{id}:
+    $ref: "./paths/MessageEndpoints.yaml#/paths/~1api~1messages~1{id}"
+  /api/messages/channels/{channelId}:
+    $ref: "./paths/MessageEndpoints.yaml#/paths/~1api~1messages~1channels~1{channelId}"

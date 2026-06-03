@@ -1,0 +1,37 @@
+components:
+  schemas:
+    userChannels:
+      type: object
+      properties:
+        allMessages:
+          description: "유저의 모든 채널 데이터"
+#          type: array
+#          items:
+#            $ref: "#/components/schemas/message"
+
+    refreshChannel:
+      type: object
+      properties:
+        messages:
+          description: "Channel ID를 기준으로 기간에 해당되는 메시지."
+          type: array
+          items:
+            $ref: "#/components/schemas/message"
+    message:
+      type: object
+      properties:
+        id:
+          description: "메시지 ID"
+          type: integer
+        channelId:
+          type: integer
+        senderId:
+          type: integer
+        createAt:
+          type: string
+          format: date
+        isDeleted:
+          type: boolean
+        content:
+          type: string
+

@@ -12,9 +12,9 @@ docker compose up -d
 npm install
 # app/client/의 .package.json
 cd "$ROOT_DIR/app/client" && npm install
-# app/service/의 maven clean(기존 target/ 제거)으로 백그라운드에서(&) 돌리기
-cd "$ROOT_DIR/app/service" && ./mvnw clean spring-boot:run &
-# app/messenger/의 maven clean(기존 target/ 제거)으로 백그라운드에서(&) 돌리기
-cd "$ROOT_DIR/app/messenger" && ./mvnw clean spring-boot:run &
+# app/service/의 maven으로 백그라운드에서(&) 돌리기
+cd "$ROOT_DIR/app/service" && ./mvnw spring-boot:run &
+# app/messenger/의 maven으로 백그라운드에서(&) 돌리기
+cd "$ROOT_DIR/app/messenger" && ./mvnw spring-boot:run &
 # app/client/의 npm run dev 돌리기
 cd "$ROOT_DIR/app/client" && npm run dev
