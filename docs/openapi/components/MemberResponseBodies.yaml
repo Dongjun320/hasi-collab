@@ -1,0 +1,155 @@
+components:
+  schemas:
+    WorkspaceMemberData:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+        role:
+          type: string
+          enum: [owner, admin, member]
+        statusCode:
+          type: string
+          enum: [online, away, busy, offline, outside, remote]
+
+    ChannelMemberData:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+        role:
+          type: string
+          enum: [admin, member]
+
+    WorkspaceMemberInviteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "초대 완료"
+            userId:
+              type: integer
+              format: int64
+            role:
+              type: string
+              enum: [owner, admin, member]
+        error:
+          nullable: true
+          example: null
+
+    WorkspaceMemberListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkspaceMemberData"
+        error:
+          nullable: true
+          example: null
+
+    WorkspaceMemberLeaveResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: "워크스페이스 탈퇴 메시지"
+        error:
+          nullable: true
+          example: null
+
+    WorkspaceMemberPatchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: "#/components/schemas/WorkspaceMemberData"
+        error:
+          nullable: true
+          example: null
+
+    WorkspaceMemberRemoveResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: "워크스페이스 멤버 추방 메시지"
+        error:
+          nullable: true
+          example: null
+
+    ChannelMemberListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChannelMemberData"
+        error:
+          nullable: true
+          example: null
+
+    ChannelMemberLeaveResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: "채널 탈퇴 메시지"
+        error:
+          nullable: true
+          example: null
+
+    ChannelMemberRemoveResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: "채널 멤버 추방 메시지"
+        error:
+          nullable: true
+          example: null
