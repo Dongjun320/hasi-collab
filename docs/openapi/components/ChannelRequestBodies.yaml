@@ -16,6 +16,7 @@ components:
           description: "공개/비공개"
 
     ChannelPatchRequest:
+      type: object
       description: "채널 부분수정 시 요청"
       properties:
         name:
