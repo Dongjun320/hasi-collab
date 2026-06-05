@@ -21,25 +21,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS003Error"
         '401':
           description: "Unauthorized, 로그인 하지 않은 상태에서 워크스페이스 생성 요청"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '409':
           description: "Conflict, 동일한 이름의 워크스페이스가 존재함"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS001Error"
         '500':
           description: "Internal Server Error, DB 저장 중 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
 
   /api/workspaces/me:
     get:
@@ -58,13 +58,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
          
   /api/workspaces/{workspaceId}:
     patch:
@@ -95,37 +95,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS003Error"
         '401':
           description: "Unauthorized, 인증되지 않은 요청"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '403':
           description: "Forbidden, 해당 워크스페이스 수정 권한 없음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
         '404':
           description: "Not Found, 워크스페이스가 존재하지 않음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS002Error"
         '409':
           description: "Conflict, 동일한 이름의 워크스페이스가 존재함"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS001Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
     delete:
       summary: "워크스페이스 삭제"
       tags:
@@ -149,25 +149,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '403':
           description: "Forbidden, 해당 워크스페이스 삭제 권한 없음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
         '404':
           description: "Not Found, 워크스페이스가 존재하지 않음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS002Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
 
   /api/workspaces/search:
     get:
@@ -206,22 +206,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '403':
           description: "Forbidden, 조회 권한 없음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
         '404':
           description: "Not Found, 워크스페이스가 존재하지 않음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS002Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"

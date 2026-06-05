@@ -28,31 +28,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR004Error"
         '401':
           description: "Unauthorized, 인증되지 않은 요청"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '403':
           description: "Forbidden, 멤버 초대 권한 없음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
         '409':
           description: "Conflict, 이미 워크스페이스에 속한 멤버"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR002Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
     get:
       summary: "워크스페이스 멤버 조회"
       tags:
@@ -76,25 +76,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '403':
           description: "Forbidden, 조회 권한 없음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
         '404':
           description: "Not Found, 워크스페이스가 존재하지 않음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS002Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
     
   /api/workspaces/{workspaceId}/members/me:
     delete:
@@ -120,25 +120,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '403':
           description: "Forbidden, 탈퇴 권한 없음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
         '404':
           description: "Not Found, 워크스페이스 또는 멤버가 존재하지 않음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR005Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
 
   /api/workspaces/{workspaceId}/members/{userId}:
     patch:
@@ -175,37 +175,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR004Error"
         '401':
           description: "Unauthorized, 인증되지 않은 요청"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '403':
           description: "Forbidden, 수정 권한 없음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
         '404':
           description: "Not Found, 멤버가 존재하지 않음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
-        '409':
-          description: "Conflict, 충돌하는 값이 존재함"
-          content:
-            application/json:
-              schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR003Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
     delete:
       summary: "워크스페이스 멤버 추방"
       tags:
@@ -235,25 +229,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '403':
           description: "Forbidden, 추방 권한 없음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
         '404':
           description: "Not Found, 워크스페이스 또는 멤버가 존재하지 않음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR005Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
 
   /api/workspaces/{workspaceId}/channels/{channelId}/members:
     get:
@@ -285,13 +279,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
 
   /api/workspaces/{workspaceId}/channels/{channelId}/members/me:
     delete:
@@ -323,25 +317,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '403':
           description: "Forbidden, 탈퇴 권한 없음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
         '404':
           description: "Not Found, 채널 또는 멤버가 존재하지 않음"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR005Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
 
   /api/workspaces/{workspaceId}/channels/{channelId}/members/{userId}:
     delete:
@@ -379,16 +373,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR004Error"
         '401':
           description: "Unauthorized, 인증되지 않은 요청"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
         '500':
           description: "Internal Server Error, 서버 내부 오류"
           content:
             application/json:
               schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
