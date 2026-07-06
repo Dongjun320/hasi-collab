@@ -52,17 +52,17 @@ const LoginPage = () => {
 
 const handleCheckNickname = () => {
   if (!signUpNickname.trim()) {
-    triggerToast("닉네임을 입력해주세요.", "warning")
+    triggerToast("ニックネームを入力してください。", "warning")
     return
   }
   
   if (mockNicknames.includes(signUpNickname)) {
     // 중복일 경우
-    triggerToast("중복된 닉네임입니다.", "error")
+    triggerToast("重複しているニックネームです。", "error")
     setIsNicknameVerified(false)
   } else {
     // 사용 가능할 경우
-    triggerToast("사용가능한 닉네임입니다.", "success")
+    triggerToast("使用可能なニックネームです。", "success")
     setIsNicknameVerified(true)
   }
   const handleSignUpSubmit = () => {
@@ -77,7 +77,7 @@ const handleCheckNickname = () => {
   }
   // 닉네임 중복 확인 여부 검사 추가
   if (!isNicknameVerified) {
-    triggerToast("닉네임 중복 확인을 완료해주세요.", "warning")
+    triggerToast("ニックネームの重宝チェックをお願いします。", "warning")
     return
   }
   if (signUpPw !== signUpPwConfirm) {
@@ -270,9 +270,7 @@ const handleCheckNickname = () => {
               <span className="font-semibold text-white text-sm">X</span>
             </button>
           </div>
-
         </div>
-
       </div>
 
       {/* ── 3. 모달 영역 ── */}
@@ -321,9 +319,9 @@ const handleCheckNickname = () => {
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <Input 
-                label="닉네임" 
+                label="ニックネーム" 
                 type="text" 
-                placeholder="닉네임을 입력해주세요" 
+                placeholder="ニックネームを入力してください。" 
                 value={signUpNickname}
                 onChange={(e) => {
                   setSignUpNickname(e.target.value)
@@ -334,7 +332,7 @@ const handleCheckNickname = () => {
             </div>
             <div className="mb-[2px]">
               <Button onClick={handleCheckNickname} disabled={isNicknameVerified}>
-                {isNicknameVerified ? "확인 완료" : "확인"}
+                {isNicknameVerified ? "確認完了" : "確認"}
               </Button>
             </div>
           </div>
