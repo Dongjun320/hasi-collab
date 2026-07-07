@@ -9,11 +9,11 @@ services:
       POSTGRES_USER: hasi
       POSTGRES_PASSWORD: hasi1234
     ports:
-      - "5432:5432"
+      - "8200:8200"
 
   redis:
     image: redis:7-alpine
     container_name: hasi-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "8201:8201"
