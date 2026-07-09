@@ -56,14 +56,10 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers(
-<<<<<<< HEAD
-                                        "/api/v1/auth/login",
+                                        "/api/auth/login",
                                         "/api/v1/mail/**",
                                         "/oauth2/**",
                                         "/login/oauth2/**",
-=======
-                                        "/api/auth/login",
->>>>>>> dev
                                         "/ws/",
                                         "/api/auth/**",
                                         "/swagger-ui/**",
