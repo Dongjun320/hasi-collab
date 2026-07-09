@@ -7,3 +7,51 @@ info:
 paths:
   /api/auth/login:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1login"
+
+  /api/workspaces:
+    $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces"
+
+  /api/workspaces/me:
+    $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces~1me"
+
+  /api/workspaces/{workspaceId}:
+    $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}"
+
+  /api/workspaces/search:
+    $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces~1search"
+
+  /api/workspaces/{workspaceId}/channels:
+    $ref: "./paths/channelEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}:
+    $ref: "./paths/channelEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}"
+
+  /api/workspaces/{workspaceId}/members:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1members"
+
+  /api/workspaces/{workspaceId}/members/me:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1members~1me"
+
+  /api/workspaces/{workspaceId}/members/{userId}:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1members~1{userId}"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/members:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}~1members"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/members/me:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}~1members~1me"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/members/{userId}:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}~1members~1{userId}"
+
+  /api/workspaces/{workspaceId}/boards:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards"
+
+  /api/workspaces/{workspaceId}/boards/{boardId}/tasks:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1tasks"
+
+  /api/workspaces/{workspaceId}/boards/{boardId}/tasks/{taskId}:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1tasks~1{taskId}"
+
+  
+

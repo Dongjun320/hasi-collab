@@ -10,9 +10,11 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 docker compose up -d
 # Root의 .package.json
 npm install
-# /client의 .package.json
+# app/client/의 .package.json
 cd "$ROOT_DIR/app/client" && npm install
-# /service의 maven 컴파일
-cd "$ROOT_DIR/app/service" && ./mvnw clean compile
-# /messenger의 maven 컴파일
-cd "$ROOT_DIR/app/messenger" && ./mvnw clean compile
+# app/service/의 maven clean(기존 target/ 제거)으로 백그라운드에서(&) 돌리기
+cd "$ROOT_DIR/app/service" && ./mvnw clean spring-boot:run &
+# app/messenger/의 maven clean(기존 target/ 제거)으로 백그라운드에서(&) 돌리기
+cd "$ROOT_DIR/app/messenger" && ./mvnw clean spring-boot:run &
+# app/client/의 npm run dev 돌리기
+cd "$ROOT_DIR/app/client" && npm run dev

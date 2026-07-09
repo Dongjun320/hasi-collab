@@ -1,0 +1,117 @@
+components:
+  schemas:
+    BoardListResponse:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: integer
+            format: int64
+          name:
+            type: string
+          workspaceId:
+            type: integer
+            format: int64
+          createdAt:
+            type: string
+            format: date-time
+
+    BoardCreateResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        workspaceId:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+
+    TaskListResponse:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: integer
+            format: int64
+          boardId:
+            type: integer
+            format: int64
+          title:
+            type: string
+          status:
+            type: string
+            enum: [TODO, IN_PROGRESS, REVIEW, DONE]
+          assigneeId:
+            type: integer
+            format: int64
+          priority:
+            type: string
+            enum: [high, medium, low]
+          createdAt:
+            type: string
+            format: date-time
+          updatedAt:
+            type: string
+            format: date-time
+
+    TaskCreateResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        boardId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        status:
+          type: string
+          enum: [TODO, IN_PROGRESS, REVIEW, DONE]
+        assigneeId:
+          type: integer
+          format: int64
+        priority:
+          type: string
+          enum: [high, medium, low]
+        createdAt:
+          type: string
+          format: date-time
+
+    TaskUpdateResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        title:
+          type: string
+        status:
+          type: string
+          enum: [TODO, IN_PROGRESS, REVIEW, DONE]
+        assigneeId:
+          type: integer
+          format: int64
+        priority:
+          type: string
+          enum: [high, medium, low]
+        updatedAt:
+          type: string
+          format: date-time
+
+    TaskDeleteResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        message:
+          type: string
+          example: "태스크가 삭제되었습니다."

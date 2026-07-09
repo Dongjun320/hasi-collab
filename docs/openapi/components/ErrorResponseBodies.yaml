@@ -112,3 +112,144 @@ components:
         error:
           code: "VALID_001"
           message: "이메일 형식이 올바르지 않습니다"
+
+    # ── SERVER 에러 ───────────────────────────────────────────────────
+
+    Server001Error:
+      description: "SERVER_001 | 500 | 서버 내부 오류"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "SERVER_001"
+          message: "서버 내부 오류가 발생하였습니다"
+
+    # ── WORKSPACE 에러 ───────────────────────────────────────────────────
+
+    WS001Error:
+      description: "WS_001 | 409 | 이미 사용중인 워크스페이스"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "WS_001"
+          message: "동일한 이름의 워크스페이스가 존재합니다"
+
+    WS002Error:
+      description: "WS_002 | 404 | 찾을 수 없는 워크스페이스"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "WS_002"
+          message: "워크스페이스를 찾을 수 없습니다"
+
+    WS003Error:
+      description: "WS_003 | 400 | 유효하지 않은 워크스페이스 입력값"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "WS_003"
+          message: "워크스페이스 입력값이 유효하지 않습니다"
+
+
+    # ── CHANNEL 에러 ───────────────────────────────────────────────────
+
+    CH001Error:
+      description: "CH_001 | 409 | 이미 사용중인 채널"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "CH_001"
+          message: "동일한 이름의 채널이 존재합니다"
+
+    CH002Error:
+      description: "CH_002 | 404 | 찾을 수 없는 채널"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "CH_002"
+          message: "채널을 찾을 수 없습니다"
+          
+    CH003Error:
+      description: "CH_003 | 400 | 유효하지 않은 채널 입력값"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "CH_003"
+          message: "채널 입력값이 유효하지 않습니다"
+
+    # ── MEMBER 에러 ───────────────────────────────────────────────────
+
+    MBR001Error:
+      description: "MBR_001 | 404 | 찾을 수 없는 닉네임의 사용자"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "MBR_001"
+          message: "해당 닉네임의 사용자를 찾을 수 없습니다"
+          
+    MBR002Error:
+      description: "MBR_002 | 409 | 이미 워크스페이스에 속한 멤버"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "MBR_002"
+          message: "이미 워크스페이스에 속한 멤버입니다"
+          
+    MBR003Error:
+      description: "MBR_003 | 404 | 찾을 수 없는 멤버"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "MBR_003"
+          message: "멤버를 찾을 수 없습니다"
+          
+    MBR004Error:
+      description: "MBR_004 | 400 | 유효하지 않은 멤버 입력값"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "MBR_004"
+          message: "멤버 입력값이 유효하지 않습니다"
+
+    MBR005Error:
+      description: "MBR_005 | 404 | 찾을 수 없는 워크스페이스 또는 채널 또는 멤버"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "MBR_005"
+          message: "워크스페이스 또는 채널 또는 멤버를 찾을 수 없습니다"

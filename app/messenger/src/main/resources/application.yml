@@ -7,7 +7,7 @@ spring:
 
   # ── PostgreSQL (service와 같은 DB 공유) ──────────────────
   datasource:
-    url: jdbc:postgresql://localhost:5432/collaboration_db
+    url: jdbc:postgresql://localhost:8200/collaboration_db
     username: hasi
     password: hasi1234
     driver-class-name: org.postgresql.Driver

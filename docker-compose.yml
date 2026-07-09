@@ -9,14 +9,22 @@ services:
       POSTGRES_USER: hasi
       POSTGRES_PASSWORD: hasi1234
     ports:
+<<<<<<< HEAD
       - "5432:5432"
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
+=======
+      - "8200:5432"
+>>>>>>> dev
 
   redis:
     image: redis:7-alpine
     container_name: hasi-redis
     restart: unless-stopped
     ports:
+<<<<<<< HEAD
       - "6379:6379"
 
+=======
+      - "8201:6379"
+>>>>>>> dev

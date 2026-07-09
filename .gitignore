@@ -24,6 +24,9 @@ postgres_data/
 *.log
 logs/
 
+# Docker PostgreSQL 데이터
+postgres_data/
+
 # 자동 생성 파일 (openapi-typescript)
 client/src/types/openapi.ts
 
