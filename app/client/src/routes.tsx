@@ -10,10 +10,14 @@ import { CalendarPage } from "./pages/CalendarPage.tsx";
 import { ThreadsPage } from "./pages/ThreadsPage.tsx";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
+import OAuth2RedirectPage from "./pages/OAuth2RedirectPage.tsx";
+import MailPage from "./pages/MailPage.tsx";
 
 export const router = createBrowserRouter([
   { path: "/",
     element: <LoginPage /> },
+  { path: "/oauth2/redirect",
+    element: <OAuth2RedirectPage />},
   { path: "/channel/:channelId",
     element: <ChannelsPage /> },
   { path: "/ComponentTestPage",
@@ -34,6 +38,7 @@ export const router = createBrowserRouter([
       { path: "calendar", Component: CalendarPage },
       { path: "profile", Component: ProfilePage },
       { path: "settings", Component: SettingsPage },
+      { path: "mail", Component: MailPage },
     ],
   },
 ]);

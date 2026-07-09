@@ -19,9 +19,9 @@ public class JwtProvider {
     private static final long REFRESH_TOKEN_EXPIRE = 1000 * 60 * 60 * 24 * 7L; // 7일
 
     // Access Token 생성
-    public String generateToken(Long userId) {
+    public String generateToken(String userId) {
         return Jwts.builder()
-                .subject(String.valueOf(userId))
+                .subject(userId)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRE))
                 .signWith(getKey())
@@ -29,9 +29,9 @@ public class JwtProvider {
     }
 
     // Refresh Token 생성
-    public String generateRefreshToken(Long userId) {
+    public String generateRefreshToken(String userId) {
         return Jwts.builder()
-                .subject(String.valueOf(userId))
+                .subject(userId)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRE))
                 .signWith(getKey())
@@ -39,8 +39,8 @@ public class JwtProvider {
     }
 
     // 토큰에서 userId 추출
-    public Long getUserId(String token) {
-        return Long.valueOf(getClaims(token).getSubject());
+    public String getUserId(String token) {
+        return getClaims(token).getSubject();
     }
 
     // 토큰 유효성 검증

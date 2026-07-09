@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus, Home, Users, Bell, Settings, Globe,
-  ChevronLeft, ChevronRight, MessageCircle, X,
+  ChevronLeft, ChevronRight, MessageCircle, X, LogOut,
 } from "lucide-react";
 
 export function WorkspaceHome() {
@@ -10,6 +10,7 @@ export function WorkspaceHome() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showNotifications, setShowNotifications] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
+  const logout = () => {navigate("/")};
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -366,6 +367,11 @@ export function WorkspaceHome() {
           </button>
           <button className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all" title="설정">
             <Settings size={19} className="text-white/60" />
+          </button>
+          <button
+              onClick={logout}
+              className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all" title="로그아웃">
+            <LogOut size={19} className="text-white/60 group-hover:text-red-400 transition-colors" />
           </button>
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold cursor-pointer ml-1 hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all">
             나
