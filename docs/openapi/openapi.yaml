@@ -40,9 +40,18 @@ paths:
 
   /api/workspaces/{workspaceId}/channels/{channelId}/members/me:
     $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}~1members~1me"
-  
+
   /api/workspaces/{workspaceId}/channels/{channelId}/members/{userId}:
     $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}~1members~1{userId}"
+
+  /api/workspaces/{workspaceId}/boards:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards"
+
+  /api/workspaces/{workspaceId}/boards/{boardId}/tasks:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1tasks"
+
+  /api/workspaces/{workspaceId}/boards/{boardId}/tasks/{taskId}:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1tasks~1{taskId}"
 
   
 
