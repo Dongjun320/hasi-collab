@@ -1,0 +1,26 @@
+components:
+  schemas:
+    WorkspaceMemberInviteRequest:
+      type: object
+      required:
+        - nickname
+      description: "워크스페이스 멤버 초대 시 요청"
+      properties:
+        nickname:
+          type: string
+          maxLength: 50
+          description: "초대할 사용자의 닉네임"
+        role:
+          type: string
+          enum: [admin, member]
+          default: member
+          description: "멤버 역할"
+
+    WorkspaceMemberPatchRequest:
+      type: object
+      description: "워크스페이스 멤버 부분 수정 시 요청"
+      properties:
+        role:
+          type: string
+          enum: [admin, member]
+          description: "변경할 멤버 역할"

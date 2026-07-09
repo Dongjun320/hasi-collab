@@ -1,0 +1,88 @@
+components:
+  schemas:
+    ChannelData:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: "채널 ID"
+        workspaceId:
+          type: integer
+          format: int64
+          description: "워크스페이스 ID"
+        name:
+          type: string
+          description: "채널 이름"
+        isPrivate:
+          type: boolean
+          description: "공개/비공개"
+        createdAt:
+          type: string
+          format: date-time
+          description: "생성일시"
+
+    ChannelCreateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: "#/components/schemas/ChannelData"
+        error:
+          nullable: true
+          example: null
+
+    ChannelPatchResponse:
+      allOf:
+        - $ref: "#/components/schemas/ChannelCreateResponse"
+
+    ChannelListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChannelData"
+        error:
+          nullable: true
+          example: null
+
+    ChannelDeleteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: "채널 삭제 메시지"
+        error:
+          nullable: true
+          example: null
+
+    ChannelDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: "#/components/schemas/ChannelData"
+            - type: object
+              properties:
+                memberCount:
+                  type: integer
+                  description: "채널 멤버 수"
+        error:
+          nullable: true
+          example: null

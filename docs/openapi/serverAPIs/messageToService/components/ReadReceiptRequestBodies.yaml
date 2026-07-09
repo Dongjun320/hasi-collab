@@ -1,0 +1,13 @@
+components:
+  schemas:
+    # User별 마지막으로 읽은 메시지 업데이트
+    updateReadReceipt:
+      type: object
+      properties:
+        uid:
+          type: string
+          description: "User ID"
+        messageId:
+          type: integer
+          description: "메시지 ID"
+

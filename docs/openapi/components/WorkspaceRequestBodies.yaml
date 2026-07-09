@@ -1,0 +1,42 @@
+components:
+  schemas:
+    WorkspaceCreateRequest:
+      type: object
+      required:
+        - name
+        - isPrivate
+      description: "워크스페이스 생성 시 요청"
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: "워크스페이스 이름"
+        isPrivate:
+          type: boolean
+          description: "공개/비공개"
+        description:
+          type: string
+          description: "워크스페이스 설명"
+        iconUrl:
+          type: string
+          maxLength: 512
+          description: "워크스페이스 대표 이미지"
+
+    WorkspacePatchRequest:
+      type: object
+      description: "워크스페이스 부분수정 시 요청"
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: "워크스페이스 이름"
+        isPrivate:
+          type: boolean
+          description: "공개/비공개"
+        description:
+          type: string
+          description: "워크스페이스 설명"
+        iconUrl:
+          type: string
+          maxLength: 512
+          description: "워크스페이스 대표 이미지"

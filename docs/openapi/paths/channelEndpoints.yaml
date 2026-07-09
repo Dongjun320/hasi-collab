@@ -1,0 +1,260 @@
+paths:
+  /api/workspaces/{workspaceId}/channels:
+    post:
+      summary: "워크스페이스 채널 생성"
+      tags:
+        - WorkspaceChannel
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/ChannelRequestBodies.yaml#/components/schemas/ChannelCreateRequest"
+      responses:
+        '201':
+          description: "채널 생성 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ChannelResponseBodies.yaml#/components/schemas/ChannelCreateResponse"
+        '400':
+          description: "Bad Request, 필수 필드 누락 또는 유효하지 않은 값"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/CH003Error"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 채널 생성 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '409':
+          description: "Conflict, 동일한 이름의 채널이 존재함"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/CH001Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+    get:
+      summary: "워크스페이스 채널 목록 조회"
+      tags:
+        - WorkspaceChannel
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "채널 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ChannelResponseBodies.yaml#/components/schemas/ChannelListResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 조회 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 워크스페이스가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS002Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}:
+    get:
+      summary: "단일 채널 조회"
+      tags:
+        - WorkspaceChannel
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "단일 채널 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ChannelResponseBodies.yaml#/components/schemas/ChannelDetailResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 조회 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 채널이 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/CH002Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+    patch:
+      summary: "채널 부분 수정"
+      tags:
+        - WorkspaceChannel
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/ChannelRequestBodies.yaml#/components/schemas/ChannelPatchRequest"
+      responses:
+        '200':
+          description: "채널 부분 수정 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ChannelResponseBodies.yaml#/components/schemas/ChannelPatchResponse"
+        '400':
+          description: "Bad Request, 유효하지 않은 값"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/CH003Error"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 수정 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 채널이 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/CH002Error"
+        '409':
+          description: "Conflict, 동일한 이름의 채널이 존재함"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/CH001Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+    delete:
+      summary: "채널 삭제"
+      tags:
+        - WorkspaceChannel
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "채널 삭제 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ChannelResponseBodies.yaml#/components/schemas/ChannelDeleteResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 삭제 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 채널이 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/CH002Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
