@@ -7,7 +7,7 @@ import {
 import { useState } from "react";
 import { WorkspaceSidebar } from "../components/WorkspaceSidebar";
 
-const WORKSPACE = { name: "개발팀", avatar: "개", color: "from-[#5CC87A] to-[#2E8B4F]" };
+const WORKSPACE = { name: {channels}, avatar: "개", color: "from-[#5CC87A] to-[#2E8B4F]" };
 
 const TOOLS = [
   { path: "/workspace/kanban",   icon: LayoutGrid,    label: "칸반" },

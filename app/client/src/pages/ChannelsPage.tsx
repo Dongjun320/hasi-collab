@@ -123,20 +123,23 @@ export function ChannelsPage() {
 
       {/* 메시지 영역 */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {messages.map((msg) => (
-          <div key={msg.id} className="flex gap-3">
-            <div className={`w-10 h-10 rounded-full ${msg.color} flex items-center justify-center text-white font-bold flex-shrink-0`}>
-              {msg.avatar}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="font-bold text-[#2C3E50]">{msg.user}</span>
-                <span className="text-xs text-gray-400">{msg.time}</span>
+        {messages.map((msg) => {
+          const isMine = msg.user === "김동준"; // TODO: 실제 로그인 유저와 비교하도록 교체
+          return (
+            <div key={msg.id} className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`}>
+              <div className={`w-10 h-10 rounded-full ${msg.color} flex items-center justify-center text-white font-bold flex-shrink-0`}>
+                {msg.avatar}
               </div>
-              <p className="text-[#2C3E50]">{msg.content}</p>
+              <div className={`flex-1 flex flex-col ${isMine ? "items-end" : "items-start"}`}>
+                <div className={`flex items-baseline gap-2 mb-1 ${isMine ? "flex-row-reverse" : ""}`}>
+                  <span className="font-bold text-[#2C3E50]">{msg.user}</span>
+                  <span className="text-xs text-gray-400">{msg.time}</span>
+                </div>
+                <p className="text-[#2C3E50]">{msg.content}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* 메시지 입력 영역 */}
