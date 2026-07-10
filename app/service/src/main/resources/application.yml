@@ -1,6 +1,12 @@
 server:
   port: 8080
 
+springdoc:
+    swagger-ui:
+      path: /swagger-ui.html
+    api-docs:
+      path: /v3/api-docs
+
 # 테스트용 하드코딩 JWT.
 jwt:
   secret: 1234567890987654323456789087654323456789

@@ -1,3 +1,22 @@
 components:
   schemas:
     LogInResponse:
+
+    UserData:
+      type: object
+      properties:
+        uid:
+          type: integer
+          format: int64
+          description: "유저 ID"
+        nickname:
+          type: string
+          description: "유저 닉네임"
+        createdAt:
+          type: string
+          format: date-time
+          description: "생성일시"
+        updatedAt:
+          type: string
+          format: date-time
+          description: "수정일시"

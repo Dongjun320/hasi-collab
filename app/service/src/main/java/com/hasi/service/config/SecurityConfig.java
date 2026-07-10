@@ -56,14 +56,16 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers(
-                                        "/api/auth/login",
                                         "/api/v1/mail/**",
-                                        "/oauth2/**",
-                                        "/login/oauth2/**",
                                         "/ws/",
                                         "/api/auth/**",
                                         "/swagger-ui/**",
-                                        "/api-docs/**"
+                                        "/swagger-ui.html",
+                                        "/api-docs/**",
+                                        "/api/auth/login",
+                                        "/login/oauth2/**",
+                                        "/v3/api-docs/**",
+                                        "/oauth2/**"
                                 ).permitAll()
                                 .anyRequest().authenticated()
                 )
@@ -95,6 +97,22 @@ public class SecurityConfig {
         return resolver;
     }
 
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173"  // 프론트엔드 주소
+        ));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

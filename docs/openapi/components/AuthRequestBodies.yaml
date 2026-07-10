@@ -23,3 +23,22 @@ components:
         refreshToken:
           type: string
           description: "Redis 블랙리스트에 등록할 Refresh 토큰"
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - nickname
+      description: "회원가입 시 필요정보"
+      properties:
+        email:
+          type: string
+          description: "email"
+        password:
+          type: string
+          description: "password"
+        nickname:
+          type: string
+          description: "nickname"
+
