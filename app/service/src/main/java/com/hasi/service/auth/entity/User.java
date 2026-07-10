@@ -26,7 +26,7 @@ public class User {
     @Column(name = "password_hash", length = 255)
     private String passwordHash;   // 소셜 로그인 시 NULL 허용
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, unique = true, length = 50)
     private String nickname;
 
     @Column(name = "avatar_url", length = 512)
@@ -34,6 +34,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status_code", nullable = false)
+    @Builder.Default
     private StatusCode statusCode = StatusCode.online;
 
     @Column(name = "status_message", length = 100)
@@ -49,10 +50,16 @@ public class User {
     private Long deptId;           // FK to Departments
 
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private boolean isActive = true;
 
     @Column(name = "is_admin", nullable = false)
+    @Builder.Default
     private boolean isAdmin = false;
+
+    @Column(name = "is_email_verified", nullable = false)
+    @Builder.Default
+    private boolean isEmailVerified = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -61,6 +68,10 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public void verifyEmail(){
+        this.isEmailVerified = true;
+    }
 
     // status_code ENUM 정의
     public enum StatusCode {

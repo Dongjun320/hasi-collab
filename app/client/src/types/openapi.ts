@@ -1337,6 +1337,393 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspaceId}/boards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 보드 목록 조회 */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 보드 목록 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BoardListResponse"];
+                    };
+                };
+                /** @description Unauthorized, 인증되지 않은 요청 */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Auth003Error"];
+                    };
+                };
+                /** @description Not Found, 워크스페이스가 존재하지 않음 */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WS002Error"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Server001Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** 보드 생성 */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["BoardCreateRequest"];
+                };
+            };
+            responses: {
+                /** @description 보드 생성 성공 */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BoardCreateResponse"];
+                    };
+                };
+                /** @description Bad Request, 필수 필드 누락 */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WS003Error"];
+                    };
+                };
+                /** @description Unauthorized, 인증되지 않은 요청 */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Auth003Error"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Server001Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspaceId}/boards/{boardId}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 태스크 목록 조회 */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: number;
+                    boardId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 태스크 목록 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TaskListResponse"];
+                    };
+                };
+                /** @description Unauthorized, 인증되지 않은 요청 */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Auth003Error"];
+                    };
+                };
+                /** @description Not Found, 보드가 존재하지 않음 */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WS002Error"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Server001Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** 태스크 생성 */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: number;
+                    boardId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["TaskCreateRequest"];
+                };
+            };
+            responses: {
+                /** @description 태스크 생성 성공 */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TaskCreateResponse"];
+                    };
+                };
+                /** @description Bad Request, 필수 필드 누락 */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WS003Error"];
+                    };
+                };
+                /** @description Unauthorized, 인증되지 않은 요청 */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Auth003Error"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Server001Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspaceId}/boards/{boardId}/tasks/{taskId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 태스크 수정 (상태 변경, 담당자 변경, 칸반 이동 포함) */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: number;
+                    boardId: number;
+                    taskId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["TaskUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description 태스크 수정 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TaskUpdateResponse"];
+                    };
+                };
+                /** @description Bad Request, 유효하지 않은 값 */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WS003Error"];
+                    };
+                };
+                /** @description Unauthorized, 인증되지 않은 요청 */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Auth003Error"];
+                    };
+                };
+                /** @description Forbidden, 수정 권한 없음 */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Auth004Error"];
+                    };
+                };
+                /** @description Not Found, 태스크가 존재하지 않음 */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WS002Error"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Server001Error"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /** 태스크 삭제 */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: number;
+                    boardId: number;
+                    taskId: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 태스크 삭제 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TaskDeleteResponse"];
+                    };
+                };
+                /** @description Unauthorized, 인증되지 않은 요청 */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Auth003Error"];
+                    };
+                };
+                /** @description Forbidden, 삭제 권한 없음 */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Auth004Error"];
+                    };
+                };
+                /** @description Not Found, 태스크가 존재하지 않음 */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WS002Error"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Server001Error"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1802,6 +2189,117 @@ export interface components {
             };
             /** @example null */
             error?: unknown;
+        };
+        BoardListResponse: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            /** Format: int64 */
+            workspaceId?: number;
+            /** Format: date-time */
+            createdAt?: string;
+        }[];
+        BoardCreateRequest: {
+            /** @description 보드 이름 */
+            name: string;
+        };
+        BoardCreateResponse: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            /** Format: int64 */
+            workspaceId?: number;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        TaskListResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            boardId?: number;
+            title?: string;
+            /** @enum {string} */
+            status?: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
+            /** Format: int64 */
+            assigneeId?: number;
+            /** @enum {string} */
+            priority?: "high" | "medium" | "low";
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        }[];
+        TaskCreateRequest: {
+            /** @description 태스크 제목 */
+            title: string;
+            /**
+             * @description 태스크 상태
+             * @enum {string}
+             */
+            status: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
+            /**
+             * Format: int64
+             * @description 담당자 userId
+             */
+            assigneeId?: number;
+            /**
+             * @description 우선순위
+             * @enum {string}
+             */
+            priority?: "high" | "medium" | "low";
+        };
+        TaskCreateResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            boardId?: number;
+            title?: string;
+            /** @enum {string} */
+            status?: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
+            /** Format: int64 */
+            assigneeId?: number;
+            /** @enum {string} */
+            priority?: "high" | "medium" | "low";
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        TaskUpdateRequest: {
+            /** @description 태스크 제목 */
+            title?: string;
+            /**
+             * @description 태스크 상태 (칸반 컬럼 이동시 변경)
+             * @enum {string}
+             */
+            status?: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
+            /**
+             * Format: int64
+             * @description 담당자 userId
+             */
+            assigneeId?: number;
+            /**
+             * @description 우선순위
+             * @enum {string}
+             */
+            priority?: "high" | "medium" | "low";
+        };
+        TaskUpdateResponse: {
+            /** Format: int64 */
+            id?: number;
+            title?: string;
+            /** @enum {string} */
+            status?: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
+            /** Format: int64 */
+            assigneeId?: number;
+            /** @enum {string} */
+            priority?: "high" | "medium" | "low";
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        TaskDeleteResponse: {
+            /** Format: int64 */
+            id?: number;
+            /** @example 태스크가 삭제되었습니다. */
+            message?: string;
         };
     };
     responses: never;
