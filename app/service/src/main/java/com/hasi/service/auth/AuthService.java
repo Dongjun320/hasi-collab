@@ -97,8 +97,8 @@ public class AuthService {
         }
 
         // JWT 발급
-        String accessToken = jwtProvider.generateToken(user.getUid());
-        String refreshToken = jwtProvider.generateRefreshToken(user.getUid());
+        String accessToken = jwtProvider.generateToken(String.valueOf(user.getUid()));
+        String refreshToken = jwtProvider.generateRefreshToken(String.valueOf(user.getUid()));
 
         // Refresh Token Redis 저장
         redisTemplate.opsForValue()
