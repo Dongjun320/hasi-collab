@@ -1,6 +1,16 @@
 components:
   schemas:
     LogInResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: "액세스 토큰 (1시간)"
+        refreshToken:
+          type: string
+          description: "리프레시 토큰 (7일)"
+        user:
+          $ref: "#/components/schemas/UserData"
 
     UserData:
       type: object

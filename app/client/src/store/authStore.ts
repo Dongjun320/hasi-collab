@@ -3,9 +3,10 @@
 import { create } from 'zustand'
 
 interface User {
-  id: number
-  email: string
-  name: string
+  uid: number
+  nickname: string
+  createAt: string
+  updateAt: string
 }
 
 interface AuthState {
