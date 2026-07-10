@@ -5,8 +5,8 @@ import { create } from 'zustand'
 interface User {
   uid: number
   nickname: string
-  createAt: string
-  updateAt: string
+  createdAt: string
+  updatedAt: string
 }
 
 interface AuthState {
