@@ -150,6 +150,7 @@
                                 <interfaceOnly>true</interfaceOnly>
                                 <apiPackage>com.hasi.collab.api</apiPackage>
                                 <modelPackage>com.hasi.collab.model</modelPackage>
+                                <useTags>true</useTags>
                             </configOptions>
                         </configuration>
                     </execution>
