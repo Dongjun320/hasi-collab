@@ -1,6 +1,8 @@
 import { useParams } from "react-router";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Hash, Users, X } from "lucide-react";
+import { useOutletContext } from "react-router-dom";
+
 
 interface Member {
   id: string;
@@ -15,10 +17,15 @@ export function ChannelsPage() {
   const [message, setMessage] = useState("");
   const [isMemberListOpen, setIsMemberListOpen] = useState(false);
   const [memberSortType, setMemberSortType] = useState<"all" | "department" | "online">("all");
+  const { channels } = useOutletContext<{ channels: { id: string; name: string }[] }>() ?? { channels: [] };
+  const channelName = channels.find((c) => c.id === channelId)?.name ?? channelId;
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const allMembers: Member[] = [
     { id: "1", name: "김동준", department: "개발팀", status: "online", color: "bg-green-400" },
-    { id: "2", name: "김상현", department: "개발팀", status: "online", color: "bg-blue-400" },
     { id: "3", name: "김지환", department: "개발팀", status: "online", color: "bg-purple-400" },
     { id: "4", name: "박규태", department: "총무팀", status: "offline", color: "bg-yellow-400" },
     { id: "5", name: "박종서", department: "총무팀", status: "online", color: "bg-pink-400" },
@@ -63,14 +70,10 @@ export function ChannelsPage() {
   const onlineCount = allMembers.filter(m => m.status === "online").length;
   const totalCount = allMembers.length;
 
-  const channelNames: Record<string, string> = {
-    general: "일반",
-    dev: "개발팀",
-    design: "디자인",
-  };
-
-  const messages = [
-    {
+  const [messagesByChannel, setMessagesByChannel] = useState<Record<string, {
+    id: number; user: string; time: string; content: string; avatar: string; color: string;
+  }[]>>({
+    general: [{
       id: 1,
       user: "김동준",
       time: "오후 2:30",
@@ -78,30 +81,70 @@ export function ChannelsPage() {
       avatar: "김",
       color: "bg-green-400",
     },
-    {
-      id: 2,
-      user: "박규태",
-      time: "오후 2:31",
-      content: "초록 계열 느낌 좋네요!",
-      avatar: "박",
-      color: "bg-yellow-400",
-    },
-    {
-      id: 3,
-      user: "정진우",
-      time: "오후 2:33",
-      content: "디스코드랑 다른 느낌이라서 좋습니다",
-      avatar: "정",
-      color: "bg-orange-400",
-    },
-  ];
+      {
+        id: 2,
+        user: "박규태",
+        time: "오후 2:31",
+        content: "초록 계열 느낌 좋네요!",
+        avatar: "박",
+        color: "bg-yellow-400",
+      },
+      {
+        id: 3,
+        user: "정진우",
+        time: "오후 2:33",
+        content: "디스코드랑 다른 느낌이라서 좋습니다",
+        avatar: "정",
+        color: "bg-orange-400",
+      },
+    ],
+  });
+
+  const messages = messagesByChannel[channelId] ?? [];
 
   const handleSend = () => {
-    if (message.trim()) {
-      console.log("전송:", message);
-      setMessage("");
-    }
+    const content = message.trim();
+    if (!content) return;
+    const newMessage = {
+      id: Date.now(),
+      user: "김동준", // TODO: 실제 로그인 유저로 교체
+      time: new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }),
+      content,
+      avatar: "김",
+      color: "bg-green-400",
+    };
+    setMessagesByChannel((prev) => ({
+      ...prev,
+      [channelId]: [...(prev[channelId] ?? []), newMessage],
+    }));
+    setMessage("");
   };
+
+  const handleScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    setIsAtBottom(atBottom);
+    if (atBottom) setUnreadCount(0);
+  };
+
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+  };
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    const isMine = last.user === "김동준"; // 기존 isMine 판별과 동일한 기준
+
+    if (isMine || isAtBottom) {
+      scrollToBottom();
+      setUnreadCount(0);
+    } else {
+      setUnreadCount((prev) => prev + 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
 
   return (
     <div className="flex flex-col h-full relative">
@@ -109,7 +152,7 @@ export function ChannelsPage() {
       <div className="h-14 border-b border-gray-100 px-6 flex items-center justify-between bg-white">
         <div className="flex items-center gap-2">
           <Hash size={20} className="text-[#5CC87A]" />
-          <h2 className="font-bold text-[#2C3E50]">{channelNames[channelId]}</h2>
+          <h2 className="font-bold text-[#2C3E50]">{channelName}</h2>
         </div>
         <button
           onClick={() => setIsMemberListOpen(!isMemberListOpen)}
@@ -122,7 +165,7 @@ export function ChannelsPage() {
       </div>
 
       {/* 메시지 영역 */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 relative" ref={messagesContainerRef} onScroll={handleScroll}>
         {messages.map((msg) => {
           const isMine = msg.user === "김동준"; // TODO: 실제 로그인 유저와 비교하도록 교체
           return (
@@ -140,6 +183,15 @@ export function ChannelsPage() {
             </div>
           );
         })}
+        <div ref={messagesEndRef} />
+        {unreadCount > 0 && (
+            <button
+                onClick={() => { scrollToBottom(); setUnreadCount(0); }}
+                className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-[#5CC87A] text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg z-20"
+            >
+              확인하지 못한 메시지 {unreadCount}건
+            </button>
+        )}
       </div>
 
       {/* 메시지 입력 영역 */}
@@ -155,7 +207,7 @@ export function ChannelsPage() {
                 handleSend();
               }
             }}
-            placeholder={`# ${channelNames[channelId]}에 메시지 보내기...`}
+            placeholder={`# ${channelName}에 메시지 보내기...`}
             className="flex-1 px-4 py-3 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A] focus:ring-2 focus:ring-[#A8E6B8]/20 transition-all"
           />
           <button

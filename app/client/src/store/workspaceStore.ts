@@ -2,21 +2,46 @@
 
 import { create } from 'zustand'
 
-interface Workspace { id: number; name: string }
-interface Channel { id: number; name: string }
+interface Workspace { id: number; name: string; avatar: string; colors: string[]; unread: boolean }
+interface Channel { id: string; name: string }
 
 interface WorkspaceState {
   currentWorkspace: Workspace | null
   channels: Channel[]
+  workspaces: Workspace[]
   setWorkspace: (w: Workspace) => void
   setChannels: (c: Channel[]) => void
+  addWorkspace: (w: Workspace) => void
   clear: () => void
+  updateWorkspace: (w: Workspace) => void
+  deleteWorkspace: (id: number) => void
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   currentWorkspace: null,
   channels: [],
+  workspaces: [
+    { id: 1, name: "디자인팀", avatar: "디", colors: ["#A8E6B8", "#5CC87A"], unread: true },
+    { id: 2, name: "개발팀",   avatar: "개", colors: ["#5CC87A", "#2E8B4F"], unread: true },
+    { id: 3, name: "마케팅팀", avatar: "마", colors: ["#A8E6B8", "#FFE66D"], unread: false },
+    { id: 4, name: "영업팀",   avatar: "영", colors: ["#5CC87A", "#FFD93D"], unread: true },
+    { id: 5, name: "기획팀",   avatar: "기", colors: ["#2E8B4F", "#5CC87A"], unread: false },
+  ],
   setWorkspace: (w) => set({ currentWorkspace: w }),
   setChannels: (c) => set({ channels: c }),
+  addWorkspace: (w) => set((s) =>({ workspaces: [...s.workspaces, w] })),
   clear: () => set({ currentWorkspace: null, channels: [] }),
+  updateWorkspace: (w) => set((s) => ({
+    workspaces: s.workspaces.map((ws) => (ws.id === w.id ? w : ws)),
+    currentWorkspace: s.currentWorkspace?.id === w.id ? w : s.currentWorkspace,
+  })),
+  deleteWorkspace: (id) => set((s) => {
+    const remaining = s.workspaces.filter((w) => w.id !== id);
+    const wasCurrent = s.currentWorkspace?.id === id;
+    return {
+      workspaces: remaining,
+      currentWorkspace: wasCurrent ? (remaining[0] ?? null) : s.currentWorkspace,
+    };
+  })
+
 }))

@@ -38,7 +38,7 @@ export default function LoadingPopup({ onFinish }: Props) {
     return (
         <>
             <style>{POPUP_CSS}</style>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overlay-fade-in">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overlay-fade-in">
                 <div
                     className="popup-scale-in rounded-2xl overflow-hidden shadow-2xl"
                     style={{ width: 480, height: 320 }}

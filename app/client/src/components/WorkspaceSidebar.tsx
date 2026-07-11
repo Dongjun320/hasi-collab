@@ -1,37 +1,53 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Hash, Home, Plus, X,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, Settings,
 } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
+import { useWorkspaceStore } from "../store/workspaceStore";
+import Modal from "@/components/Modal.tsx";
 
-const WORKSPACES = [
-  { id: 1, name: "디자인팀", unread: true,  avatar: "디", colors: ["#A8E6B8", "#5CC87A"] },
-  { id: 2, name: "개발팀",   unread: true,  avatar: "개", colors: ["#5CC87A", "#2E8B4F"] },
-  { id: 3, name: "마케팅팀", unread: false, avatar: "마", colors: ["#A8E6B8", "#FFE66D"] },
-  { id: 4, name: "영업팀",   unread: true,  avatar: "영", colors: ["#5CC87A", "#FFD93D"] },
-  { id: 5, name: "기획팀",   unread: false, avatar: "기", colors: ["#2E8B4F", "#5CC87A"] },
-];
 
 interface WorkspaceSidebarProps {
   channels: { id: string; name: string }[];
   activeChannelId: string | null;
   onSelectChannel: (id: string) => void;
   onAddChannel: (name: string) => void;
+  onDeleteChannel: (channelId: string) => void;
+  onRenameChannel: (channelId: string, newName: string) => void;
+  onDeleteWorkspace: (workspaceId: number) => void;
+  getDefaultChannelId: (workspaceId: number) => string;
 }
 
 export function WorkspaceSidebar({
-  channels, activeChannelId, onSelectChannel, onAddChannel,
+  channels, activeChannelId, onSelectChannel, onAddChannel, onRenameChannel, onDeleteChannel, onDeleteWorkspace, getDefaultChannelId,
 }: WorkspaceSidebarProps) {
   const navigate = useNavigate();
-  const { isSidebarOpen, toggleSidebar } = useUiStore();
-
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState(2);
+  const {isSidebarOpen, toggleSidebar} = useUiStore();
+  const {currentWorkspace, setWorkspace, workspaces, addWorkspace, updateWorkspace} = useWorkspaceStore();
   const [showNewInput, setShowNewInput] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
+  const [showNewWorkspaceInput, setShowNewWorkspaceInput] = useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [channelMenuOpenId, setChannelMenuOpenId] = useState<string | null>(null);
+  const [renamingChannelId, setRenamingChannelId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
+  const railRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef({ dragging: false, startY: 0, startScroll: 0 });
 
-  const activeWorkspace = WORKSPACES.find((w) => w.id === activeWorkspaceId);
+  const handleRailMouseDown = (e: React.MouseEvent) => {
+    dragState.current = { dragging: true, startY: e.pageY, startScroll: railRef.current?.scrollTop ?? 0 };
+  };
+  const handleRailMouseMove = (e: React.MouseEvent) => {
+    if (!dragState.current.dragging || !railRef.current) return;
+    railRef.current.scrollTop = dragState.current.startScroll - (e.pageY - dragState.current.startY);
+  };
+  const stopRailDrag = () => {
+    dragState.current.dragging = false;
+  };
+  const [editName, setEditName] = useState("");
 
   const handleAddChannel = () => {
     const name = newChannelName.trim();
@@ -39,10 +55,125 @@ export function WorkspaceSidebar({
     onAddChannel(name);
     setNewChannelName("");
     setShowNewInput(false);
+  }
+
+  const handleAddWorkspace = () => {
+    const name = newWorkspaceName.trim();
+    if (!name) return;
+    const newWorkspace = {
+      id: Date.now(),
+      name,
+      avatar: name.charAt(0),
+      colors: ["#5CC87A", "#2E8B4F"],
+      unread: false,
+    };
+    addWorkspace(newWorkspace);
+    setWorkspace(newWorkspace);
+    setNewWorkspaceName("");
+    setShowNewWorkspaceInput(false);
   };
+
+  useEffect(() => {
+    if (!currentWorkspace) setWorkspace(workspaces[1]);
+  }, [currentWorkspace, setWorkspace])
 
   return (
     <div className="flex h-full flex-shrink-0">
+      {/* ── 새 워크스페이스 모달 ── */}
+      <Modal
+        isOpen={showNewWorkspaceInput}
+        onClose={() => setShowNewWorkspaceInput(false)}
+        title="새 워크스페이스"
+      >
+        <div className="flex flex-col gap-3">
+          <input
+            type="text"
+            value={newWorkspaceName}
+            onChange={(e) => setNewWorkspaceName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAddWorkspace()}
+            placeholder="워크스페이스 이름"
+            autoFocus
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]"
+          />
+          <button
+            onClick={handleAddWorkspace}
+            disabled={!newWorkspaceName.trim()}
+            className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all"
+          >
+          만들기
+          </button>
+       </div>
+      </Modal>
+
+      {/* ── 서버 설정 모달 ── */}
+      <Modal
+          isOpen={showWorkspaceSettings}
+          onClose={() => setShowWorkspaceSettings(false)}
+          title="서버 설정"
+      >
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="text-xs text-gray-500 font-medium">서버 이름</label>
+            <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500 font-medium mb-1 block">서버 색상</label>
+            <div className="flex gap-2">
+              {[
+                ["#A8E6B8", "#5CC87A"],
+                ["#5CC87A", "#2E8B4F"],
+                ["#A8E6B8", "#FFE66D"],
+                ["#5CC87A", "#FFD93D"],
+                ["#2E8B4F", "#5CC87A"],
+              ].map((c, idx) => (
+                  <button
+                      key={idx}
+                      onClick={() => {
+                        if (!currentWorkspace) return;
+                        updateWorkspace({ ...currentWorkspace, colors: c });
+                      }}
+                      className="w-8 h-8 rounded-full border-2 border-transparent hover:border-gray-300"
+                      style={{ background: `linear-gradient(to bottom right, ${c[0]}, ${c[1]})` }}
+                  />
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 pt-3">
+            <p className="text-xs text-gray-400">서버원 권한 설정은 준비 중입니다.</p>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <button
+                onClick={() => {
+                  if (!currentWorkspace) return;
+                  const name = editName.trim();
+                  if (name) updateWorkspace({ ...currentWorkspace, name, avatar: name.charAt(0) });
+                  setShowWorkspaceSettings(false);
+                }}
+                className="flex-1 px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] text-white font-medium rounded-lg transition-all"
+            >
+              저장
+            </button>
+            <button
+                onClick={() => {
+                  if (!currentWorkspace) return;
+                  onDeleteWorkspace(currentWorkspace.id);
+                  setShowWorkspaceSettings(false);
+                }}
+                className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-all"
+            >
+              서버 삭제
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* ── 서버 레일 ── */}
       <div className="w-[72px] h-full bg-[#1e3a28] flex flex-col items-center py-3 gap-2 flex-shrink-0">
@@ -56,13 +187,23 @@ export function WorkspaceSidebar({
 
         <div className="w-8 h-[2px] bg-white/20 rounded-full my-1 flex-shrink-0" />
 
-        <div className="flex-1 w-full flex flex-col items-center gap-2 overflow-y-auto overflow-x-hidden">
-          {WORKSPACES.map((ws) => {
-            const active = ws.id === activeWorkspaceId;
+        <div
+          ref={railRef}
+          onMouseDown={handleRailMouseDown}
+          onMouseMove={handleRailMouseMove}
+          onMouseUp={stopRailDrag}
+          onMouseLeave={stopRailDrag}
+          className="flex-1 w-full flex flex-col items-center gap-2 overflow-y-auto overflow-x-hidden no-scrollbar cursor-grab active:cursor-grabbing"
+        >
+          {workspaces.map((ws) => {
+            const active = ws.id === currentWorkspace?.id;
             return (
               <button
                 key={ws.id}
-                onClick={() => setActiveWorkspaceId(ws.id)}
+                onClick={() => {
+                  setWorkspace(ws);
+                  navigate(`/workspace/channels/${getDefaultChannelId(ws.id)}`);
+                }}
                 title={ws.name}
                 className="relative group flex-shrink-0"
               >
@@ -86,6 +227,7 @@ export function WorkspaceSidebar({
             );
           })}
           <button
+            onClick={()=>setShowNewWorkspaceInput(true)}
             className="w-11 h-11 rounded-full bg-white/10 hover:bg-[#5CC87A] flex items-center justify-center transition-all duration-200 group flex-shrink-0"
             title="새 워크스페이스"
           >
@@ -110,8 +252,17 @@ export function WorkspaceSidebar({
           ${isSidebarOpen ? "w-56" : "w-0"}`}
       >
         <div className="w-56 flex flex-col h-full">
-          <div className="h-14 px-4 flex items-center border-b border-white/10 flex-shrink-0">
-            <h2 className="text-white font-bold text-sm truncate">{activeWorkspace?.name}</h2>
+          <div className="h-14 px-4 flex items-center justify-between border-b border-white/10 flex-shrink-0">
+            <h2 className="text-white font-bold text-sm truncate">{currentWorkspace?.name}</h2>
+            <button
+              onClick={() => {
+                setEditName(currentWorkspace?.name ?? "");
+                setShowWorkspaceSettings(true);
+              }}
+              className="p-1 hover:bg-white/10 rounded-md flex-shrink-0"
+            >
+              <Settings size={14} className="text-white/50" />
+            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">
@@ -153,19 +304,76 @@ export function WorkspaceSidebar({
             <div className="space-y-0.5">
               {channels.map((ch) => {
                 const active = ch.id === activeChannelId;
+                const isRenaming = renamingChannelId === ch.id;
+
+                if (isRenaming) {
+                  return (
+                    <div key={ch.id} className="flex items-center gap-1.5 px-2 py-1.5">
+                      <Hash size={14} className="text-[#5CC87A] flex-shrink-0" />
+                      <input
+                        type="text"
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const name = renameValue.trim();
+                            if (name) onRenameChannel(ch.id, name);
+                            setRenamingChannelId(null);
+                          }
+                          if (e.key === "Escape") setRenamingChannelId(null);
+                        }}
+                        autoFocus
+                        className="flex-1 bg-white/10 text-white text-sm px-2 py-1 rounded-md outline-none focus:bg-white/15 min-w-0"
+                      />
+                    </div>
+                  );
+                }
+
                 return (
-                  <button
-                    key={ch.id}
-                    onClick={() => onSelectChannel(ch.id)}
-                    className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm font-medium transition-all text-left
-                      ${active
-                        ? "bg-[#5CC87A] text-white shadow-md"
-                        : "text-white/60 hover:bg-white/10 hover:text-white"
-                      }`}
-                  >
-                    <Hash size={14} className="flex-shrink-0" />
-                    <span className="truncate">{ch.name}</span>
-                  </button>
+                  <div key={ch.id} className="relative group/channel">
+                    <button
+                      onClick={() => onSelectChannel(ch.id)}
+                      className={`w-full flex items-center gap-1.5 px-2 py-1.5 pr-7 rounded-lg text-sm font-medium transition-all text-left
+                        ${active
+                          ? "bg-[#5CC87A] text-white shadow-md"
+                          : "text-white/60 hover:bg-white/10 hover:text-white"
+                        }`}
+                    >
+                      <Hash size={14} className="flex-shrink-0" />
+                      <span className="truncate">{ch.name}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setChannelMenuOpenId(channelMenuOpenId === ch.id ? null : ch.id)}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20"
+                    >
+                      <Settings size={12} className="text-white/70" />
+                    </button>
+
+                    {channelMenuOpenId === ch.id && (
+                      <div className="absolute right-0 top-8 bg-[#1e3a28] rounded-lg shadow-xl z-50 py-1 w-32">
+                        <button
+                          onClick={() => {
+                            setRenamingChannelId(ch.id);
+                            setRenameValue(ch.name);
+                            setChannelMenuOpenId(null);
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+                        >
+                          이름 변경
+                        </button>
+                        <button
+                          onClick={() => {
+                            onDeleteChannel(ch.id);
+                            setChannelMenuOpenId(null);
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-white/10"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>

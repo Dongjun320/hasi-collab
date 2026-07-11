@@ -2,12 +2,13 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Settings, Calendar, LayoutGrid,
   Plus, Bell, User, Grid3x3, Search,
-  Phone, Mail, MessageSquare,
+  Phone, Mail, MessageSquare, LogOut
 } from "lucide-react";
 import { useState } from "react";
 import { WorkspaceSidebar } from "../components/WorkspaceSidebar";
+import { useWorkspaceStore } from "../store/workspaceStore";
 
-const WORKSPACE = { name: {channels}, avatar: "개", color: "from-[#5CC87A] to-[#2E8B4F]" };
+
 
 const TOOLS = [
   { path: "/workspace/kanban",   icon: LayoutGrid,    label: "칸반" },
@@ -21,18 +22,26 @@ const QUICK_ITEMS = [
   { icon: User,          label: "내정보", to: "/workspace/profile" },
   { icon: Phone,         label: "전화",   to: "#" },
   { icon: Mail,          label: "메일",   to: "/workspace/mail" },
+  { icon: LogOut,        label: "로그아웃", to: "/" }
 ];
 
 export function WorkspaceLayout() {
+  const { currentWorkspace, deleteWorkspace } = useWorkspaceStore();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [channels, setChannels] = useState([
-    { id: "general", name: "일반" },
-    { id: "dev",     name: "개발" },
-    { id: "design",  name: "디자인" },
-  ]);
+  const [channelsByWorkspace, setChannelsByWorkspace] = useState<Record<number, { id: string; name: string }[]>>({
+    1: [{ id: "design-general", name: "일반" }],
+    2: [{ id: "general", name: "일반" }, { id: "dev", name: "개발" }, { id: "design", name: "디자인" }],
+    3: [{ id: "marketing-general", name: "일반" }],
+    4: [{ id: "sales-general", name: "일반" }],
+    5: [{ id: "plan-general", name: "일반" }],
+  });
+  const channels = currentWorkspace ? channelsByWorkspace[currentWorkspace.id] ?? [
+    {id: "general", name: "일반"}
+  ] : [];
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
+
 
   const isActive = (path: string) =>
     path !== "/workspace"
@@ -44,11 +53,53 @@ export function WorkspaceLayout() {
     ? location.pathname.split("/workspace/channels/")[1]
     : null;
 
+  const [lastChannelByWorkspace, setLastChannelByWorkspace] = useState<Record<number, string>>({});
+
   const handleAddChannel = (name: string) => {
+    if (!currentWorkspace) return;
     const id = name.toLowerCase().replace(/\s+/g, "-");
-    setChannels((prev) => [...prev, { id, name }]);
+    setChannelsByWorkspace((prev) => ({
+      ...prev,
+      [currentWorkspace.id]: [...(prev[currentWorkspace.id] ?? []), { id, name }],
+    }));
     navigate(`/workspace/channels/${id}`);
   };
+
+  const handleDeleteChannel = (channelId: string) => {
+    if (!currentWorkspace) return;
+    setChannelsByWorkspace((prev) => ({
+      ...prev,
+      [currentWorkspace.id]: prev[currentWorkspace.id].filter((c) => c.id !== channelId),
+    }));
+    if (activeChannelId === channelId) navigate("/workspace");
+  };
+
+  const handleRenameChannel = (channelId: string, newName: string) => {
+    if (!currentWorkspace) return;
+    setChannelsByWorkspace((prev) => ({
+      ...prev,
+      [currentWorkspace.id]: prev[currentWorkspace.id].map((c) =>
+        c.id === channelId ? { ...c, name: newName } : c
+      ),
+    }));
+  };
+
+  const handleDeleteWorkspace = (workspaceId: number) => {
+    deleteWorkspace(workspaceId);
+    setChannelsByWorkspace((prev) => {
+      const next = { ...prev };
+      delete next[workspaceId];
+      return next;
+    });
+
+    const newCurrent = useWorkspaceStore.getState().currentWorkspace;
+    if (newCurrent) {
+      navigate(`/workspace/channels/${getDefaultChannelId(newCurrent.id)}`);
+    }
+  };
+
+  const getDefaultChannelId = (workspaceId: number) =>
+      lastChannelByWorkspace[workspaceId] ?? channelsByWorkspace[workspaceId]?.[0]?.id ?? "general";
 
   return (
     <div className="flex h-screen bg-white overflow-hidden">
@@ -57,8 +108,17 @@ export function WorkspaceLayout() {
       <WorkspaceSidebar
         channels={channels}
         activeChannelId={activeChannelId}
-        onSelectChannel={(id) => navigate(`/workspace/channels/${id}`)}
+        onSelectChannel={(id) => {
+          if (currentWorkspace) {
+            setLastChannelByWorkspace((prev) => ({ ...prev, [currentWorkspace.id]: id }));
+          }
+          navigate(`/workspace/channels/${id}`);
+        }}
         onAddChannel={handleAddChannel}
+        onDeleteChannel={handleDeleteChannel}
+        onRenameChannel={handleRenameChannel}
+        onDeleteWorkspace={handleDeleteWorkspace}
+        getDefaultChannelId={getDefaultChannelId}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -66,10 +126,17 @@ export function WorkspaceLayout() {
         {/* ── 상단 헤더 ── */}
         <div className="h-14 bg-white border-b border-[#e8f8ed] flex items-center px-5 gap-3 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${WORKSPACE.color} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
-              {WORKSPACE.avatar}
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm"
+              style={{
+                background: currentWorkspace
+                ? `linear-gradient(to bottom right, ${currentWorkspace.colors[0]},
+                ${currentWorkspace.colors[1]})`
+                    : undefined,
+            }}
+            >
+              {currentWorkspace?.avatar}
             </div>
-            <h1 className="font-bold text-[#2C3E50] text-base">{WORKSPACE.name}</h1>
+            <h1 className="font-bold text-[#2C3E50] text-base">{currentWorkspace?.name}</h1>
           </div>
           <div className="flex-1" />
           <button className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all" title="검색">
@@ -91,7 +158,7 @@ export function WorkspaceLayout() {
 
         {/* ── 메인 콘텐츠 ── */}
         <div className="flex-1 overflow-hidden relative">
-          <Outlet />
+          <Outlet context={{ channels }} />
         </div>
 
         {/* 퀵 메뉴 팝업 */}
