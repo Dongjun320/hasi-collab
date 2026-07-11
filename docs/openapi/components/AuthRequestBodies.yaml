@@ -7,9 +7,9 @@ components:
         - password
       description: "로그인 시 필요 정보"
       properties:
-        id:
+        email:
           type: string
-          description: "ID"
+          description: "email"
         password:
           type: string
           description: "password"
