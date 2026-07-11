@@ -19,6 +19,7 @@ postgres_data/
 **/dist/
 **/.next/
 **/build/
+*.tsbuildinfo
 
 # 로그
 *.log

@@ -1,4 +1,50 @@
 paths:
+  /api/auth/register:
+    post:
+      summary: "회원가입 → 이메일 인증코드 자동 발송."
+      tags:
+        - Auth
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/RegisterRequest"
+      responses:
+        '201':
+          description: "회원가입 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/AuthResponseBodies.yaml#/components/schemas/RegisterResponse"
+  /api/auth/email/send:
+    post:
+      summary: "이메일 인증코드 발송 (10분 유효)."
+      tags:
+        - Auth
+      operationId: emailSend
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/EmailSendRequest"
+      responses:
+        '200':
+          description: "발송 완료"
+  /api/auth/email/verify:
+    post:
+      summary: "이메일 인증코드 확인."
+      tags:
+        - Auth
+      operationId: emailVerify
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/EmailVerifyRequest"
+      responses:
+        '200':
+          description: "인증 완료"
   /api/auth/login:
     post:
       summary: "로그인 성공 시 accessToken(1h) + refreshToken(7d) 발급."
