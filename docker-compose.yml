@@ -30,3 +30,4 @@ services:
       # 테스트용 유저.
       RABBITMQ_DEFAULT_USER: "hasi"
       RABBITMQ_DEFAULT_PASS: "1234"
+      RABBITMQ_SERVER_ADDITIONAL_PLUGINS: "rabbitmq_stomp"
