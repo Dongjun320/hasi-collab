@@ -1,6 +1,5 @@
 package com.hasi.messenger.channel;
 
-import com.hasi.messenger.message.ChannelMessageRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 

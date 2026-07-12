@@ -1,6 +1,5 @@
 package com.hasi.messenger.dm;
 
-import com.hasi.messenger.message.DirectMessageRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 

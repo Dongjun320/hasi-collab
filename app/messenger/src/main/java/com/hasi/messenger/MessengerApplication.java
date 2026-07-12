@@ -1,7 +1,7 @@
 package com.hasi.messenger;
 
-import com.hasi.messenger.message.ChannelMessage;
-import com.hasi.messenger.message.ChannelMessageRepository;
+import com.hasi.messenger.channel.ChannelMessage;
+import com.hasi.messenger.channel.ChannelMessageRepository;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 

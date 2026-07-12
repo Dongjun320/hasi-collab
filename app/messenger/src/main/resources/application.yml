@@ -22,6 +22,7 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+app:
   broker:
     relay-host: localhost
     relay-port: 8204

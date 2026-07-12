@@ -1,4 +1,4 @@
-package com.hasi.messenger.message;
+package com.hasi.messenger.channel;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,7 +8,7 @@ import lombok.ToString;
 import java.time.LocalDateTime;
 
 /**
- * Message Entity 입니다.
+ * ChannelMessage Entity 입니다.
  * @author Jinwoo Jeong
  */
 @Entity
