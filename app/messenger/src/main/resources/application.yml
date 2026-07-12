@@ -22,6 +22,12 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  broker:
+    relay-host: localhost
+    relay-port: 8204
+    login: hasi
+    passcode: "1234"
+
 #
 ## ── WebSocket STOMP ───────────────────────────────────────
 ## ws://localhost:8081/ws 로 접속
