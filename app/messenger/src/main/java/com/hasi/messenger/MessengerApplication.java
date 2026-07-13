@@ -13,10 +13,10 @@ public class MessengerApplication {
 		var ctx = SpringApplication.run(MessengerApplication.class, args);
 
 		// PostgreSQL 연결 테스트
-		ChannelMessageRepository repo = ctx.getBean(ChannelMessageRepository.class);
-		ChannelMessage msg = new ChannelMessage();
-		msg.setContent("테스트 메시지");
-		repo.save(msg);
-		System.out.println("PostgreSQL 조회: " + repo.findAll());
+//		ChannelMessageRepository repo = ctx.getBean(ChannelMessageRepository.class);
+//		ChannelMessage msg = new ChannelMessage();
+//		msg.setContent("테스트 메시지");
+//		repo.save(msg);
+//		System.out.println("PostgreSQL 조회: " + repo.findAll());
 	}
 }
