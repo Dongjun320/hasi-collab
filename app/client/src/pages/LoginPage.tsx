@@ -6,9 +6,13 @@ import Modal from '../components/Modal'
 import Toast from '../components/Toast'
 import hasiImg from './Hasi.png'
 import LoadingPopup from '../components/LoadingPopup'
+import { api } from '../api/client'
+import{useAuthStore} from '../store/authStore'
+
 
 const LoginPage = () => {
   const navigate = useNavigate()
+const {setAuth} = useAuthStore()
 
   // ── 1. 상태 관리 (State) ──
   const [email, setEmail] = useState('')
@@ -17,6 +21,7 @@ const LoginPage = () => {
 
   const [signUpOpen, setSignUpOpen] = useState(false)
   const [signUpEmail, setSignUpEmail] = useState('')
+  const [signUpNickname, setSignUpNickname] = useState('')
   const [signUpCode, setSignUpCode] = useState('')
   const [isCodeSent, setIsCodeSent] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
@@ -44,38 +49,73 @@ const LoginPage = () => {
     setToast({ open: true, message, type })
   }
 
-  const handleLogin = () => {
+  // 💡 수정된 로그인 처리
+  const handleLogin = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       triggerToast("有効なE-mail形式で入力してください。", "error")
       return
     }
-    triggerToast("ログインが完了しました。", "success")
-    
-    setTimeout(() => {
-      setLoadingOpen(true)
-    }, 1200)
+
+    setLoadingOpen(true) // 로딩 시작
+
+    // openapi-fetch 방식의 응답 처리
+    const { data, error } = await api.POST('/api/auth/login', { body: { email, password } })
+
+    if (error) {
+      setLoadingOpen(false)
+      triggerToast("ログインに失敗しました。メールとパスワードをご確認ください。", "error")
+      return
+    }
+
+    if (data && data.accessToken) {
+      setAuth(data.user as any, data.accessToken)
+      triggerToast("ログインが完了しました。", "success")
+
+      setTimeout(() => {
+        navigate('/WorkspaceHome') // 실제 페이지 이동
+      }, 1200)
+    }
   }
 
-  const handleSendEmail = () => {
+  // 💡 수정된 이메일 전송 처리
+  const handleSendEmail = async () => {
     if (!signUpEmail.trim()) {
       triggerToast("E-mailを入力してください。", "warning")
       return
     }
+
+    const { error } = await api.POST('/api/auth/email/send', { body: { email: signUpEmail } })
+
+    if (error) {
+      triggerToast("メール送信に失敗しました。", "error")
+      return
+    }
+
     setIsCodeSent(true)
     triggerToast("メールの送信が完了しました。", "success")
   }
 
-  const handleVerifyCode = () => {
+  // 💡 수정된 인증 코드 확인 처리
+  const handleVerifyCode = async () => {
     if (!signUpCode.trim()) {
       triggerToast("認証コードを入力してください。", "warning")
       return
     }
+
+    const { error } = await api.POST('/api/auth/email/verify', { body: { email: signUpEmail, code: signUpCode } })
+
+    if (error) {
+      triggerToast("認証に失敗しました。コードをご確認ください。", "error")
+      return
+    }
+
     setIsVerified(true)
     triggerToast("認証が完了しました。", "success")
   }
 
-  const handleSignUpSubmit = () => {
+  // 💡 수정된 회원가입 제출 처리 (API 호출 추가)
+  const handleSignUpSubmit = async () => { // async 추가
     if (!signUpEmail.trim() || !signUpPw.trim() || !signUpPwConfirm.trim()) {
       triggerToast("すべての情報を入力してください。", "warning")
       return
@@ -88,9 +128,22 @@ const LoginPage = () => {
       triggerToast("パスワードが一致しません。", "error")
       return
     }
+
+    // 회원가입 API 호출
+    const { error } = await api.POST('/api/auth/register', {
+      body: { email: signUpEmail, password: signUpPw, nickname: signUpNickname }
+    })
+
+    if (error) {
+      triggerToast("会員登録に失敗しました。", "error")
+      return
+    }
+
     triggerToast("会員登録が完了しました。", "success")
-    setSignUpOpen(false)
-    setSignUpEmail(''); setSignUpPw(''); setSignUpPwConfirm(''); setSignUpCode('');
+    setSignUpOpen(false) // 모달 닫기
+
+    // 상태 초기화
+    setSignUpEmail(''); setSignUpNickname(''); setSignUpPw(''); setSignUpPwConfirm(''); setSignUpCode('');
     setIsCodeSent(false); setIsVerified(false);
   }
 
@@ -266,6 +319,14 @@ const LoginPage = () => {
               </Button>
             </div>
           </div>
+          <Input
+           label="ニックネーム"
+          　type="text"
+           placeholder="ニックネームを入力"
+           value={signUpNickname}
+           onChange={(e) => setSignUpNickname(e.target.value)}
+          />
+
           <Input 
             label="パスワード" 
             type="password" 

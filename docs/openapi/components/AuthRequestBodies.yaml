@@ -3,13 +3,13 @@ components:
     LogInRequest:
       type: object
       required:
-        - id
+        - email
         - password
       description: "로그인 시 필요 정보"
       properties:
-        id:
+        email:
           type: string
-          description: "ID"
+          description: "email"
         password:
           type: string
           description: "password"
@@ -41,4 +41,28 @@ components:
         nickname:
           type: string
           description: "nickname"
+
+    EmailSendRequest:
+      type: object
+      required:
+        - email
+      description: "이메일 인증코드 발송 요청"
+      properties:
+        email:
+          type: string
+          description: "인증코드를 받을 email"
+
+    EmailVerifyRequest:
+      type: object
+      required:
+        - email
+        - code
+      description: "이메일 인증코드 확인 요청"
+      properties:
+        email:
+          type: string
+          description: "email"
+        code:
+          type: string
+          description: "발송된 인증코드"
 

@@ -58,6 +58,18 @@ components:
           type: boolean
           example: true
         data:
+          $ref: "#/components/schemas/WorkspaceData"
+        error:
+          nullable: true
+          example: null
+
+    WorkspaceGetUserSpaceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
           type: array
           items:
             type: object

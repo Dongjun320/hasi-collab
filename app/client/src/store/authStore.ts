@@ -1,11 +1,13 @@
 // PM 담당 — 사용법: const { user, setAuth, clear } = useAuthStore()
 
 import { create } from 'zustand'
+import {persist} from 'zustand/middleware'
 
 interface User {
-  id: number
-  email: string
-  name: string
+  uid: number
+  nickname: string
+  createdAt: string
+  updatedAt: string
 }
 
 interface AuthState {
@@ -15,9 +17,17 @@ interface AuthState {
   clear: () => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  accessToken: null,
-  setAuth: (user, token) => set({ user, accessToken: token }),
-  clear: () => set({ user: null, accessToken: null }),
-}))
+// persist 미들웨어 적용
+export const useAuthStore = create<AuthState>()(
+    persist(
+        (set) => ({
+          user: null,
+          accessToken: null,
+          setAuth: (user, token) => set({ user, accessToken: token }),
+          clear: () => set({ user: null, accessToken: null }),
+        }),
+        {
+          name: 'hasi-auth', // client.ts와 동일한 LocalStorage 키 이름
+        }
+    )
+)

@@ -1,9 +1,56 @@
 paths:
+  /api/auth/register:
+    post:
+      summary: "회원가입 → 이메일 인증코드 자동 발송."
+      tags:
+        - Auth
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/RegisterRequest"
+      responses:
+        '201':
+          description: "회원가입 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/AuthResponseBodies.yaml#/components/schemas/RegisterResponse"
+  /api/auth/email/send:
+    post:
+      summary: "이메일 인증코드 발송 (10분 유효)."
+      tags:
+        - Auth
+      operationId: emailSend
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/EmailSendRequest"
+      responses:
+        '200':
+          description: "발송 완료"
+  /api/auth/email/verify:
+    post:
+      summary: "이메일 인증코드 확인."
+      tags:
+        - Auth
+      operationId: emailVerify
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/EmailVerifyRequest"
+      responses:
+        '200':
+          description: "인증 완료"
   /api/auth/login:
     post:
       summary: "로그인 성공 시 accessToken(1h) + refreshToken(7d) 발급."
       tags:
         - Auth
+      operationId: login
       requestBody:
         content:
           application/json:
@@ -12,10 +59,10 @@ paths:
       responses:
         '200':
           description: "로그인 성공"
-#          content:
-#            application/json:
-#              schema:
-#                $ref: "../components/AuthResponseBodies.yaml#/components/schemas/LogInResponse"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/AuthResponseBodies.yaml#/components/schemas/LogInResponse"
         '401':
           description: "이메일 혹은 pw 틀림"
   /api/auth/logout:
@@ -23,8 +70,9 @@ paths:
       summary: "refreshToken을 Redis 블랙리스트에 등록 (TTL = 남은 만료 시간)."
       tags:
         - Auth
-#      requestBody:
-#        content:
-#          application/json:
-#            schema:
-#              $ref: "../components/AuthRequestBodies.yaml"
+      operationId: logout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/LogOutRequest"

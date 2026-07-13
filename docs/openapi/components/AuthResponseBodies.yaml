@@ -1,6 +1,27 @@
 components:
   schemas:
     LogInResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: "액세스 토큰 (1시간)"
+        refreshToken:
+          type: string
+          description: "리프레시 토큰 (7일)"
+        user:
+          $ref: "#/components/schemas/UserData"
+
+    RegisterResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: "처리 결과 메시지"
+        userId:
+          type: integer
+          format: int64
+          description: "생성된 유저 ID"
 
     UserData:
       type: object
