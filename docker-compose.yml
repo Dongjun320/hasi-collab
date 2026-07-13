@@ -17,3 +17,17 @@ services:
     restart: unless-stopped
     ports:
       - "8201:6379"
+
+  rabbitMq:
+    image: rabbitmq:4-management
+    container_name: rabbit-mq
+    restart: no
+    ports:
+      - "8202:5672" # AMQP
+      - "8203:15672" # 관리 UI
+      - "8204:61613" # STOMP
+    environment:
+      # 테스트용 유저.
+      RABBITMQ_DEFAULT_USER: "hasi"
+      RABBITMQ_DEFAULT_PASS: "1234"
+      RABBITMQ_SERVER_ADDITIONAL_PLUGINS: "rabbitmq_stomp"

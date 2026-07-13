@@ -4,6 +4,9 @@ info:
   description: Service는 Authentication/Authorization, RESTful API, DB와의 연결 등을 처리하는 백엔드 서비스입니다.
   version: 1.0.0
 
+security:
+  - BearerAuth: []
+
 paths:
   /api/auth/register:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1register"
@@ -65,5 +68,11 @@ paths:
   /api/workspaces/{workspaceId}/boards/{boardId}/tasks/{taskId}:
     $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1tasks~1{taskId}"
 
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   
 

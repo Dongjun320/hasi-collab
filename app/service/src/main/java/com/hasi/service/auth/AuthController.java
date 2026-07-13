@@ -1,7 +1,12 @@
 package com.hasi.service.auth;
 
-import com.hasi.service.auth.dto.request.*;
-import com.hasi.service.auth.dto.response.*;
+import com.hasi.collab.model.RegisterRequest;
+import com.hasi.collab.model.EmailSendRequest;
+import com.hasi.collab.model.EmailVerifyRequest;
+import com.hasi.collab.model.LogOutRequest;
+import com.hasi.collab.model.LogInRequest;
+import com.hasi.collab.model.LogInResponse;
+import com.hasi.collab.model.RegisterResponse;
 import com.hasi.service.common.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,16 +48,16 @@ public class AuthController {
 
     // 로그인
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(
-            @Valid @RequestBody LoginRequest request) {
-        LoginResponse response = authService.login(request);
+    public ResponseEntity<ApiResponse<LogInResponse>> login(
+            @Valid @RequestBody LogInRequest request) {
+        LogInResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     // 로그아웃
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<String>> logout(
-            @Valid @RequestBody LogoutRequest request) {
+            @Valid @RequestBody LogOutRequest request) {
         authService.logout(request);
         return ResponseEntity.ok(ApiResponse.ok("로그아웃 완료"));
     }
