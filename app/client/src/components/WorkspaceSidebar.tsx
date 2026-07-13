@@ -69,12 +69,17 @@ export function WorkspaceSidebar({
     };
     addWorkspace(newWorkspace);
     setWorkspace(newWorkspace);
+    navigate(`/workspace/channels/${getDefaultChannelId(newWorkspace.id)}`);
     setNewWorkspaceName("");
     setShowNewWorkspaceInput(false);
   };
 
   useEffect(() => {
-    if (!currentWorkspace) setWorkspace(workspaces[1]);
+    if (!currentWorkspace) {
+      const target = workspaces[1];
+      setWorkspace(target);
+      navigate(`/workspace/channels/${getDefaultChannelId(target.id)}`);
+    }
   }, [currentWorkspace, setWorkspace])
 
   return (

@@ -16,15 +16,6 @@ const TOOLS = [
   { path: "/workspace/threads",  icon: MessageSquare, label: "스레드" },
 ];
 
-const QUICK_ITEMS = [
-  { icon: MessageSquare, label: "메시지", to: "/workspace/channels/general" },
-  { icon: Calendar,      label: "달력",   to: "/workspace/calendar" },
-  { icon: User,          label: "내정보", to: "/workspace/profile" },
-  { icon: Phone,         label: "전화",   to: "#" },
-  { icon: Mail,          label: "메일",   to: "/workspace/mail" },
-  { icon: LogOut,        label: "로그아웃", to: "/" }
-];
-
 export function WorkspaceLayout() {
   const { currentWorkspace, deleteWorkspace } = useWorkspaceStore();
   const location = useLocation();
@@ -100,6 +91,19 @@ export function WorkspaceLayout() {
 
   const getDefaultChannelId = (workspaceId: number) =>
       lastChannelByWorkspace[workspaceId] ?? channelsByWorkspace[workspaceId]?.[0]?.id ?? "general";
+
+  const QUICK_ITEMS = [
+    {
+      icon: MessageSquare,
+      label: "메시지",
+      to: currentWorkspace ? `/workspace/channels/${getDefaultChannelId(currentWorkspace.id)}` : "/workspace",
+    },
+    { icon: Calendar, label: "달력",   to: "/workspace/calendar" },
+    { icon: User,     label: "내정보", to: "/workspace/profile" },
+    { icon: Phone,    label: "전화",   to: "#" },
+    { icon: Mail,     label: "메일",   to: "/workspace/mail" },
+    { icon: LogOut,   label: "로그아웃", to: "/" },
+  ];
 
   return (
     <div className="flex h-screen bg-white overflow-hidden">
