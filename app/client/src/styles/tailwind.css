@@ -3,6 +3,7 @@
 
 @import 'tw-animate-css';
 
+/* 기존 fade-in */
 @keyframes fade-in {
     from { opacity: 0; }
     to   { opacity: 1; }
@@ -10,4 +11,31 @@
 
 @utility animate-fade-in {
     animation: fade-in 0.3s ease-in-out forwards;
+}
+
+/*  디스코드 스타일 모달 애니메이션  */
+@keyframes modal-pop-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes modal-overlay-fade {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+/* 커스텀 유틸리티 클래스 생성 */
+@utility animate-modal-pop-in {
+    /* 0.2s 부분을 0.3s 등으로 바꿔서 속도를 조절할 수 있습니다. */
+    animation: modal-pop-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@utility animate-modal-overlay {
+    animation: modal-overlay-fade 0.2s ease-out forwards;
 }

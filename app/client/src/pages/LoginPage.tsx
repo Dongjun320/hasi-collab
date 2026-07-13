@@ -292,8 +292,9 @@ const {setAuth} = useAuthStore()
                 type="email" 
                 placeholder="メールアドレスを入力" 
                 value={signUpEmail}
-                onChange={(e) => setSignUpEmail(e.target.value)}
-                disabled={isVerified}
+                onChange={(e) => {setSignUpEmail(e.target.value)
+                    if(isVerified) setIsVerified(false)
+                }}
               />
             </div>
             <div className="mb-[2px]">
@@ -310,7 +311,7 @@ const {setAuth} = useAuthStore()
                 placeholder="認証コードを入力" 
                 value={signUpCode}
                 onChange={(e) => setSignUpCode(e.target.value)}
-                disabled={isVerified}
+
               />
             </div>
             <div className="mb-[2px]">
