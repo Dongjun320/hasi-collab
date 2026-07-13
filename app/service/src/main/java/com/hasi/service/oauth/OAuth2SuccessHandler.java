@@ -52,8 +52,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         } else {
             // 처음 보는 계정 → 일반 가입 절차로 안내
-            String redirectUrl = "http://localhost:5173/signup"
-                    + "?reason=social_not_linked"
+            String redirectUrl = "http://localhost:5173/?social=unlinked"
                     + "&provider=" + provider;
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
         }
