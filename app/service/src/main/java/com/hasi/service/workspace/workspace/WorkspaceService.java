@@ -2,6 +2,8 @@ package com.hasi.service.workspace.workspace;
 
 import com.hasi.collab.model.WorkspaceCreateRequest;
 import com.hasi.collab.model.WorkspaceData;
+import com.hasi.collab.model.WorkspaceGetUserSpaceResponseDataInner;
+import com.hasi.collab.model.WorkspaceMemberData;
 import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
 import com.hasi.service.workspace.member.entity.WorkspaceMember;
@@ -15,6 +17,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -63,6 +67,48 @@ public class WorkspaceService {
         data.setIconUrl(JsonNullable.of(saved.getIconUrl()));
         data.setCreatedAt(saved.getCreatedAt().atOffset(ZoneOffset.UTC));
         data.setUpdatedAt(saved.getUpdatedAt().atOffset(ZoneOffset.UTC));
+
+        return data;
+    }
+
+    public WorkspaceData getWorkspace(Long workspaceId) {
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001)); // 추후 커스텀 에러 작성 및 교체 필요
+
+        WorkspaceData data = new WorkspaceData();
+        data.setId(workspace.getId());
+        data.setName(workspace.getName());
+        data.setOwnerId(workspace.getOwnerId());
+        data.setIsPrivate(workspace.isPrivate());
+        data.setDescription(JsonNullable.of(workspace.getDescription()));
+        data.setIconUrl(JsonNullable.of(workspace.getIconUrl()));
+        data.setCreatedAt(workspace.getCreatedAt().atOffset(ZoneOffset.UTC));
+        data.setUpdatedAt(workspace.getUpdatedAt().atOffset(ZoneOffset.UTC));
+
+        return data;
+    }
+
+    public List<WorkspaceGetUserSpaceResponseDataInner> getWorkspaceUserSpace() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null || authentication.getName() == null) {
+            throw new ApiException(ErrorCode.AUTH_003); // 추후 커스텀 에러 작성 및 교체 필요
+        }
+        Long uid = Long.valueOf(authentication.getName());
+
+        List<WorkspaceMember> members = workspaceMemberRepository.findByUserId(uid);
+
+        List<WorkspaceGetUserSpaceResponseDataInner> data = new ArrayList<>();
+        for (WorkspaceMember member : members) {
+            Workspace workspace = workspaceRepository.findById(member.getWorkspaceId())
+                    .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001)); // 추후 커스텀 에러 작성 및 교체 필요
+            WorkspaceGetUserSpaceResponseDataInner item = new WorkspaceGetUserSpaceResponseDataInner();
+            item.setId(workspace.getId());
+            item.setName(workspace.getName());
+            item.setIconUrl(JsonNullable.of(workspace.getIconUrl()));
+            item.setRole(member.getRole().name());
+
+            data.add(item);
+        }
 
         return data;
     }
