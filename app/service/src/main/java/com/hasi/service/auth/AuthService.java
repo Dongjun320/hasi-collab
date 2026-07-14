@@ -48,9 +48,6 @@ public class AuthService {
             throw new RuntimeException("AUTH_005");  // 나중에 커스텀 예외로 교체
         }
 
-        // 비밀번호 bcrypt 암호화
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
-
         // 유저 저장 (isEmailVerified = false)
         User user = User.builder()
                 .email(request.getEmail())
@@ -90,7 +87,7 @@ public class AuthService {
     // 로그인
     public LogInResponse login(LogInRequest request) {
         // 이메일로 유저 조회
-        User user = userRepository.findByEmail(request.getId())
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("AUTH_001"));
 
         // 비밀번호 검증
