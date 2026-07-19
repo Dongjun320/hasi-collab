@@ -19,6 +19,7 @@
   #status { font-weight: bold; }
   .status-disconnected { color: #b00; }
   .status-connected { color: #080; }
+  .status-reconnecting { color: #b8860b; }
   pre.log { background: #111; color: #ccc; padding: 0.75rem; height: 220px; overflow-y: auto; border-radius: 4px; font-size: 0.8rem; white-space: pre-wrap; }
 </style>
 </head>
@@ -82,8 +83,14 @@
 
 <script>
   const MESSENGER_ORIGIN = 'http://localhost:8081';
+  // How long to tolerate being mid-reconnect before showing a real "Disconnected".
+  // reconnectDelay is 5000ms, so this allows a few retry attempts before giving up visually.
+  const RECONNECT_GRACE_MS = 20000;
+
   let client = null;
   let myUid = null;
+  let manualDisconnect = false;
+  let giveUpTimer = null;
 
   function log(elId, text) {
     const el = document.getElementById(elId);
@@ -101,16 +108,18 @@
     }
   }
 
-  function setStatus(text, connected) {
+  // kind: 'connected' | 'disconnected' | 'reconnecting'
+  function setStatus(text, kind) {
     const el = document.getElementById('status');
     el.textContent = text;
-    el.className = connected ? 'status-connected' : 'status-disconnected';
+    el.className = `status-${kind}`;
   }
 
   document.getElementById('connectBtn').onclick = () => {
     const token = document.getElementById('token').value.trim();
     if (!token) return alert('paste a token first');
     myUid = decodeJwtSubject(token);
+    manualDisconnect = false;
 
     client = new StompJs.Client({
       brokerURL: 'ws://localhost:8081/ws',
@@ -121,16 +130,37 @@
       debug: (msg) => log('rawLog', msg),
     });
 
-    client.onConnect = () => setStatus(`Connected as uid ${myUid}`, true);
-    client.onStompError = (frame) => setStatus(`Error: ${frame.headers['message']}`, false);
-    client.onWebSocketClose = () => setStatus('Disconnected', false);
+    client.onConnect = () => {
+      clearTimeout(giveUpTimer);
+      setStatus(`Connected as uid ${myUid}`, 'connected');
+    };
+    client.onStompError = (frame) => {
+      clearTimeout(giveUpTimer);
+      setStatus(`Error: ${frame.headers['message']}`, 'disconnected');
+    };
+    client.onWebSocketClose = () => {
+      if (manualDisconnect) {
+        setStatus('Disconnected', 'disconnected');
+        return;
+      }
+      // Unexpected drop — the client will auto-retry (reconnectDelay). Show a calm
+      // "recovering" state instead of flashing red, and only escalate to a real
+      // "Disconnected" if it hasn't recovered within a few retry attempts.
+      setStatus('Reconnecting...', 'reconnecting');
+      clearTimeout(giveUpTimer);
+      giveUpTimer = setTimeout(() => {
+        setStatus('Disconnected (reconnect attempts failed)', 'disconnected');
+      }, RECONNECT_GRACE_MS);
+    };
 
     client.activate();
   };
 
   document.getElementById('disconnectBtn').onclick = () => {
+    manualDisconnect = true;
+    clearTimeout(giveUpTimer);
     client?.deactivate();
-    setStatus('Disconnected', false);
+    setStatus('Disconnected', 'disconnected');
   };
 
   document.getElementById('subscribeChannelBtn').onclick = () => {
