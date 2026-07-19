@@ -2,6 +2,8 @@ package com.hasi.messenger.channel;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+
 /**
  * JPARepository를 extends한  Channel Message Repository
  * Message는 Entity, Long은 PK의 타입
@@ -9,4 +11,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface ChannelMessageRepository extends JpaRepository<ChannelMessage, Long> {
     // save(), findByID(), findAll(), delete(), count(), existsByID() 자동제공
+
+    List<ChannelMessage> findByChannelIdOrderByCreatedAtAsc(Long channelId);
 }

@@ -68,8 +68,8 @@ const {setAuth} = useAuthStore()
       return
     }
 
-    if (data && data.accessToken) {
-      setAuth(data.user as any, data.accessToken)
+    if (data && data.data?.accessToken) {
+      setAuth(data.data.user as any, data.data.accessToken)
       triggerToast("ログインが完了しました。", "success")
 
       setTimeout(() => {

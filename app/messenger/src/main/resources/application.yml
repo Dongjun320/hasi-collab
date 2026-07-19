@@ -29,25 +29,6 @@ app:
     login: hasi
     passcode: "1234"
 
-#
-## ── WebSocket STOMP ───────────────────────────────────────
-## ws://localhost:8081/ws 로 접속
-## 프론트엔드 socketClient.ts 설정과 맞춰야 함
-#websocket:
-#  endpoint: /ws
-#  allowed-origins: http://localhost:5173
-#
-## ── JWT 검증 (service와 동일한 시크릿 사용) ───────────────
-#spring.security.oauth2.resourceserver.jwt:
-#  issuer-uri: http://localhost:8080   # service에서 발급한 토큰 검증
-#
-#app:
-#  jwt:
-#    secret: ${JWT_SECRET}            # service와 반드시 동일한 값
-#
-## ── 로깅 ─────────────────────────────────────────────────
-#logging:
-#  level:
-#    com.hasi: DEBUG
-#    org.springframework.security: DEBUG
-#    org.springframework.web.socket: DEBUG
+# ── JWT 검증 (service와 동일한 시크릿 사용) ───────────────
+jwt:
+  secret: 1234567890987654323456789087654323456789
