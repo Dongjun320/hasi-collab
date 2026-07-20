@@ -28,13 +28,13 @@ public class WorkspaceMember {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private Role role = Role.MEMBER;
+    private Role role = Role.member;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     public enum Role {
-        OWNER, ADMIN, MEMBER
+        owner, admin, member
     }
 }

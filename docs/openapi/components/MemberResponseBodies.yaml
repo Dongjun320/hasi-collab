@@ -27,6 +27,39 @@ components:
           type: string
           enum: [admin, member]
 
+    InviteMemberData:
+      type: object
+      properties:
+        invitationId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: integer
+          format: int64
+        workspaceName:
+          type: string
+        inviterId:
+          type: integer
+          format: int64
+        inviterNickname:
+          type: string
+        inviteeId:
+          type: integer
+          format: int64
+        inviteeNickname:
+          type: string
+        status:
+          type: string
+          enum: [ACCEPTED, PENDING, DECLINED, CANCELLED]
+        createdAt:
+          type: string
+          format: date-time
+          description: "생성일시"
+        expiresAt:
+          type: string
+          format: date-time
+          description: "만료일시"
+
     WorkspaceMemberInviteResponse:
       type: object
       properties:
@@ -150,6 +183,42 @@ components:
             message:
               type: string
               description: "채널 멤버 추방 메시지"
+        error:
+          nullable: true
+          example: null
+
+    MemberInviteListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/InviteMemberData"
+        error:
+          nullable: true
+          example: null
+
+    MemberInviteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: "초대 승낙/거절/취소 메시지"
+            invitationId:
+              type: integer
+              format: int64
+            status:
+              type: string
+              enum: [ACCEPTED, DECLINED, CANCELLED]
         error:
           nullable: true
           example: null

@@ -71,6 +71,15 @@ paths:
   /api/workspaces/{workspaceId}/boards/{boardId}/tasks/{taskId}:
     $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1tasks~1{taskId}"
 
+  /api/invitations/sent:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1invitations~1sent"
+
+  /api/invitations/received:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1invitations~1received"
+
+  /api/invitations/{invitationId}:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1invitations~1{invitationId}"
+
 components:
   securitySchemes:
     BearerAuth:

@@ -52,7 +52,7 @@ public class WorkspaceService {
         WorkspaceMember ownerMember = WorkspaceMember.builder()
                 .workspaceId(saved.getId())
                 .userId(ownerId)
-                .role(WorkspaceMember.Role.OWNER)
+                .role(WorkspaceMember.Role.owner)
                 .build();
         workspaceMemberRepository.save(ownerMember);
 
@@ -72,9 +72,11 @@ public class WorkspaceService {
     }
 
     public WorkspaceData getWorkspace(Long workspaceId) {
+        // 워크스페이스 찾기
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001)); // 추후 커스텀 에러 작성 및 교체 필요
 
+        // data에 워크스페이스 DB를 담음
         WorkspaceData data = new WorkspaceData();
         data.setId(workspace.getId());
         data.setName(workspace.getName());
@@ -89,14 +91,18 @@ public class WorkspaceService {
     }
 
     public List<WorkspaceGetUserSpaceResponseDataInner> getWorkspaceUserSpace() {
+
+        // ownerId를 JWT SecurityContextHolder에서 추출
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if(authentication == null || authentication.getName() == null) {
             throw new ApiException(ErrorCode.AUTH_003); // 추후 커스텀 에러 작성 및 교체 필요
         }
         Long uid = Long.valueOf(authentication.getName());
 
+        // 자신이 들어간 워크스페이스 목록 추출
         List<WorkspaceMember> members = workspaceMemberRepository.findByUserId(uid);
 
+        // 해당 워크스페이스의 값을 DATA에 넣음
         List<WorkspaceGetUserSpaceResponseDataInner> data = new ArrayList<>();
         for (WorkspaceMember member : members) {
             Workspace workspace = workspaceRepository.findById(member.getWorkspaceId())
