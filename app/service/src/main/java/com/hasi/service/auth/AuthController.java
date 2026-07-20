@@ -33,10 +33,10 @@ public class AuthController implements AuthApi {
 
     // 이메일 인증코드 재발송
     @PostMapping("/email/send")
-    public ResponseEntity<String> emailSend(
+    public ResponseEntity<Void> emailSend(
             @Valid @RequestBody EmailSendRequest request) {
         authService.emailSend(request);
-        return ResponseEntity.ok("인증코드 발송 완료 (10분 우효)");
+        return ResponseEntity.ok().build();
     }
 
     // 이메일 인증코드 확인
