@@ -53,7 +53,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .nickname(request.getNickname())
-                .isEmailVerified(false)
+                .isEmailVerified(true)
                 .isActive(true)
                 .isAdmin(false)
                 .statusCode(User.StatusCode.online)
