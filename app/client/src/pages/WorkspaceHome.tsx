@@ -5,8 +5,9 @@ import {
   ChevronLeft, ChevronRight, MessageCircle, X, LogOut, Calendar,
 } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
-import { useFriendStore } from "../store/friendStore";
+import { useFriendStore, FRIEND_STATUS } from "../store/friendStore";
 import { FriendSidebar } from "../components/FriendSidebar";
+
 
 
 export function WorkspaceHome() {
@@ -32,14 +33,8 @@ export function WorkspaceHome() {
     { id: 5, name: "기획팀",   unread: false, avatar: "기", color: "from-[#2E8B4F] to-[#5CC87A]" },
   ];
 
-  const onlineFriends = [
-    { id: 1, name: "김민준", status: "회의 중",   avatar: "김", dot: "bg-blue-400" },
-    { id: 2, name: "이서연", status: "온라인",    avatar: "이", dot: "bg-green-400" },
-    { id: 3, name: "박지훈", status: "온라인",    avatar: "박", dot: "bg-green-400" },
-    { id: 4, name: "강하은", status: "자리 비움", avatar: "강", dot: "bg-amber-400" },
-    { id: 5, name: "최수진", status: "온라인",    avatar: "최", dot: "bg-green-400" },
-    { id: 6, name: "정민호", status: "온라인",    avatar: "정", dot: "bg-green-400" },
-  ];
+  // friendStore에서 가져옴 (오프라인 제외 = 온라인 친구)
+  const onlineFriends = friends.filter((f) => f.status !== "offline");
 
   const notifications = [
     { id: 1, text: "개발팀에 새 메시지가 5개 있습니다", time: "5분 전" },
@@ -169,13 +164,13 @@ export function WorkspaceHome() {
                   <div key={f.id} className="flex items-center gap-2 bg-[#f8fdf9] rounded-xl px-3 py-2 border border-[#e8f8ed]">
                     <div className="relative">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-xs font-bold">
-                        {f.avatar}
+                        {f.avatar ?? f.name.charAt(0)}
                       </div>
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${f.dot}`} />
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${FRIEND_STATUS[f.status].dot`} />
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-[#2C3E50]">{f.name}</p>
-                      <p className="text-[10px] text-gray-400">{f.status}</p>
+                      <p className="text-[10px] text-gray-400">{f.statusMessage ?? FRIEND_STATUS[f.status].label}</p>
                     </div>
                   </div>
                 ))}

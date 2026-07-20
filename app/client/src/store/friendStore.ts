@@ -9,6 +9,14 @@ export interface Friend {
     unreadCount: number;
 }
 
+// 상태 표시용 (점 색상 / 기본 라벨) — FriendSidebar, HOME 친구 카드 등에서 공용으로 사용
+export const FRIEND_STATUS = {
+    online:  { dot: 'bg-green-400', label: '온라인' },
+    away:    { dot: 'bg-amber-400', label: '자리 비움' },
+    busy:    { dot: 'bg-red-400',   label: '바쁨' },
+    offline: { dot: 'bg-gray-400',  label: '오프라인' },
+} as const;
+
 interface FriendState {
     friends: Friend[];
     setFriends: (list: Friend[]) => void;
