@@ -132,12 +132,25 @@ public class AuthService {
     // emailSend() - 인증코드 재발송
     public void emailSend(EmailSendRequest request) {
         String code = generateCode();
+
         redisTemplate.opsForValue()
                 .set("email:verify:" + request.getEmail(), code, Duration.ofMinutes(10));
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(request.getEmail());
         message.setSubject("[HASI] 이메일 인증 코드");
         message.setText("인증 코드: " + code + "\n\n10분 안에 입력해주세요.");
+        javaMailSender.send(message);
+    }
+
+    // 비밀번호 재설정용 인증코드 발송
+    public void emailSendForPasswordReset(EmailSendRequest request) {
+        String code = generateCode();
+        redisTemplate.opsForValue()
+                .set("email:reset:" + request.getEmail(), code, Duration.ofMinutes(10));
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(request.getEmail());
+        message.setSubject("[HASI] 비밀번호 재설정 코드");
+        message.setText("비밀번호 재설정 코드: " + code + "\n\n10분 안에 입력해주세요.");
         javaMailSender.send(message);
     }
 
@@ -166,6 +179,26 @@ public class AuthService {
                         .providerId(providerId)
                         .build()
         );
+    }
+
+    @Transactional
+    public void resetPassword(String email, String code, String newPassword) {
+
+        // Redis에서 비밀번호 재설정 코드 확인
+        String savedCode = redisTemplate.opsForValue().get("email:reset:" + email);
+        if (savedCode == null || !savedCode.equals(code)) {
+            throw new ApiException(ErrorCode.VERIFY_001);
+        }
+
+        // 유저 조회
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        // 비밀번호 변경
+        user.updatePassword(passwordEncoder.encode(newPassword));
+
+        // Redis 코드 삭제
+        redisTemplate.delete("email:reset:" + email);
     }
 
 }

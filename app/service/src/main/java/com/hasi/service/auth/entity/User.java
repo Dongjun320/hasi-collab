@@ -73,6 +73,10 @@ public class User {
         this.isEmailVerified = true;
     }
 
+    public void updatePassword(String encodedPassword) {
+        this.passwordHash = encodedPassword;
+    }
+
     // status_code ENUM 정의
     public enum StatusCode {
         online, away, busy, offline, outside, remote
