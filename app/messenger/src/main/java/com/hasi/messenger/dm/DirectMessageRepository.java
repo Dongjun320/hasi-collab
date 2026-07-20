@@ -11,6 +11,6 @@ import java.util.List;
  */
 public interface DirectMessageRepository extends JpaRepository<DirectMessage, Long> {
 
-    List<DirectMessage> findByIds(
+    List<DirectMessage> findById(
             Long senderIdA, Long receiverIdA, Long senderIdB, Long receiverIdB);
 }
