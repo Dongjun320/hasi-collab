@@ -2,7 +2,17 @@
 
 import { create } from 'zustand'
 
-interface Workspace { id: number; name: string; avatar: string; colors: string[]; unread: boolean }
+// 백엔드 필드(role, iconUrl) = API 응답(GET /workspaces/me)에서 옴
+// 장식 필드(avatar, colors, unread) = 화면 표시용. API 연결 시 매핑에서 채움
+interface Workspace {
+  id: number
+  name: string
+  avatar: string
+  colors: string[]
+  unread: boolean
+  role?: string           // 백엔드: OWNER | ADMIN | MEMBER
+  iconUrl?: string | null // 백엔드
+}
 interface Channel { id: string; name: string }
 
 interface WorkspaceState {
@@ -10,6 +20,7 @@ interface WorkspaceState {
   channels: Channel[]
   workspaces: Workspace[]
   setWorkspace: (w: Workspace) => void
+  setWorkspaces: (list: Workspace[]) => void   // API 목록 응답을 통째로 세팅 (김상현 연결용)
   setChannels: (c: Channel[]) => void
   addWorkspace: (w: Workspace) => void
   clear: () => void
@@ -28,6 +39,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
     { id: 5, name: "기획팀",   avatar: "기", colors: ["#2E8B4F", "#5CC87A"], unread: false },
   ],
   setWorkspace: (w) => set({ currentWorkspace: w }),
+  setWorkspaces: (list) => set({ workspaces: list }),
   setChannels: (c) => set({ channels: c }),
   addWorkspace: (w) => set((s) =>({ workspaces: [...s.workspaces, w] })),
   clear: () => set({ currentWorkspace: null, channels: [] }),

@@ -87,6 +87,17 @@ components:
           code: "AUTH_005"
           message: "이미 사용 중인 이메일입니다"
 
+    Auth006Error:
+      description: "AUTH_006 | 404 | 가입되지 않은 이메일"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "AUTH_006"
+          message: "가입되지 않은 이메일입니다"
+
     # ── VERIFY 에러 ──────────────────────────────────────────────────
 
     Verify001Error:

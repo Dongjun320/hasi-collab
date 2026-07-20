@@ -31,6 +31,18 @@ paths:
       responses:
         '200':
           description: "발송 완료"
+        '404':
+          description: "가입되지 않은 이메일 (purpose=reset일 때)"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth006Error"
+        '409':
+          description: "이미 가입된 이메일 (purpose=register일 때)"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth005Error"
   /api/auth/email/verify:
     post:
       summary: "이메일 인증코드 확인."
@@ -76,3 +88,23 @@ paths:
           application/json:
             schema:
               $ref: "../components/AuthRequestBodies.yaml#/components/schemas/LogOutRequest"
+  /api/auth/password/reset:
+    post:
+      summary: "비밀번호 재설정 — 이메일 인증(email/verify) 완료 후 새 비밀번호로 교체"
+      tags:
+        - Auth
+      operationId: resetPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/PasswordResetRequest"
+      responses:
+        '200':
+          description: "비밀번호 재설정 성공"
+        '400':
+          description: "인증 미완료 또는 유효하지 않은 값"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Verify001Error"
