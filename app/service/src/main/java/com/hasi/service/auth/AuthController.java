@@ -1,13 +1,7 @@
 package com.hasi.service.auth;
 
 import com.hasi.collab.api.AuthApi;
-import com.hasi.collab.model.RegisterRequest;
-import com.hasi.collab.model.EmailSendRequest;
-import com.hasi.collab.model.EmailVerifyRequest;
-import com.hasi.collab.model.LogOutRequest;
-import com.hasi.collab.model.LogInRequest;
-import com.hasi.collab.model.LogInResponse;
-import com.hasi.collab.model.RegisterResponse;
+import com.hasi.collab.model.*;
 import com.hasi.service.common.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,11 +33,19 @@ public class AuthController implements AuthApi {
         return ResponseEntity.ok().build();
     }
 
+    // 이메일 인증코드 재발송
+    @PostMapping("/password/send")
+    public ResponseEntity<Void> emailSendForPasswordReset(
+            @Valid @RequestBody EmailSendRequest request) {
+        authService.emailSend(request);
+        return ResponseEntity.ok().build();
+    }
+
     // 이메일 인증코드 확인
     @PostMapping("/email/verify")
     public ResponseEntity<Void> emailVerify(
-            @Valid @RequestBody EmailVerifyRequest request) {
-        authService.emailVerify(request);
+            @Valid @RequestBody EmailSendRequest request) {
+        authService.emailSendForPasswordReset(request);
         return ResponseEntity.ok().build();
     }
 
@@ -60,6 +62,17 @@ public class AuthController implements AuthApi {
     public ResponseEntity<Void> logout(
             @Valid @RequestBody LogOutRequest request) {
         authService.logout(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/password/reset")
+    public ResponseEntity<Void> resetPassword(
+            @Valid @RequestBody PasswordResetRequest request) {
+        authService.resetPassword(
+                request.getEmail(),
+                request.getCode(),
+                request.getNewPassword()
+        );
         return ResponseEntity.ok().build();
     }
 }

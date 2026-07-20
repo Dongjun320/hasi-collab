@@ -24,3 +24,13 @@ components:
           type: string
           enum: [admin, member]
           description: "변경할 멤버 역할"
+
+    MemberInvitePatchRequest:
+      type: object
+      description: "초대 수락/거절/취소 시 요청"
+      properties:
+        action:
+          type: string
+          enum: [ACCEPTED, DECLINED, CANCELLED]
+
+

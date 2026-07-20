@@ -264,3 +264,14 @@ components:
         error:
           code: "MBR_005"
           message: "워크스페이스 또는 채널 또는 멤버를 찾을 수 없습니다"
+
+    MBR006Error:
+      description: "MBR_005 | 404 | 찾을 수 없는 초대"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "MBR_006"
+          message: "초대를 찾을 수 없습니다"

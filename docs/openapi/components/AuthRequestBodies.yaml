@@ -46,7 +46,6 @@ components:
       type: object
       required:
         - email
-        - purpose
       description: "이메일 인증코드 발송 요청"
       properties:
         email:
@@ -76,12 +75,17 @@ components:
       type: object
       required:
         - email
+        - code
         - newPassword
       description: "비밀번호 재설정(이메일 인증 완료되었을때)"
       properties:
         email:
           type: string
           description: "재설정하는 email 계정"
+        code:
+          type: string
+          description: "발송된 인증코드"
         newPassword:
           type: string
           description: "새로운 비밀번호"
+
