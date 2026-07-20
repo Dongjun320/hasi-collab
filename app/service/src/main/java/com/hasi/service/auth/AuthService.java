@@ -12,9 +12,13 @@ import com.hasi.service.auth.entity.SocialAccount;
 import com.hasi.service.auth.entity.User;
 import com.hasi.service.auth.repository.UserRepository;
 import com.hasi.service.auth.repository.SocialAccountRepository;
+import com.hasi.service.common.ApiException;
+import com.hasi.service.common.ErrorCode;
 import com.hasi.service.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +36,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final RedisTemplate<String, String> redisTemplate;
+    private final JavaMailSender javaMailSender;
 
     // 회원가입
     @Transactional
@@ -41,11 +46,11 @@ public class AuthService {
 
         // 이메일 인증 없이 가입 시도
         if (!isVerified) {
-            throw new RuntimeException("VERIFY_002"); // 이메일 인증 안 하고 가입 시도
+            throw new ApiException(ErrorCode.VERIFY_002); // 이메일 인증 안 하고 가입 시도
         }
         // 이메일 중복 체크
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("AUTH_005");  // 나중에 커스텀 예외로 교체
+            throw new ApiException(ErrorCode.AUTH_005);  // 나중에 커스텀 예외로 교체
         }
 
         // 유저 저장 (isEmailVerified = false)
@@ -76,7 +81,7 @@ public class AuthService {
 
         // 코드 없거나 만료됐거나 틀리면
         if (savedCode == null || !savedCode.equals(request.getCode())) {
-            throw new RuntimeException("VERIFY_001");
+            throw new ApiException(ErrorCode.VERIFY_001);
         }
         redisTemplate.opsForValue()
                 .set("email:verified:" + request.getEmail(), "true", Duration.ofMinutes(10));
@@ -88,16 +93,16 @@ public class AuthService {
     public LogInResponse login(LogInRequest request) {
         // 이메일로 유저 조회
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("AUTH_001"));
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
 
         // 비밀번호 검증
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("AUTH_001");
+            throw new ApiException(ErrorCode.AUTH_001);
         }
 
         // 이메일 인증 여부 확인
         if (!user.isEmailVerified()) {
-            throw new RuntimeException("AUTH_002");
+            throw new ApiException(ErrorCode.AUTH_002);
         }
 
         // JWT 발급
@@ -129,7 +134,11 @@ public class AuthService {
         String code = generateCode();
         redisTemplate.opsForValue()
                 .set("email:verify:" + request.getEmail(), code, Duration.ofMinutes(10));
-        System.out.println("인증코드: " + code); // 나중에 실제 메일 발송으로 교체
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(request.getEmail());
+        message.setSubject("[HASI] 이메일 인증 코드");
+        message.setText("인증 코드: " + code + "\n\n10분 안에 입력해주세요.");
+        javaMailSender.send(message);
     }
 
     // logout() - refreshToken 블랙리스트 등록
@@ -144,11 +153,11 @@ public class AuthService {
 
         // 이미 다른 유저가 연동한 소셜 계정인지 체크
         if (socialAccountRepository.findByProviderAndProviderId(provider, providerId).isPresent()) {
-            throw new RuntimeException("AUTH_007"); // 이미 연동된 소셜 계정
+            throw new ApiException(ErrorCode.AUTH_007); // 이미 연동된 소셜 계정
         }
 
         User user = userRepository.findById(uid)
-                .orElseThrow(() -> new RuntimeException("AUTH_001"));
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
 
         socialAccountRepository.save(
                 SocialAccount.builder()
