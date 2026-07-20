@@ -34,7 +34,7 @@ public class AuthController implements AuthApi {
     }
 
     // 이메일 인증코드 재발송
-    @PostMapping("/email/send")
+    @PostMapping("/password/send")
     public ResponseEntity<Void> emailSendForPasswordReset(
             @Valid @RequestBody EmailSendRequest request) {
         authService.emailSend(request);
