@@ -88,14 +88,12 @@ export function subscribeToChannel(
   return () => subscription.unsubscribe();
 }
 
-// /topic/dm.{min}.{max} 구독 (양쪽이 동일한 토픽명을 계산할 수 있도록 정렬된 uid 쌍 사용)
+// /user/queue/dm 구독. 서버가 세션별 큐로 변환해 전달하므로 상대방과 무관하게 내 DM 전체가 하나의 큐로 옵니다.
+// 특정 상대방과의 대화만 필요하면 onMessage 콜백에서 message.sender/receiver로 걸러야 합니다.
 export function subscribeToDm(
-  myUid: number,
-  peerUid: number,
   onMessage: (message: DmOutboundMessage) => void
 ): () => void {
-  const topic = `/topic/dm.${Math.min(myUid, peerUid)}.${Math.max(myUid, peerUid)}`;
-  const subscription = requireClient().subscribe(topic, (message) => {
+  const subscription = requireClient().subscribe('/user/queue/dm', (message) => {
     onMessage(parseBody<DmOutboundMessage>(message));
   });
   return () => subscription.unsubscribe();

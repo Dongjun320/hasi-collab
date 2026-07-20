@@ -31,7 +31,7 @@
 
 <h2>1. Connect</h2>
 <section>
-  <label for="token">Access token (paste the JWT from <code>localStorage.getItem('hasi-auth')</code> after logging in)</label>
+  <label for="token">Access token (run <code>JSON.parse(localStorage.getItem('hasi-auth')).state.accessToken</code> in devtools after logging in, and paste the result — <code>hasi-auth</code> itself is a Zustand-persist JSON blob, not a bare JWT)</label>
   <textarea id="token" placeholder="eyJhbGciOiJIUzI1NiIs..."></textarea>
   <div class="row">
     <button id="connectBtn">Connect</button>
@@ -194,13 +194,12 @@
 
   document.getElementById('subscribeDmBtn').onclick = () => {
     if (!client?.connected) return alert('connect first');
-    if (!myUid) return alert('could not read uid from token');
-    const peerId = document.getElementById('peerId').value;
-    const topic = `/topic/dm.${Math.min(Number(myUid), Number(peerId))}.${Math.max(Number(myUid), Number(peerId))}`;
-    client.subscribe(topic, (msg) => {
+    // /user/queue/dm carries ALL of this user's DMs (any peer), not one topic per pair —
+    // Spring rewrites it to a session-private queue, so subscribing once is enough.
+    client.subscribe('/user/queue/dm', (msg) => {
       log('dmLog', `RECV ${msg.body}`);
     });
-    log('dmLog', `subscribed to ${topic}`);
+    log('dmLog', 'subscribed to /user/queue/dm');
   };
 
   document.getElementById('sendDmBtn').onclick = () => {

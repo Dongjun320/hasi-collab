@@ -83,10 +83,8 @@ public class DmService {
     }
 
     private void broadcast(DmDtos.OutboundMessage outbound){
-        long a = Long.parseLong(outbound.sender());
-        long b = Long.parseLong(outbound.receiver());
-        String topic = "/topic/dm." + Math.min(a, b) + "." + Math.max(a, b);
-        messageTemplate.convertAndSend(topic, outbound);
+        messageTemplate.convertAndSendToUser(outbound.sender(), "/queue/dm", outbound);
+        messageTemplate.convertAndSendToUser(outbound.receiver(), "/queue/dm", outbound);
     }
 
     private DmDtos.OutboundMessage toOutbound(DirectMessage message){

@@ -12,14 +12,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
-import java.security.Principal;
 import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
-
-    private static final String DM_TOPIC_PREFIX = "/topic/dm.";
 
     private final JwtProvider jwtProvider;
 
@@ -32,8 +29,6 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             accessor.setUser(authenticate(accessor));
-        } else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
-            authorizeSubscribe(accessor);
         }
 
         return message;
@@ -46,24 +41,6 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         }
         String userId = jwtProvider.getUserId(token);
         return new UsernamePasswordAuthenticationToken(userId, null, List.of());
-    }
-
-    private void authorizeSubscribe(StompHeaderAccessor accessor) {
-        String destination = accessor.getDestination();
-        if (destination == null || !destination.startsWith(DM_TOPIC_PREFIX)) {
-            return; // channel topics: no membership data available here, see plan's known gaps
-        }
-
-        Principal principal = accessor.getUser();
-        String uid = principal == null ? null : principal.getName();
-
-        String[] participants = destination.substring(DM_TOPIC_PREFIX.length()).split("\\.");
-        boolean isParticipant = participants.length == 2
-                && (participants[0].equals(uid) || participants[1].equals(uid));
-
-        if (!isParticipant) {
-            throw new MessagingException("SUBSCRIBE rejected: not a participant of " + destination);
-        }
     }
 
     private String resolveToken(String bearer) {
