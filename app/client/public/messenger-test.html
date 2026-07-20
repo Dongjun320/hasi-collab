@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>messenger STOMP test page</title>
+<script src="/vendor/stomp.umd.min.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; color: #222; }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; }
+  section { display: flex; flex-direction: column; gap: 0.5rem; }
+  label { font-size: 0.85rem; color: #555; }
+  input, textarea { font: inherit; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px; }
+  textarea { height: 3.5rem; }
+  button { padding: 0.4rem 0.9rem; border: 1px solid #888; border-radius: 4px; background: #f5f5f5; cursor: pointer; }
+  button:hover { background: #eee; }
+  .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+  .row > * { flex: 1; }
+  .row > button { flex: 0 0 auto; }
+  #status { font-weight: bold; }
+  .status-disconnected { color: #b00; }
+  .status-connected { color: #080; }
+  .status-reconnecting { color: #b8860b; }
+  pre.log { background: #111; color: #ccc; padding: 0.75rem; height: 220px; overflow-y: auto; border-radius: 4px; font-size: 0.8rem; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<h1>messenger (port 8081) STOMP test page</h1>
+<p>Served from the Vite dev server at <code>http://localhost:5173</code>, matching the origin
+<code>WebSocketConfig</code> already allows &mdash; no backend config changes needed.</p>
+
+<h2>1. Connect</h2>
+<section>
+  <label for="token">Access token (run <code>JSON.parse(localStorage.getItem('hasi-auth')).state.accessToken</code> in devtools after logging in, and paste the result — <code>hasi-auth</code> itself is a Zustand-persist JSON blob, not a bare JWT)</label>
+  <textarea id="token" placeholder="eyJhbGciOiJIUzI1NiIs..."></textarea>
+  <div class="row">
+    <button id="connectBtn">Connect</button>
+    <button id="disconnectBtn">Disconnect</button>
+    <span id="status" class="status-disconnected">Disconnected</span>
+  </div>
+</section>
+
+<h2>2. Channel messages</h2>
+<section>
+  <div class="row">
+    <div>
+      <label for="channelId">Channel ID (numeric)</label>
+      <input id="channelId" type="number" value="1" />
+    </div>
+    <button id="subscribeChannelBtn">Subscribe</button>
+  </div>
+  <div class="row">
+    <input id="channelContent" placeholder="message content" />
+    <button id="sendChannelBtn">Send</button>
+  </div>
+  <div class="row">
+    <button id="historyChannelBtn">Fetch history (REST)</button>
+  </div>
+  <pre class="log" id="channelLog"></pre>
+</section>
+
+<h2>3. Direct messages</h2>
+<section>
+  <div class="row">
+    <div>
+      <label for="peerId">Peer UID (numeric)</label>
+      <input id="peerId" type="number" value="9" />
+    </div>
+    <button id="subscribeDmBtn">Subscribe</button>
+  </div>
+  <div class="row">
+    <input id="dmContent" placeholder="message content" />
+    <button id="sendDmBtn">Send</button>
+  </div>
+  <div class="row">
+    <button id="historyDmBtn">Fetch history (REST)</button>
+  </div>
+  <pre class="log" id="dmLog"></pre>
+</section>
+
+<h2>Raw STOMP frames</h2>
+<pre class="log" id="rawLog"></pre>
+
+<script>
+  const MESSENGER_ORIGIN = 'http://localhost:8081';
+  // How long to tolerate being mid-reconnect before showing a real "Disconnected".
+  // reconnectDelay is 5000ms, so this allows a few retry attempts before giving up visually.
+  const RECONNECT_GRACE_MS = 20000;
+
+  let client = null;
+  let myUid = null;
+  let manualDisconnect = false;
+  let giveUpTimer = null;
+
+  function log(elId, text) {
+    const el = document.getElementById(elId);
+    const time = new Date().toLocaleTimeString();
+    el.textContent += `[${time}] ${text}\n`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function decodeJwtSubject(token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      return payload.sub;
+    } catch {
+      return null;
+    }
+  }
+
+  // kind: 'connected' | 'disconnected' | 'reconnecting'
+  function setStatus(text, kind) {
+    const el = document.getElementById('status');
+    el.textContent = text;
+    el.className = `status-${kind}`;
+  }
+
+  document.getElementById('connectBtn').onclick = () => {
+    const token = document.getElementById('token').value.trim();
+    if (!token) return alert('paste a token first');
+    myUid = decodeJwtSubject(token);
+    manualDisconnect = false;
+
+    client = new StompJs.Client({
+      brokerURL: 'ws://localhost:8081/ws',
+      connectHeaders: { Authorization: `Bearer ${token}` },
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+      debug: (msg) => log('rawLog', msg),
+    });
+
+    client.onConnect = () => {
+      clearTimeout(giveUpTimer);
+      setStatus(`Connected as uid ${myUid}`, 'connected');
+    };
+    client.onStompError = (frame) => {
+      clearTimeout(giveUpTimer);
+      setStatus(`Error: ${frame.headers['message']}`, 'disconnected');
+    };
+    client.onWebSocketClose = () => {
+      if (manualDisconnect) {
+        setStatus('Disconnected', 'disconnected');
+        return;
+      }
+      // Unexpected drop — the client will auto-retry (reconnectDelay). Show a calm
+      // "recovering" state instead of flashing red, and only escalate to a real
+      // "Disconnected" if it hasn't recovered within a few retry attempts.
+      setStatus('Reconnecting...', 'reconnecting');
+      clearTimeout(giveUpTimer);
+      giveUpTimer = setTimeout(() => {
+        setStatus('Disconnected (reconnect attempts failed)', 'disconnected');
+      }, RECONNECT_GRACE_MS);
+    };
+
+    client.activate();
+  };
+
+  document.getElementById('disconnectBtn').onclick = () => {
+    manualDisconnect = true;
+    clearTimeout(giveUpTimer);
+    client?.deactivate();
+    setStatus('Disconnected', 'disconnected');
+  };
+
+  document.getElementById('subscribeChannelBtn').onclick = () => {
+    if (!client?.connected) return alert('connect first');
+    const channelId = document.getElementById('channelId').value;
+    client.subscribe(`/topic/channel.${channelId}`, (msg) => {
+      log('channelLog', `RECV ${msg.body}`);
+    });
+    log('channelLog', `subscribed to /topic/channel.${channelId}`);
+  };
+
+  document.getElementById('sendChannelBtn').onclick = () => {
+    if (!client?.connected) return alert('connect first');
+    const channelId = document.getElementById('channelId').value;
+    const content = document.getElementById('channelContent').value;
+    client.publish({
+      destination: `/app/channel/${channelId}/send`,
+      body: JSON.stringify({ content }),
+    });
+    log('channelLog', `SENT ${content}`);
+  };
+
+  document.getElementById('historyChannelBtn').onclick = async () => {
+    const token = document.getElementById('token').value.trim();
+    const channelId = document.getElementById('channelId').value;
+    const res = await fetch(`${MESSENGER_ORIGIN}/messenger-api/channels/${channelId}/messages`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    log('channelLog', `HISTORY ${res.status} ${await res.text()}`);
+  };
+
+  document.getElementById('subscribeDmBtn').onclick = () => {
+    if (!client?.connected) return alert('connect first');
+    // /user/queue/dm carries ALL of this user's DMs (any peer), not one topic per pair —
+    // Spring rewrites it to a session-private queue, so subscribing once is enough.
+    client.subscribe('/user/queue/dm', (msg) => {
+      log('dmLog', `RECV ${msg.body}`);
+    });
+    log('dmLog', 'subscribed to /user/queue/dm');
+  };
+
+  document.getElementById('sendDmBtn').onclick = () => {
+    if (!client?.connected) return alert('connect first');
+    const peerId = document.getElementById('peerId').value;
+    const content = document.getElementById('dmContent').value;
+    client.publish({
+      destination: `/app/dm/send`,
+      body: JSON.stringify({ receiverId: Number(peerId), content }),
+    });
+    log('dmLog', `SENT ${content}`);
+  };
+
+  document.getElementById('historyDmBtn').onclick = async () => {
+    const token = document.getElementById('token').value.trim();
+    const peerId = document.getElementById('peerId').value;
+    const res = await fetch(`${MESSENGER_ORIGIN}/messenger-api/dm/${peerId}/messages`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    log('dmLog', `HISTORY ${res.status} ${await res.text()}`);
+  };
+</script>
+
+</body>
+</html>

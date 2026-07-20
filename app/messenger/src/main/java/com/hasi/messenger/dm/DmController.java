@@ -8,26 +8,30 @@ import org.springframework.stereotype.Controller;
 import java.security.Principal;
 
 @Controller
+@MessageMapping("/dm")
 public class DmController {
 
-    @MessageMapping("/dm/send")
+    private final DmService dmService;
+
+    public DmController(DmService dmService){
+        this.dmService = dmService;
+    }
+
+    @MessageMapping("/send")
     public void send(@Payload DmDtos.IncomingMessage incomingMessage, Principal principal){
-        // TODO
         String sender = principal.getName();
-//        DmService.createMessage();
+        dmService.createMessage(sender, incomingMessage.receiverId(), incomingMessage.content());
     }
 
-    @MessageMapping("/dm/{messageId}/delete")
-    public void delete(@DestinationVariable String channelId, @Payload Long id, Principal principal){
-        // TODO
+    @MessageMapping("/{messageId}/delete")
+    public void delete(@DestinationVariable Long messageId, @Payload Long id, Principal principal){
         String sender = principal.getName();
-//        DmService.deleteMessage();
+        dmService.deleteMessage(sender, id);
     }
 
-    @MessageMapping("/dm/{messageId}/update")
-    public void update(@DestinationVariable String channelId, @Payload DmDtos.UpdateMessage updateMessage, Principal principal){
-        // TODO
+    @MessageMapping("/{messageId}/update")
+    public void update(@DestinationVariable Long messageId, @Payload DmDtos.UpdateMessage updateMessage, Principal principal){
         String sender = principal.getName();
-//        DmService.updateMessage();
+        dmService.updateMessage(sender, updateMessage.id(), updateMessage.content());
     }
 }

@@ -1,6 +1,5 @@
 package com.hasi.messenger.dm;
 
-import com.hasi.messenger.channel.ChannelMessage;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,7 +23,7 @@ public class DirectMessage {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_msg_id")
-    private ChannelMessage parentMessage;
+    private DirectMessage parentMessage;
 
     @Column(nullable = false)
     private Long senderId;

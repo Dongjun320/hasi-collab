@@ -24,7 +24,11 @@ interface WorkspaceState {
   channels: Channel[]
   workspaces: Workspace[]
   setWorkspace: (w: Workspace) => void
+<<<<<<< HEAD
   setWorkspaces: (list: Workspace[]) => void
+=======
+  setWorkspaces: (list: Workspace[]) => void   // API 목록 응답을 통째로 세팅 (김상현 연결용)
+>>>>>>> dev
   setChannels: (c: Channel[]) => void
   addWorkspace: (w: Workspace) => void
   clear: () => void

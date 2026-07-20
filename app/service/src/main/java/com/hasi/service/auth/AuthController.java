@@ -1,5 +1,6 @@
 package com.hasi.service.auth;
 
+import com.hasi.collab.api.AuthApi;
 import com.hasi.collab.model.RegisterRequest;
 import com.hasi.collab.model.EmailSendRequest;
 import com.hasi.collab.model.EmailVerifyRequest;
@@ -17,48 +18,48 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-public class AuthController {
+public class AuthController implements AuthApi {
 
     private final AuthService authService;
 
     // 회원가입 → 이메일 인증코드 자동 발송
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<RegisterResponse>> register(
+    public ResponseEntity<RegisterResponse> register(
             @Valid @RequestBody RegisterRequest request) {
         RegisterResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response));
+                .body(response);
     }
 
     // 이메일 인증코드 재발송
     @PostMapping("/email/send")
-    public ResponseEntity<ApiResponse<String>> emailSend(
+    public ResponseEntity<Void> emailSend(
             @Valid @RequestBody EmailSendRequest request) {
         authService.emailSend(request);
-        return ResponseEntity.ok(ApiResponse.ok("인증코드 발송 완료 (10분 유효)"));
+        return ResponseEntity.ok().build();
     }
 
     // 이메일 인증코드 확인
     @PostMapping("/email/verify")
-    public ResponseEntity<ApiResponse<String>> emailVerify(
+    public ResponseEntity<Void> emailVerify(
             @Valid @RequestBody EmailVerifyRequest request) {
         authService.emailVerify(request);
-        return ResponseEntity.ok(ApiResponse.ok("이메일 인증 완료"));
+        return ResponseEntity.ok().build();
     }
 
     // 로그인
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LogInResponse>> login(
+    public ResponseEntity<LogInResponse> login(
             @Valid @RequestBody LogInRequest request) {
         LogInResponse response = authService.login(request);
-        return ResponseEntity.ok(ApiResponse.ok(response));
+        return ResponseEntity.ok(response);
     }
 
     // 로그아웃
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<String>> logout(
+    public ResponseEntity<Void> logout(
             @Valid @RequestBody LogOutRequest request) {
         authService.logout(request);
-        return ResponseEntity.ok(ApiResponse.ok("로그아웃 완료"));
+        return ResponseEntity.ok().build();
     }
 }

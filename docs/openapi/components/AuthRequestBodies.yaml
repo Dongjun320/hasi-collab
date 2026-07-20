@@ -46,11 +46,17 @@ components:
       type: object
       required:
         - email
+        - purpose
       description: "이메일 인증코드 발송 요청"
       properties:
         email:
           type: string
           description: "인증코드를 받을 email"
+          #여기 추가 했습니다.
+        purpose:
+          type: string
+          enum: [register, reset]
+          description: "발송 목적입니다, 생략시 register로 간주(register=회원가입, reset=비밀번호 재설정)"
 
     EmailVerifyRequest:
       type: object
@@ -65,4 +71,17 @@ components:
         code:
           type: string
           description: "발송된 인증코드"
-
+    # 지환님 확인 부탁드려요 확인하고 주석 지우고 올려주시면 될거같아요
+    PasswordResetRequest:
+      type: object
+      required:
+        - email
+        - newPassword
+      description: "비밀번호 재설정(이메일 인증 완료되었을때)"
+      properties:
+        email:
+          type: string
+          description: "재설정하는 email 계정"
+        newPassword:
+          type: string
+          description: "새로운 비밀번호"
