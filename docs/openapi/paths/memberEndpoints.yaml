@@ -394,3 +394,106 @@ paths:
             application/json:
               schema:
                 $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/invitations/sent:
+    get:
+      summary: "해당 유저가 보낸 초대 목록 조회"
+      tags:
+        - WorkspaceMember
+      operationId: getSentInvitation
+      responses:
+        '200':
+          description: "해당 유저가 보낸 초대 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/MemberInviteListResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/invitations/received:
+    get:
+      summary: "해당 유저가 받은 초대 목록 조회"
+      tags:
+        - WorkspaceMember
+      operationId: getReceivedInvitation
+      responses:
+        '200':
+          description: "해당 유저가 받은 초대 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/MemberInviteListResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+
+  /api/invitations/{invitationId}:
+    patch:
+      summary: "초대 수락 / 거절 / 취소"
+      tags:
+        - WorkspaceMember
+      operationId: responseInvitation
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/MemberRequestBodies.yaml#/components/schemas/MemberInvitePatchRequest"
+      responses:
+        '200':
+          description: "초대 수락 또는 거절 또는 취소 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/MemberInviteResponse"
+        '400':
+          description: "Bad Request, 유효하지 않은 값"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR004Error"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '404':
+          description: "Not Found, 초대가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR006Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
