@@ -2,8 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus, Home, Users, Bell, Settings, Globe,
-  ChevronLeft, ChevronRight, MessageCircle, X, LogOut,
+  ChevronLeft, ChevronRight, MessageCircle, X, LogOut, Calendar,
 } from "lucide-react";
+import { useUiStore } from "../store/uiStore";
+import { useFriendStore } from "../store/friendStore";
+import { FriendSidebar } from "../components/FriendSidebar";
+
 
 export function WorkspaceHome() {
   const navigate = useNavigate();
@@ -11,6 +15,9 @@ export function WorkspaceHome() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const logout = () => {navigate("/")};
+  const { activeRightPanel, toggleRightPanel } = useUiStore();
+  const { friends } = useFriendStore();
+  const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -207,7 +214,9 @@ export function WorkspaceHome() {
           </div>
         </div>
 
-        {/* 오른쪽 캘린더 사이드바 */}
+        {/* ── 오른쪽 rail 슬롯: activeRightPanel에 따라 표시 (null이면 아무것도 안 뜸) ── */}
+        {activeRightPanel === 'friend' && <FriendSidebar />}
+        {activeRightPanel === 'calendar' && (
         <div className="w-64 bg-white border-l border-[#e8f8ed] p-4 overflow-y-auto flex-shrink-0">
 
           {/* 월 네비게이션 */}
@@ -296,6 +305,7 @@ export function WorkspaceHome() {
           </div>
 
         </div>
+        )}
       </div>
 
       {/* 하단 내비게이션 바 (Windows 작업표시줄 스타일) */}
@@ -349,13 +359,32 @@ export function WorkspaceHome() {
         {/* 스페이서 */}
         <div className="flex-1" />
 
+
         {/* 구분선 */}
         <div className="h-8 w-[2px] bg-white/20 rounded-full mx-2 flex-shrink-0" />
 
         {/* 개인 메뉴 */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all" title="친구 목록">
+          <button
+            onClick={() => toggleRightPanel('calendar')}
+            className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all
+              ${activeRightPanel === 'calendar' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+            title="달력"
+          >
+            <Calendar size={19} className="text-white/60" />
+          </button>
+          <button
+            onClick={() => toggleRightPanel('friend')}
+            className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
+              ${activeRightPanel === 'friend' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+            title="친구 목록"
+          >
             <Users size={19} className="text-white/60" />
+            {activeRightPanel !== 'friend' && totalUnread > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {totalUnread}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setShowNotifications(!showNotifications)}

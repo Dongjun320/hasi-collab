@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 
-interface Workspace { id: number; name: string; avatar: string; colors: string[]; unread: boolean }
+interface Workspace { id: number; name: string; avatar: string; colors: string[]; unread: boolean; role?: string;  }
 interface Channel { id: string; name: string }
 
 interface WorkspaceState {
@@ -10,6 +10,7 @@ interface WorkspaceState {
   channels: Channel[]
   workspaces: Workspace[]
   setWorkspace: (w: Workspace) => void
+  setWorkspaces: (list: Workspace[]) => void
   setChannels: (c: Channel[]) => void
   addWorkspace: (w: Workspace) => void
   clear: () => void
@@ -28,6 +29,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
     { id: 5, name: "기획팀",   avatar: "기", colors: ["#2E8B4F", "#5CC87A"], unread: false },
   ],
   setWorkspace: (w) => set({ currentWorkspace: w }),
+  setWorkspaces: (list) => set({ workspaces: list }),
   setChannels: (c) => set({ channels: c }),
   addWorkspace: (w) => set((s) =>({ workspaces: [...s.workspaces, w] })),
   clear: () => set({ currentWorkspace: null, channels: [] }),
