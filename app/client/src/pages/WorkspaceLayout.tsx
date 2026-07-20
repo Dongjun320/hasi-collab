@@ -10,6 +10,10 @@ import { useWorkspaceStore } from "../store/workspaceStore";
 import { useFriendStore } from "../store/friendStore";
 import { useUiStore } from "../store/uiStore";
 import { FriendSidebar } from "../components/FriendSidebar";
+import { NotificationSidebar } from "../components/NotificationSidebar";
+import { useNotificationStore } from "../store/notificationStore";
+
+
 
 const TOOLS = [
   { path: "/workspace/kanban",   icon: LayoutGrid,    label: "칸반" },
@@ -109,6 +113,8 @@ export function WorkspaceLayout() {
   ];
 
   const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0)
+  const { notifications } = useNotificationStore();
+  const unreadNotifications = notifications.filter((n) => n.unread).length;
 
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
@@ -154,9 +160,16 @@ export function WorkspaceLayout() {
           <button className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all" title="검색">
             <Search size={18} className="text-[#5CC87A]" />
           </button>
-          <button className="relative p-2 hover:bg-[#f0f9f4] rounded-xl transition-all" title="알림">
+          <button
+              onClick={() => toggleRightPanel('notification')}
+              className={`relative p-2 rounded-xl transition-all
+              ${activeRightPanel === 'notification' ? "bg-[#d4f4dd]" : "hover:bg-[#f0f9f4]"}`}
+              title="알림"
+          >
             <Bell size={18} className="text-[#5CC87A]" />
-            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
+            {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
+                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
+            )}
           </button>
           <Link to="/workspace/settings" className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all" title="설정">
             <Settings size={18} className="text-[#5CC87A]" />
@@ -205,6 +218,7 @@ export function WorkspaceLayout() {
         )}
         </div>
         <FriendSidebar />
+        <NotificationSidebar />
       </div>
 
       {/* ── 하단 작업표시줄 (윈도우 작업표시줄처럼 전체폭 고정) ── */}

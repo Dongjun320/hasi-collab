@@ -4,7 +4,7 @@
 import { create } from 'zustand'
 
 // 오른쪽 rail에 띄울 패널 종류 (null = 접힘)
-export type RightPanel = 'friend' | 'calendar' | null
+export type RightPanel = 'friend' | 'calendar' | 'notification' |  null
 
 interface UiState {
   isSidebarOpen: boolean
