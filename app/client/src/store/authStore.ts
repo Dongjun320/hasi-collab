@@ -13,7 +13,8 @@ interface User {
 interface AuthState {
   user: User | null
   accessToken: string | null
-  setAuth: (user: User, token: string) => void
+  refreshToken: string | null
+  setAuth: (user: User, accessToken: string, refreshToken: string) => void
   clear: () => void
 }
 
@@ -23,8 +24,10 @@ export const useAuthStore = create<AuthState>()(
         (set) => ({
           user: null,
           accessToken: null,
-          setAuth: (user, token) => set({ user, accessToken: token }),
-          clear: () => set({ user: null, accessToken: null }),
+          refreshToken: null,
+          setAuth: (user, accessToken, refreshToken) =>
+            set({ user, accessToken, refreshToken }),
+          clear: () => set({ user: null, accessToken: null, refreshToken: null }),
         }),
         {
           name: 'hasi-auth', // client.ts와 동일한 LocalStorage 키 이름
