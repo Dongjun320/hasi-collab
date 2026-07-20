@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import java.security.Principal;
 
 @Controller
+@MessageMapping("/channel/{channelId}")
 public class ChannelController {
 
     private final ChannelService channelService;
@@ -16,19 +17,19 @@ public class ChannelController {
         this.channelService = channelService;
     }
 
-    @MessageMapping("/channel/{channelId}/send")
+    @MessageMapping("/send")
     public void send(@DestinationVariable Long channelId, @Payload ChannelDtos.IncomingMessage incomingMessage, Principal principal){
         String sender = principal.getName();
         this.channelService.createMessage(channelId, sender, incomingMessage.content());
     }
 
-    @MessageMapping("/channel/{channelId}/delete")
+    @MessageMapping("/delete")
     public void delete(@DestinationVariable Long channelId, @Payload Long id, Principal principal){
         String sender = principal.getName();
         this.channelService.deleteMessage(channelId, sender, id);
     }
 
-    @MessageMapping("/channel/{channelId}/update")
+    @MessageMapping("/update")
     public void update(@DestinationVariable Long channelId, @Payload ChannelDtos.UpdateMessage updateMessage, Principal principal){
         String sender = principal.getName();
         this.channelService.updateMessage(channelId, sender, updateMessage.id(), updateMessage.content());

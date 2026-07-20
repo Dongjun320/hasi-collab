@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import java.security.Principal;
 
 @Controller
+@MessageMapping("/dm")
 public class DmController {
 
     private final DmService dmService;
@@ -16,19 +17,19 @@ public class DmController {
         this.dmService = dmService;
     }
 
-    @MessageMapping("/dm/send")
+    @MessageMapping("/send")
     public void send(@Payload DmDtos.IncomingMessage incomingMessage, Principal principal){
         String sender = principal.getName();
         dmService.createMessage(sender, incomingMessage.receiverId(), incomingMessage.content());
     }
 
-    @MessageMapping("/dm/{messageId}/delete")
+    @MessageMapping("/{messageId}/delete")
     public void delete(@DestinationVariable Long messageId, @Payload Long id, Principal principal){
         String sender = principal.getName();
         dmService.deleteMessage(sender, id);
     }
 
-    @MessageMapping("/dm/{messageId}/update")
+    @MessageMapping("/{messageId}/update")
     public void update(@DestinationVariable Long messageId, @Payload DmDtos.UpdateMessage updateMessage, Principal principal){
         String sender = principal.getName();
         dmService.updateMessage(sender, updateMessage.id(), updateMessage.content());
