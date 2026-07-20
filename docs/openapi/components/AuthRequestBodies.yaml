@@ -46,6 +46,7 @@ components:
       type: object
       required:
         - email
+        - purpose
       description: "이메일 인증코드 발송 요청"
       properties:
         email:
