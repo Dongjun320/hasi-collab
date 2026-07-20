@@ -2,9 +2,6 @@
 
 import { create } from 'zustand'
 
-<<<<<<< HEAD
-interface Workspace { id: number; name: string; avatar: string; colors: string[]; unread: boolean; role?: string;  }
-=======
 // 백엔드 필드(role, iconUrl) = API 응답(GET /workspaces/me)에서 옴
 // 장식 필드(avatar, colors, unread) = 화면 표시용. API 연결 시 매핑에서 채움
 interface Workspace {
@@ -16,7 +13,6 @@ interface Workspace {
   role?: string           // 백엔드: OWNER | ADMIN | MEMBER
   iconUrl?: string | null // 백엔드
 }
->>>>>>> dev
 interface Channel { id: string; name: string }
 
 interface WorkspaceState {
