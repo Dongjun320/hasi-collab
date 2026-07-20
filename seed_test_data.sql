@@ -12,7 +12,7 @@ INSERT INTO workspaces (owner_id, name, is_private, description, created_at, upd
 SELECT uid, 'test_workspace', false, 'Seeded workspace for testing', NOW(), NOW()
 FROM users
 WHERE email = 'test_user1@example.com'
-ON CONFLICT DO NOTHING;
+  AND NOT EXISTS (SELECT 1 FROM workspaces WHERE name = 'test_workspace');
 
 INSERT INTO workspace_members (workspace_id, user_id, role, created_at)
 SELECT w.id, u.uid,
