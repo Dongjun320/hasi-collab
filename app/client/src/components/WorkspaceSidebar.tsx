@@ -2,11 +2,24 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Hash, Home, Plus, X,
-  PanelLeftClose, PanelLeftOpen, Settings,
+  PanelLeftClose, PanelLeftOpen, Settings, UserPlus,
 } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import Modal from "@/components/Modal.tsx";
+import { api } from '../api/client';
+
+// 목데이터 — 나중에 "닉네임 사용자 검색 API"로 교체 예정 (현재 백엔드에 없음)
+const MOCK_USERS = [
+  { id: 1, nickname: "김민준" },
+  { id: 2, nickname: "이서연" },
+  { id: 3, nickname: "박지훈" },
+  { id: 4, nickname: "강하은" },
+  { id: 5, nickname: "최수진" },
+  { id: 6, nickname: "정민호" },
+  { id: 7, nickname: "홍길동" },
+  { id: 8, nickname: "김철수" },
+];
 
 
 interface WorkspaceSidebarProps {
@@ -25,7 +38,7 @@ export function WorkspaceSidebar({
 }: WorkspaceSidebarProps) {
   const navigate = useNavigate();
   const {isSidebarOpen, toggleSidebar} = useUiStore();
-  const {currentWorkspace, setWorkspace, workspaces, addWorkspace, updateWorkspace} = useWorkspaceStore();
+  const {currentWorkspace, setWorkspace, workspaces, addWorkspace, updateWorkspace, setWorkspaces} = useWorkspaceStore();
   const [showNewInput, setShowNewInput] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [showNewWorkspaceInput, setShowNewWorkspaceInput] = useState(false);
@@ -34,6 +47,9 @@ export function WorkspaceSidebar({
   const [renamingChannelId, setRenamingChannelId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteQuery, setInviteQuery] = useState("");
+  const [invitedIds, setInvitedIds] = useState<number[]>([]);
   const railRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startY: 0, startScroll: 0 });
 
@@ -74,13 +90,31 @@ export function WorkspaceSidebar({
     setShowNewWorkspaceInput(false);
   };
 
+  const DEFAULT_COLORS = [
+    ["#A8E6B8", "#5CC87A"], ["#5CC87A", "#2E8B4F"],
+    ["#A8E6B8", "#FFE66D"], ["#5CC87A", "#FFD93D"], ["#2E8B4F", "#5CC87A"],
+  ]
+
   useEffect(() => {
-    if (!currentWorkspace) {
-      const target = workspaces[1];
-      setWorkspace(target);
-      navigate(`/workspace/channels/${getDefaultChannelId(target.id)}`);
-    }
-  }, [currentWorkspace, setWorkspace])
+    (async () => {
+      const { data, error } = await api.GET('/api/workspaces/me')
+      if (error || !data?.data) return
+      const mapped = data.data.map((w, i) => ({
+        id: w.id!,
+        name: w.name ?? '',
+        avatar: (w.name ?? '?').charAt(0),
+        colors: DEFAULT_COLORS[i % DEFAULT_COLORS.length],
+        unread: false,
+      }))
+      setWorkspaces(mapped)
+      if (!currentWorkspace && mapped[0]) {
+        setWorkspace(mapped[0])
+        navigate(`/workspace/channels/${getDefaultChannelId(mapped[0].id)}`)
+      }
+    })()
+  }, [])
+
+
 
   return (
     <div className="flex h-full flex-shrink-0">
@@ -180,6 +214,59 @@ export function WorkspaceSidebar({
         </div>
       </Modal>
 
+      {/* ── 인원 추가 모달 ── */}
+      <Modal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        title="인원 추가"
+      >
+        <div className="flex flex-col gap-3">
+          <input
+            type="text"
+            value={inviteQuery}
+            onChange={(e) => setInviteQuery(e.target.value)}
+            placeholder="닉네임으로 검색"
+            autoFocus
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]"
+          />
+
+          <div className="max-h-60 overflow-y-auto flex flex-col gap-1">
+            {inviteQuery.trim() &&
+              MOCK_USERS.filter((u) => u.nickname.includes(inviteQuery.trim())).map((u) => {
+                const invited = invitedIds.includes(u.id);
+                return (
+                  <div key={u.id} className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold">
+                        {u.nickname.charAt(0)}
+                      </div>
+                      <span className="text-sm text-[#2C3E50]">{u.nickname}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        // TODO: 실제 초대 API 연결 (POST /api/workspaces/{id}/members)
+                        setInvitedIds((prev) => [...prev, u.id]);
+                      }}
+                      disabled={invited}
+                      className={`px-3 py-1 text-xs font-medium rounded-lg transition-all
+                        ${invited
+                          ? "bg-gray-100 text-gray-400 cursor-default"
+                          : "bg-[#5CC87A] hover:bg-[#2E8B4F] text-white"}`}
+                    >
+                      {invited ? "초대됨" : "초대"}
+                    </button>
+                  </div>
+                );
+              })}
+
+            {inviteQuery.trim() &&
+              MOCK_USERS.filter((u) => u.nickname.includes(inviteQuery.trim())).length === 0 && (
+                <p className="text-xs text-gray-400 text-center py-4">검색 결과가 없습니다</p>
+              )}
+          </div>
+        </div>
+      </Modal>
+
       {/* ── 서버 레일 ── */}
       <div className="w-[72px] h-full bg-[#1e3a28] flex flex-col items-center py-3 gap-2 flex-shrink-0">
         <button
@@ -259,15 +346,25 @@ export function WorkspaceSidebar({
         <div className="w-56 flex flex-col h-full">
           <div className="h-14 px-4 flex items-center justify-between border-b border-white/10 flex-shrink-0">
             <h2 className="text-white font-bold text-sm truncate">{currentWorkspace?.name}</h2>
-            <button
-              onClick={() => {
-                setEditName(currentWorkspace?.name ?? "");
-                setShowWorkspaceSettings(true);
-              }}
-              className="p-1 hover:bg-white/10 rounded-md flex-shrink-0"
-            >
-              <Settings size={14} className="text-white/50" />
-            </button>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={() => { setInviteQuery(""); setShowInviteModal(true); }}
+                title="인원 추가"
+                className="p-1 hover:bg-white/10 rounded-md"
+              >
+                <UserPlus size={14} className="text-white/50" />
+              </button>
+              <button
+                onClick={() => {
+                  setEditName(currentWorkspace?.name ?? "");
+                  setShowWorkspaceSettings(true);
+                }}
+                title="서버 설정"
+                className="p-1 hover:bg-white/10 rounded-md"
+              >
+                <Settings size={14} className="text-white/50" />
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">

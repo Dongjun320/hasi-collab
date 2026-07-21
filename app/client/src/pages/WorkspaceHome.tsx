@@ -3,15 +3,24 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from '../store/authStore';
 import { api } from '../api/client';
 import {
-  Plus, Home, Users, Bell, Settings, Globe,
-  ChevronLeft, ChevronRight, MessageCircle, X, LogOut,
+  Users, Bell, Settings, Globe,
+  ChevronLeft, ChevronRight, MessageCircle, LogOut, Calendar,
+    LayoutGrid,
 } from "lucide-react";
+import { useUiStore } from "../store/uiStore";
+import { useFriendStore, FRIEND_STATUS } from "../store/friendStore";
+import { FriendSidebar } from "../components/FriendSidebar";
+import hasiClean from "./HasiClean.png"
+import { useWorkspaceStore } from "../store/workspaceStore";
+import { NotificationSidebar } from "../components/NotificationSidebar";
+import { useNotificationStore } from "../store/notificationStore";
+
 
 export function WorkspaceHome() {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [showNotifications, setShowNotifications] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
+ HEAD
   const { refreshToken, clear } = useAuthStore();
   const handleLogout = async () => {
     try {
@@ -23,33 +32,23 @@ export function WorkspaceHome() {
       navigate("/");
     }
   };
+
+  const logout = () => {navigate("/")};
+  const { activeRightPanel, toggleRightPanel } = useUiStore();
+  const { friends } = useFriendStore();
+  const { workspaces, setWorkspace } = useWorkspaceStore();
+  const { notifications } = useNotificationStore();
+  const unreadNotifications = notifications.filter((n) => n.unread).length;
+  const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0);
+
+ c0d991b49f798e1b0b2040a72b44e81399011697
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const workspaces = [
-    { id: 1, name: "디자인팀", unread: true,  avatar: "디", color: "from-[#A8E6B8] to-[#5CC87A]" },
-    { id: 2, name: "개발팀",   unread: true,  avatar: "개", color: "from-[#5CC87A] to-[#2E8B4F]" },
-    { id: 3, name: "마케팅팀", unread: false, avatar: "마", color: "from-[#A8E6B8] to-[#FFE66D]" },
-    { id: 4, name: "영업팀",   unread: true,  avatar: "영", color: "from-[#5CC87A] to-[#FFD93D]" },
-    { id: 5, name: "기획팀",   unread: false, avatar: "기", color: "from-[#2E8B4F] to-[#5CC87A]" },
-  ];
-
-  const onlineFriends = [
-    { id: 1, name: "김민준", status: "회의 중",   avatar: "김", dot: "bg-blue-400" },
-    { id: 2, name: "이서연", status: "온라인",    avatar: "이", dot: "bg-green-400" },
-    { id: 3, name: "박지훈", status: "온라인",    avatar: "박", dot: "bg-green-400" },
-    { id: 4, name: "강하은", status: "자리 비움", avatar: "강", dot: "bg-amber-400" },
-    { id: 5, name: "최수진", status: "온라인",    avatar: "최", dot: "bg-green-400" },
-    { id: 6, name: "정민호", status: "온라인",    avatar: "정", dot: "bg-green-400" },
-  ];
-
-  const notifications = [
-    { id: 1, text: "개발팀에 새 메시지가 5개 있습니다", time: "5분 전" },
-    { id: 2, text: "디자인 리뷰 미팅이 30분 후 시작됩니다", time: "방금" },
-    { id: 3, text: "마케팅팀 파일이 업로드됐습니다", time: "1시간 전" },
-  ];
+  // friendStore에서 가져옴 (오프라인 제외 = 온라인 친구)
+  const onlineFriends = friends.filter((f) => f.status !== "offline");
 
   const recentActivities = [
     { ws: "개", name: "개발팀",   text: "새 메시지 5개",   time: "5분 전",  color: "from-[#5CC87A] to-[#2E8B4F]" },
@@ -103,43 +102,36 @@ export function WorkspaceHome() {
                 {today.getFullYear()}년 {today.getMonth() + 1}월 {today.getDate()}일 {weekDayKo[today.getDay()]}요일
               </p>
             </div>
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 hover:bg-[#d4f4dd] rounded-xl transition-all"
-            >
-              <Bell size={20} className="text-[#5CC87A]" />
-              <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-white" />
-            </button>
           </div>
-
-          {/* 알림 드롭다운 */}
-          {showNotifications && (
-            <>
-              <div className="absolute top-16 right-4 w-80 bg-white rounded-2xl shadow-2xl border border-[#d4f4dd] z-50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#e8f8ed] flex items-center justify-between">
-                  <h3 className="font-bold text-[#2C3E50] text-sm">알림</h3>
-                  <button onClick={() => setShowNotifications(false)} className="p-1 hover:bg-[#f0f9f4] rounded-lg">
-                    <X size={14} className="text-gray-400" />
-                  </button>
-                </div>
-                <div className="divide-y divide-[#f0f9f4]">
-                  {notifications.map((n) => (
-                    <div key={n.id} className="px-4 py-3 hover:bg-[#f8fdf9] transition-colors cursor-pointer">
-                      <p className="text-sm text-[#2C3E50]">{n.text}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{n.time}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="px-4 py-3 border-t border-[#e8f8ed] text-center">
-                  <button className="text-xs text-[#5CC87A] font-medium hover:underline">모두 읽음 처리</button>
-                </div>
-              </div>
-              <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
-            </>
-          )}
 
           {/* 스크롤 영역 */}
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
+
+            <div className="bg-white rounded-2x1 p-4 shadow-sm border border-[#e8f8ed]">
+              <div className="flex items-center gap-2 mb-3">
+                <LayoutGrid size={15} className="text-[#5CC87A]"/>
+                <h2 className="text-sm font-bold text-[#2C3E50]">워크스페이스 · {workspaces.length}개</h2>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {workspaces.map((ws) => (
+                    <button
+                    key={ws.id}
+                    onClick={() => {setWorkspace(ws);
+                    navigate("/workspace");
+                    }}
+                    title={ws.name}
+                    className="relative group flex flex-col items-center gap-1.5 w-[68px]"
+                    >
+                      <div
+                          className="w-12 h-12 rounded-[24px] group-hover:rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md transition-all duration-200"
+                          style={{ background: `linear-gradient(to bottom right, ${ws.colors[0]}, ${ws.colors[1]})` }}
+                      >
+                        {ws.avatar}
+                        </div>
+                    </button>
+                ))}
+              </div>
+            </div>
 
             {/* 세계 시계 */}
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#e8f8ed]">
@@ -173,13 +165,13 @@ export function WorkspaceHome() {
                   <div key={f.id} className="flex items-center gap-2 bg-[#f8fdf9] rounded-xl px-3 py-2 border border-[#e8f8ed]">
                     <div className="relative">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-xs font-bold">
-                        {f.avatar}
+                        {f.avatar ?? f.name.charAt(0)}
                       </div>
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${f.dot}`} />
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${FRIEND_STATUS[f.status].dot}`} />
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-[#2C3E50]">{f.name}</p>
-                      <p className="text-[10px] text-gray-400">{f.status}</p>
+                      <p className="text-[10px] text-gray-400">{f.statusMessage ?? FRIEND_STATUS[f.status].label}</p>
                     </div>
                   </div>
                 ))}
@@ -218,7 +210,10 @@ export function WorkspaceHome() {
           </div>
         </div>
 
-        {/* 오른쪽 캘린더 사이드바 */}
+        {/* ── 오른쪽 rail 슬롯: activeRightPanel에 따라 표시 (null이면 아무것도 안 뜸) ── */}
+        {activeRightPanel === 'friend' && <FriendSidebar />}
+        <NotificationSidebar />
+        {activeRightPanel === 'calendar' && (
         <div className="w-64 bg-white border-l border-[#e8f8ed] p-4 overflow-y-auto flex-shrink-0">
 
           {/* 월 네비게이션 */}
@@ -245,7 +240,7 @@ export function WorkspaceHome() {
             {dayNames.map((d, i) => (
               <div
                 key={d}
-                className={`text-center text-[10px] font-semibold py-1 ${
+                className={`text-center text-[10px] font-semibold py-1" ${
                   i === 0 ? "text-red-400" : i === 6 ? "text-blue-400" : "text-gray-400"
                 }`}
               >
@@ -307,55 +302,19 @@ export function WorkspaceHome() {
           </div>
 
         </div>
+        )}
       </div>
 
       {/* 하단 내비게이션 바 (Windows 작업표시줄 스타일) */}
       <div className="h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0">
 
         {/* 홈 버튼 */}
-        <div className="w-11 h-11 bg-[#5CC87A] rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-          <Home size={20} className="text-white" />
+        <div>
+          <img src={hasiClean} alt="HASI" className="w-11 h-11 rounded-2x1 object-contain"/>
         </div>
 
         {/* 구분선 */}
         <div className="h-8 w-[2px] bg-white/20 rounded-full mx-2 flex-shrink-0" />
-
-        {/* 워크스페이스 아이콘들 */}
-        <div className="flex items-center gap-1.5 overflow-x-auto">
-          {workspaces.map((ws) => (
-            <button
-              key={ws.id}
-              onClick={() => navigate("/workspace")}
-              className="relative group flex-shrink-0"
-              title={ws.name}
-            >
-              <div
-                className="w-11 h-11 rounded-[22px] group-hover:rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md transition-all duration-200"
-                style={{ background: `linear-gradient(to bottom right, ${
-                  ws.color === "from-[#A8E6B8] to-[#5CC87A]" ? "#A8E6B8, #5CC87A" :
-                  ws.color === "from-[#5CC87A] to-[#2E8B4F]" ? "#5CC87A, #2E8B4F" :
-                  ws.color === "from-[#A8E6B8] to-[#FFE66D]" ? "#A8E6B8, #FFE66D" :
-                  ws.color === "from-[#5CC87A] to-[#FFD93D]" ? "#5CC87A, #FFD93D" :
-                  "#2E8B4F, #5CC87A"
-                })` }}
-              >
-                {ws.avatar}
-              </div>
-              {ws.unread && (
-                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-[#1e3a28]" />
-              )}
-              <div className="absolute bottom-[52px] left-1/2 bg-[#1e3a28] text-white text-xs font-semibold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl" style={{ transform: "translateX(-50%)" }}>
-                {ws.name}
-              </div>
-            </button>
-          ))}
-          <button
-            className="w-11 h-11 rounded-full bg-white/10 hover:bg-[#5CC87A] flex items-center justify-center transition-all duration-200 group flex-shrink-0"
-            title="새 워크스페이스"
-          >
-            <Plus size={20} className="text-[#5CC87A] group-hover:text-white transition-colors" />
-          </button>
-        </div>
 
         {/* 스페이서 */}
         <div className="flex-1" />
@@ -365,16 +324,37 @@ export function WorkspaceHome() {
 
         {/* 개인 메뉴 */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all" title="친구 목록">
-            <Users size={19} className="text-white/60" />
+          <button
+            onClick={() => toggleRightPanel('calendar')}
+            className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all
+              ${activeRightPanel === 'calendar' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+            title="달력"
+          >
+            <Calendar size={19} className="text-white/60" />
           </button>
           <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all"
-            title="알림"
+            onClick={() => toggleRightPanel('friend')}
+            className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
+              ${activeRightPanel === 'friend' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+            title="친구 목록"
+          >
+            <Users size={19} className="text-white/60" />
+            {activeRightPanel !== 'friend' && totalUnread > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {totalUnread}
+              </span>
+            )}
+          </button>
+          <button
+              onClick={() => toggleRightPanel('notification')}
+              className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
+              ${activeRightPanel === 'notification' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+              title="알림"
           >
             <Bell size={19} className="text-white/60" />
-            <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
+            {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
+                <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
+            )}
           </button>
           <button className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all" title="설정">
             <Settings size={19} className="text-white/60" />

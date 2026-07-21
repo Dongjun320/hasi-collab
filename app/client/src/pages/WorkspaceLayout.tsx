@@ -2,11 +2,16 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Settings, Calendar, LayoutGrid,
   Plus, Bell, User, Grid3x3, Search,
-  Phone, Mail, MessageSquare, LogOut
+  Phone, Mail, MessageSquare, LogOut, Users
 } from "lucide-react";
 import { useState } from "react";
 import { WorkspaceSidebar } from "../components/WorkspaceSidebar";
 import { useWorkspaceStore } from "../store/workspaceStore";
+import { useFriendStore } from "../store/friendStore";
+import { useUiStore } from "../store/uiStore";
+import { FriendSidebar } from "../components/FriendSidebar";
+import { NotificationSidebar } from "../components/NotificationSidebar";
+import { useNotificationStore } from "../store/notificationStore";
 
 
 
@@ -20,6 +25,8 @@ export function WorkspaceLayout() {
   const { currentWorkspace, deleteWorkspace } = useWorkspaceStore();
   const location = useLocation();
   const navigate = useNavigate();
+  const { friends } = useFriendStore();
+  const { activeRightPanel, toggleRightPanel } = useUiStore();
 
   const [channelsByWorkspace, setChannelsByWorkspace] = useState<Record<number, { id: string; name: string }[]>>({
     1: [{ id: "design-general", name: "일반" }],
@@ -105,8 +112,15 @@ export function WorkspaceLayout() {
     { icon: LogOut,   label: "로그아웃", to: "/" },
   ];
 
+  const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0)
+  const { notifications } = useNotificationStore();
+  const unreadNotifications = notifications.filter((n) => n.unread).length;
+
   return (
-    <div className="flex h-screen bg-white overflow-hidden">
+    <div className="flex flex-col h-screen bg-white overflow-hidden">
+
+      {/* ── 상단 영역: 사이드바 + 콘텐츠 (하단바 제외) ── */}
+      <div className="flex flex-1 overflow-hidden">
 
       {/* ── 사이드바 (서버 레일 + 채널 목록) ── */}
       <WorkspaceSidebar
@@ -146,9 +160,16 @@ export function WorkspaceLayout() {
           <button className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all" title="검색">
             <Search size={18} className="text-[#5CC87A]" />
           </button>
-          <button className="relative p-2 hover:bg-[#f0f9f4] rounded-xl transition-all" title="알림">
+          <button
+              onClick={() => toggleRightPanel('notification')}
+              className={`relative p-2 rounded-xl transition-all
+              ${activeRightPanel === 'notification' ? "bg-[#d4f4dd]" : "hover:bg-[#f0f9f4]"}`}
+              title="알림"
+          >
             <Bell size={18} className="text-[#5CC87A]" />
-            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
+            {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
+                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
+            )}
           </button>
           <Link to="/workspace/settings" className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all" title="설정">
             <Settings size={18} className="text-[#5CC87A]" />
@@ -195,9 +216,13 @@ export function WorkspaceLayout() {
             <div className="fixed inset-0 z-40" onClick={() => setIsQuickMenuOpen(false)} />
           </>
         )}
+        </div>
+        <FriendSidebar />
+        <NotificationSidebar />
+      </div>
 
-        {/* ── 하단 작업표시줄 (개인 메뉴) ── */}
-        <div className="h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0 z-30">
+      {/* ── 하단 작업표시줄 (윈도우 작업표시줄처럼 전체폭 고정) ── */}
+      <div className="h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0 z-30">
 
           {/* 도구들 */}
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -237,6 +262,7 @@ export function WorkspaceLayout() {
             >
               <Grid3x3 size={19} className="text-white" />
             </button>
+
             <Link
               to="/workspace/profile"
               className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all ml-1"
@@ -244,10 +270,23 @@ export function WorkspaceLayout() {
             >
               나
             </Link>
+            <button
+                onClick={() => toggleRightPanel('friend')}
+                className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
+                  ${activeRightPanel === 'friend' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+                title="친구 목록"
+            >
+              <Users size={19} className="text-white" />
+              {activeRightPanel !== 'friend' && totalUnread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+               {totalUnread}
+                 </span>
+              )}
+            </button>
           </div>
 
+
         </div>
-      </div>
     </div>
   );
 }
