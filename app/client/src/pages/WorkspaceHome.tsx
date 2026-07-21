@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from '../store/authStore';
+import { api } from '../api/client';
 import {
   Plus, Home, Users, Bell, Settings, Globe,
   ChevronLeft, ChevronRight, MessageCircle, X, LogOut,
@@ -10,8 +12,17 @@ export function WorkspaceHome() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showNotifications, setShowNotifications] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
-  const logout = () => {navigate("/")};
-
+  const { refreshToken, clear } = useAuthStore();
+  const handleLogout = async () => {
+    try {
+      await api.POST('/api/auth/logout', { body: { refreshToken } });
+    } catch (error) {
+      console.error("로그아웃 실패:", error);
+    } finally {
+      clear();
+      navigate("/");
+    }
+  };
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -369,8 +380,8 @@ export function WorkspaceHome() {
             <Settings size={19} className="text-white/60" />
           </button>
           <button
-              onClick={logout}
-              className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all" title="로그아웃">
+                onClick={handleLogout}
+                className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all" title="로그아웃">
             <LogOut size={19} className="text-white/60 group-hover:text-red-400 transition-colors" />
           </button>
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold cursor-pointer ml-1 hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all">
