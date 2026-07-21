@@ -20,7 +20,6 @@ export function WorkspaceHome() {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [calendarDate, setCalendarDate] = useState(new Date());
- HEAD
   const { refreshToken, clear } = useAuthStore();
   const handleLogout = async () => {
     try {
