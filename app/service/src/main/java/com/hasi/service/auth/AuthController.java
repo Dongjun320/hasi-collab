@@ -16,7 +16,7 @@ public class AuthController implements AuthApi {
 
     private final AuthService authService;
 
-    // 회원가입 → 이메일 인증코드 자동 발송
+    // 회원가입 (선 이메일 인증 필요)
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(
             @Valid @RequestBody RegisterRequest request) {
@@ -25,7 +25,7 @@ public class AuthController implements AuthApi {
                 .body(response);
     }
 
-    // 이메일 인증코드 재발송
+    // 이메일 인증코드 발송
     @PostMapping("/email/send")
     public ResponseEntity<Void> emailSend(
             @Valid @RequestBody EmailSendRequest request) {
@@ -33,19 +33,19 @@ public class AuthController implements AuthApi {
         return ResponseEntity.ok().build();
     }
 
-    // 이메일 인증코드 재발송
+    // 비밀번호 찾기 전용 인증코드 발송
     @PostMapping("/password/send")
     public ResponseEntity<Void> emailSendForPasswordReset(
             @Valid @RequestBody EmailSendRequest request) {
-        authService.emailSend(request);
+        authService.emailSendForPasswordReset(request);
         return ResponseEntity.ok().build();
     }
 
     // 이메일 인증코드 확인
     @PostMapping("/email/verify")
     public ResponseEntity<Void> emailVerify(
-            @Valid @RequestBody EmailSendRequest request) {
-        authService.emailSendForPasswordReset(request);
+            @Valid @RequestBody EmailVerifyRequest request) {
+        authService.emailVerify(request);
         return ResponseEntity.ok().build();
     }
 
@@ -65,6 +65,7 @@ public class AuthController implements AuthApi {
         return ResponseEntity.ok().build();
     }
 
+    // 비밀번호 찾기 이메일 인증코드 확인 및 패스워드 변경
     @PostMapping("/password/reset")
     public ResponseEntity<Void> resetPassword(
             @Valid @RequestBody PasswordResetRequest request) {
