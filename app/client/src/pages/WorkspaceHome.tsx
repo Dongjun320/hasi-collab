@@ -41,7 +41,6 @@ export function WorkspaceHome() {
   const unreadNotifications = notifications.filter((n) => n.unread).length;
   const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0);
 
- c0d991b49f798e1b0b2040a72b44e81399011697
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
