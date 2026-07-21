@@ -141,6 +141,23 @@ components:
           nullable: true
           example: null
 
+    ChannelMemberJoinResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "채널 참가 완료"
+        error:
+          nullable: true
+          example: null
+
+
     ChannelMemberListResponse:
       type: object
       properties:

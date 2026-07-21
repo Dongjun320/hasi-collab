@@ -57,6 +57,7 @@ public class InvitationService {
 
         invitationRepository.save(invitation);
 
+        // response 리턴
         WorkspaceMemberInviteResponseData data = new WorkspaceMemberInviteResponseData();
         data.setUserId(user.getUid());
         data.setRole(WorkspaceMemberInviteResponseData.RoleEnum.fromValue(request.getRole().name().toLowerCase()));
@@ -70,12 +71,14 @@ public class InvitationService {
     }
 
     public List<InviteMemberData> getInvitation(InvitationType type) {
+
         // 현재 id를 JWT SecurityContextHolder에서 추출
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if(authentication == null || authentication.getName() == null) {
             throw new ApiException(ErrorCode.AUTH_003); // 추후 커스텀 에러 작성 및 교체 필요
         }
 
+        // InvitationType(SENT, RECEIVED)에 따른 DB 검색(inviter, invitee) 변경
         Long inviteId = Long.valueOf(authentication.getName());
         List<Invitation> invites;
         if (type == InvitationType.SENT) {
@@ -84,6 +87,7 @@ public class InvitationService {
             invites = invitationRepository.findByInviteeIdAndStatus(inviteId, Invitation.Status.PENDING);
         }
 
+        // InviteMemberData가 들어간 list 반환
         List<InviteMemberData> data = new ArrayList<>();
         for (Invitation invite : invites) {
             User inviter = userRepository.findById(invite.getInviterId())
@@ -120,6 +124,7 @@ public class InvitationService {
 
     @Transactional
     public MemberInviteResponseData patchResponseInvitation(Long invitationId, MemberInvitePatchRequest request) {
+
         // 현재 id를 JWT SecurityContextHolder에서 추출
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if(authentication == null || authentication.getName() == null) {
@@ -134,6 +139,7 @@ public class InvitationService {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
+        // 초대 수락/거절/취소에 따른 switch문
         String action = request.getAction().name();
         String message;
 
@@ -143,6 +149,7 @@ public class InvitationService {
                     throw new ApiException(ErrorCode.AUTH_004);
                 }
                 invitation.accept();
+                // workspaceMember 레코드 생성
                 workspaceMemberRepository.save(
                         WorkspaceMember.builder()
                                 .workspaceId(invitation.getWorkspaceId())
@@ -159,7 +166,7 @@ public class InvitationService {
                 invitation.decline();
                 message = "초대 거절 완료";
                 break;
-            case "CANCELLED":
+            case "CANCELLED": // 초대 보낸 유저가 취소하는 경우(다른 건 초대 받은 유저가 응답하는 형태)
                 if(!invitation.getInviterId().equals(userId)) {
                     throw new ApiException(ErrorCode.AUTH_004);
                 }
@@ -170,6 +177,7 @@ public class InvitationService {
                 throw new ApiException(ErrorCode.AUTH_004);
         }
 
+        // Response 리턴
         MemberInviteResponseData data = new MemberInviteResponseData();
         data.setMessage(message);
         data.setInvitationId(invitationId);

@@ -2,6 +2,7 @@ package com.hasi.service.workspace.member;
 
 import com.hasi.collab.api.WorkspaceMemberApi;
 import com.hasi.collab.model.*;
+import com.hasi.service.workspace.channel.ChannelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import java.util.List;
 public class MemberController implements WorkspaceMemberApi {
     private final MemberService memberService;
     private final InvitationService invitationService;
+    private final ChannelService channelService;
 
     @Override
     public ResponseEntity<WorkspaceMemberInviteResponse> inviteWorkspaceMember(Long workspaceId, WorkspaceMemberInviteRequest request) {
@@ -57,6 +59,17 @@ public class MemberController implements WorkspaceMemberApi {
         response.setError(null);
 
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<ChannelMemberJoinResponse> joinChannelMembers(Long workspaceId, Long channelId) {
+        ChannelMemberJoinResponseData data = channelService.joinChannelMembers(workspaceId, channelId);
+        ChannelMemberJoinResponse response = new ChannelMemberJoinResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
 }

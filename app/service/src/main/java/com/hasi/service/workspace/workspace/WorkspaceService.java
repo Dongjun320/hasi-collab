@@ -76,7 +76,7 @@ public class WorkspaceService {
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001)); // 추후 커스텀 에러 작성 및 교체 필요
 
-        // data에 워크스페이스 DB를 담음
+        // 해당 워크스페이스의 값을 DATA에 넣음
         WorkspaceData data = new WorkspaceData();
         data.setId(workspace.getId());
         data.setName(workspace.getName());

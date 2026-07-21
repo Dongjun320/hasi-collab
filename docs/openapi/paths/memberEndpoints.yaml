@@ -255,6 +255,43 @@ paths:
                 $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
 
   /api/workspaces/{workspaceId}/channels/{channelId}/members:
+    post:
+      summary: "채널 멤버 참가"
+      tags:
+        - WorkspaceMember
+      operationId: joinChannelMembers
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '201':
+          description: "채널 멤버 참가 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/ChannelMemberJoinResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
     get:
       summary: "채널 멤버 목록 조회"
       tags:
