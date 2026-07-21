@@ -48,7 +48,7 @@ const LoginPage = () => {
     setToast({ open: true, message, type })
   }
 
-  // 로그인 로직
+  // 로그인 로직 (메인 폼에서 인증 성공 시에만 navigate 이동)
   const handleLogin = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
@@ -104,7 +104,7 @@ const LoginPage = () => {
     triggerToast("認証が完了しました。", "success")
   }
 
-  // 회원가입 제출 및 자동 로그인
+  // 회원가입 제출 (완료 시 모달 닫기 및 메인 폼에 정보 채우기)
   const handleSignUpSubmit = async () => {
     if (!signUpEmail.trim() || !signUpPw.trim() || !signUpPwConfirm.trim()) {
       triggerToast("すべての情報を入力してください。", "warning")
@@ -119,7 +119,6 @@ const LoginPage = () => {
       return
     }
 
-    // 회원가입 API 호출
     const { error } = await api.POST('/api/auth/register', {
       body: { email: signUpEmail, password: signUpPw, nickname: signUpNickname }
     })
@@ -129,28 +128,21 @@ const LoginPage = () => {
       return
     }
 
-    triggerToast("会員登録が完了しました。自動でログインします。", "success")
+    triggerToast("会員登録が完了しました。ログインしてください。", "success")
 
-    // 회원가입 성공 직후 로그인 API 자동 호출
-    setLoadingOpen(true)
-    const loginRes = await api.POST('/api/auth/login', { body: { email: signUpEmail, password: signUpPw } })
+    // 사용자가 바로 로그인할 수 있도록 메인 폼에 이메일/비밀번호 자동 입력
+    setEmail(signUpEmail)
+    setPassword(signUpPw)
 
-    if (loginRes.data && loginRes.data.accessToken) {
-      setAuth(loginRes.data.user as any, loginRes.data.accessToken, loginRes.data.refreshToken)
-      setSignUpOpen(false)
+    // 모달 닫기
+    setSignUpOpen(false)
 
-      // 상태 초기화
-      setSignUpEmail(''); setSignUpNickname(''); setSignUpPw(''); setSignUpPwConfirm(''); setSignUpCode('');
-      setIsCodeSent(false); setIsVerified(false);
-
-      setTimeout(() => navigate('/WorkspaceHome'), 1200)
-    } else {
-      setLoadingOpen(false)
-      triggerToast("自動ログインに失敗しました。ログイン画面からお試しください。", "warning")
-    }
+    // 상태 초기화
+    setSignUpEmail(''); setSignUpNickname(''); setSignUpPw(''); setSignUpPwConfirm(''); setSignUpCode('');
+    setIsCodeSent(false); setIsVerified(false);
   }
 
-  // 비밀번호 재설정 이메일 발송 (API 경로 수정: /api/auth/password/send)
+  // 비밀번호 재설정 이메일 발송
   const handleFindSendEmail = async () => {
     if (!findEmail.trim()) {
       triggerToast("E-mailを入力してください。", "warning")
@@ -167,7 +159,7 @@ const LoginPage = () => {
     triggerToast("メールの送信が完了しました。", "success")
   }
 
-  // 비밀번호 재설정 코드 확인 (API 경로 수정: /api/auth/password/verify)
+  // 비밀번호 재설정 코드 확인
   const handleFindVerifyCode = async () => {
     if (!findCode.trim()) {
       triggerToast("認証コードを入力してください。", "warning")
@@ -182,7 +174,7 @@ const LoginPage = () => {
     triggerToast("認証が完了しました。", "success")
   }
 
-  // 비밀번호 재설정 제출 및 자동 로그인
+  // 비밀번호 재설정 제출 (완료 시 모달 닫기 및 메인 폼에 정보 채우기)
   const handleResetPasswordSubmit = async () => {
     if (!findEmail.trim() || !newPw.trim() || !newPwConfirm.trim()) {
       triggerToast("すべての情報を入力してください。", "warning")
@@ -197,9 +189,8 @@ const LoginPage = () => {
       return
     }
 
-    // 비밀번호 재설정 API 호출
     const { error } = await api.POST('/api/auth/password/reset' as any, {
-      body: { email: findEmail, password: newPw } as any // newPassword를 password로 변경
+      body: { email: findEmail, newPassword: newPw } as any
     })
 
     if (error) {
@@ -207,25 +198,18 @@ const LoginPage = () => {
       return
     }
 
-    triggerToast("パスワードが変更されました。自動でログインします。", "success")
+    triggerToast("パスワードが変更されました。新しいパスワードでログインしてください。", "success")
 
-    // 비밀번호 변경 성공 직후 로그인 API 자동 호출
-    setLoadingOpen(true)
-    const loginRes = await api.POST('/api/auth/login', { body: { email: findEmail, password: newPw } })
+    // 사용자가 바로 로그인할 수 있도록 메인 폼에 이메일/비밀번호 자동 입력
+    setEmail(findEmail)
+    setPassword(newPw)
 
-    if (loginRes.data && loginRes.data.accessToken) {
-      setAuth(loginRes.data.user as any, loginRes.data.accessToken, loginRes.data.refreshToken)
-      setFindOpen(false)
+    // 모달 닫기
+    setFindOpen(false)
 
-      // 상태 초기화
-      setFindEmail(''); setFindCode(''); setNewPw(''); setNewPwConfirm('');
-      setIsFindCodeSent(false); setIsFindVerified(false);
-
-      setTimeout(() => navigate('/WorkspaceHome'), 1200)
-    } else {
-      setLoadingOpen(false)
-      triggerToast("自動ログインに失敗しました。ログイン画面からお試しください。", "warning")
-    }
+    // 상태 초기화
+    setFindEmail(''); setFindCode(''); setNewPw(''); setNewPwConfirm('');
+    setIsFindCodeSent(false); setIsFindVerified(false);
   }
 
   return (
