@@ -86,6 +86,15 @@ paths:
   /api/invitations/{invitationId}:
     $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1invitations~1{invitationId}"
 
+  /api/friends:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends"
+
+  /api/friends/{friendId}:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1{friendId}"
+
+  /api/users/search:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1search"
+
 components:
   securitySchemes:
     BearerAuth:

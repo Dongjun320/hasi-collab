@@ -1,0 +1,73 @@
+paths:
+  /api/friends:
+    get:
+      operationId: getFriends
+      summary: "친구 목록 조회"
+      tags: [Friend]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: "조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/FriendResponseBodies.yaml#/components/schemas/FriendResponse"
+
+  /api/friends/{friendId}:
+    post:
+      operationId: addFriend
+      summary: "친구 추가"
+      tags: [Friend]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: friendId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: "추가 성공"
+
+    delete:
+      operationId: removeFriend
+      summary: "친구 삭제"
+      tags: [Friend]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: friendId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: "삭제 성공"
+
+  /api/users/search:
+    get:
+      operationId: searchUser
+      summary: "닉네임으로 유저 검색 (친구 추가용)"
+      tags: [ User ]
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: nickname
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "검색 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/userResponseBodies.yaml#/components/schemas/UserSearchResponse"
+        "404":
+          description: "해당 닉네임의 유저가 없음"

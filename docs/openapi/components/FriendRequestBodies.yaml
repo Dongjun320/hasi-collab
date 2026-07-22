@@ -1,0 +1,12 @@
+components:
+  schemas:
+    FriendAddRequest:
+      type: object
+      required:
+        - friendId
+      description: "친구 추가 시 필요 정보"
+      properties:
+        friendId:
+          type: integer
+          format: int64
+          description: "추가할 친구의 유저 ID"

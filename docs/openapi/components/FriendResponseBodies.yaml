@@ -1,0 +1,25 @@
+components:
+  schemas:
+    FriendResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: "친구 유저 ID"
+        name:
+          type: string
+          description: "친구 닉네임"
+        status:
+          type: string
+          enum: [online, away, busy, offline]
+          description: "상태 코드"
+        statusMessage:
+          type: string
+          nullable: true
+          description: "상태 메시지"
+
+    FriendListResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/FriendResponse"

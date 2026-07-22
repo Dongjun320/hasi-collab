@@ -32,5 +32,3 @@ components:
         action:
           type: string
           enum: [ACCEPTED, DECLINED, CANCELLED]
-
-
