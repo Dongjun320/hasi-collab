@@ -18,6 +18,6 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "../components/userResponseBodies.yaml#/components/schemas/UserSearchResponse"
+                $ref: "../components/UserResponseBodies.yaml#/components/schemas/UserSearchResponse"
         "404":
           description: "해당 닉네임의 유저가 없음"
