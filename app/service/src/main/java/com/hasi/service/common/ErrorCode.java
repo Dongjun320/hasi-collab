@@ -20,7 +20,31 @@ public enum ErrorCode {
     VERIFY_002(HttpStatus.FORBIDDEN, "VERIFY_002", "이메일 인증이 필요합니다"),
 
     // VALID
-    VALID_001(HttpStatus.BAD_REQUEST,  "VALID_001", "입력값이 올바르지 않습니다");
+    VALID_001(HttpStatus.BAD_REQUEST,  "VALID_001", "입력값이 올바르지 않습니다"),
+
+    // SERVER
+    SERVER_001(HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_001", "서버 내부 오류가 발생하였습니다"),
+
+    // WORKSPACE
+    WS_001(HttpStatus.CONFLICT, "WS_001", "동일한 이름의 워크스페이스가 존재합니다"),
+    WS_002(HttpStatus.NOT_FOUND, "WS_002", "워크스페이스를 찾을 수 없습니다"),
+    WS_003(HttpStatus.BAD_REQUEST, "WS_003", "워크스페이스 입력값이 유효하지 않습니다"),
+
+    // CHANNEL
+    CH_001(HttpStatus.CONFLICT, "CH_001", "동일한 이름의 채널이 존재합니다"),
+    CH_002(HttpStatus.NOT_FOUND, "CH_002", "채널을 찾을 수 없습니다"),
+    CH_003(HttpStatus.BAD_REQUEST, "CH_003", "채널 입력값이 유효하지 않습니다"),
+    CH_004(HttpStatus.CONFLICT, "CH_004", "하위 채널이 있어 삭제할 수 없습니다"),
+    CH_005(HttpStatus.CONFLICT, "CH_005", "이미 채널에 참가한 멤버입니다"),
+
+    // MEMBER
+    MBR_001(HttpStatus.NOT_FOUND, "MBR_001", "해당 닉네임의 사용자를 찾을 수 없습니다"),
+    MBR_002(HttpStatus.CONFLICT, "MBR_002", "이미 워크스페이스에 속한 멤버입니다"),
+    MBR_003(HttpStatus.NOT_FOUND, "MBR_003", "멤버를 찾을 수 없습니다"),
+    MBR_004(HttpStatus.BAD_REQUEST, "MBR_004", "멤버 입력값이 유효하지 않습니다"),
+    MBR_005(HttpStatus.NOT_FOUND, "MBR_005", "워크스페이스 또는 채널 또는 멤버를 찾을 수 없습니다"),
+    MBR_006(HttpStatus.NOT_FOUND, "MBR_006", "초대를 찾을 수 없습니다"),
+    MBR_007(HttpStatus.CONFLICT, "MBR_007", "초대 대기 중인 사용자입니다");
 
     private final HttpStatus status;
     private final String code;

@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,17 +30,12 @@ public class ChannelService {
     @Transactional
     public ChannelData createWorkspaceChannel(Long workspaceId, ChannelCreateRequest request) {
 
-        // 현재 id를 JWT SecurityContextHolder에서 추출
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if(authentication == null || authentication.getName() == null) {
-            throw new ApiException(ErrorCode.AUTH_003); // 추후 커스텀 에러 작성 및 교체 필요
-        }
-        Long uid = Long.valueOf(authentication.getName());
+        Long uid = getCurrentUserId();
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
         if(!workspaceMember.getRole().name().equals("owner")) {
-            throw new ApiException(ErrorCode.AUTH_001);
+            throw new ApiException(ErrorCode.AUTH_004);
         }
 
         Long parentId = null;
@@ -72,7 +68,7 @@ public class ChannelService {
         data.setParentId(JsonNullable.of(channel.getParentId()));
         data.setName(channel.getName());
         data.setIsPrivate(channel.isPrivate());
-        data.setCreatedAt(channel.getCreatedAt().atOffset(java.time.ZoneOffset.of("+09:00")));
+        data.setCreatedAt(channel.getCreatedAt().atOffset(ZoneOffset.UTC));
 
         return data;
     }
@@ -81,7 +77,7 @@ public class ChannelService {
 
         // 해당 Channel 을 찾고, channelMember 수를 count하기 위한 channelMember 리스트를 찾음
         Channel channel = channelRepository.findByWorkspaceIdAndId(workspaceId, channelId)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+                .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
 
         List<ChannelMember> channelMembers = channelMemberRepository.findByChannelId(channelId);
 
@@ -92,7 +88,7 @@ public class ChannelService {
         data.setParentId(JsonNullable.of(channel.getParentId()));
         data.setName(channel.getName());
         data.setIsPrivate(channel.isPrivate());
-        data.setCreatedAt(channel.getCreatedAt().atOffset(java.time.ZoneOffset.of("+09:00")));
+        data.setCreatedAt(channel.getCreatedAt().atOffset(ZoneOffset.UTC));
         data.setMemberCount(channelMembers.size());
 
         return data;
@@ -113,7 +109,7 @@ public class ChannelService {
             item.setParentId(JsonNullable.of(channel.getParentId()));
             item.setName(channel.getName());
             item.setIsPrivate(channel.isPrivate());
-            item.setCreatedAt(channel.getCreatedAt().atOffset(java.time.ZoneOffset.of("+09:00")));
+            item.setCreatedAt(channel.getCreatedAt().atOffset(ZoneOffset.UTC));
 
             data.add(item);
         }
@@ -122,21 +118,17 @@ public class ChannelService {
 
     @Transactional
     public ChannelData patchWorkspaceChannel(Long workspaceId, Long channelId, ChannelPatchRequest request) {
-        // 현재 id를 JWT SecurityContextHolder에서 추출
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if(authentication == null || authentication.getName() == null) {
-            throw new ApiException(ErrorCode.AUTH_003); // 추후 커스텀 에러 작성 및 교체 필요
-        }
-        Long uid = Long.valueOf(authentication.getName());
+
+        Long uid = getCurrentUserId();
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
         if(!workspaceMember.getRole().name().equals("owner")) {
-            throw new ApiException(ErrorCode.AUTH_001);
+            throw new ApiException(ErrorCode.AUTH_004);
         }
 
         Channel channel = channelRepository.findByWorkspaceIdAndId(workspaceId, channelId)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+                .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
 
         if(request.getName() != null) {
             channel.updateName(request.getName());
@@ -151,37 +143,33 @@ public class ChannelService {
         data.setParentId(JsonNullable.of(channel.getParentId()));
         data.setName(channel.getName());
         data.setIsPrivate(channel.isPrivate());
-        data.setCreatedAt(channel.getCreatedAt().atOffset(java.time.ZoneOffset.of("+09:00")));
+        data.setCreatedAt(channel.getCreatedAt().atOffset(ZoneOffset.UTC));
 
         return data;
     }
 
     @Transactional
     public ChannelDeleteResponseData deleteWorkspaceChannel(Long workspaceId, Long channelId) {
-        // 현재 id를 JWT SecurityContextHolder에서 추출
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if(authentication == null || authentication.getName() == null) {
-            throw new ApiException(ErrorCode.AUTH_003); // 추후 커스텀 에러 작성 및 교체 필요
-        }
-        Long uid = Long.valueOf(authentication.getName());
+
+        Long uid = getCurrentUserId();
 
         // 워크스페이스에 소속한 멤버가 아니면 접근불가
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
         // owner가 아니면 삭제 불가
         if(!workspaceMember.getRole().name().equals("owner")) {
-            throw new ApiException(ErrorCode.AUTH_001);
+            throw new ApiException(ErrorCode.AUTH_004);
         }
 
         // 하위 채널이 있을 경우 삭제 불가
         List<Channel> subChannels = channelRepository.findByParentId(channelId);
         if(!subChannels.isEmpty()) {
-            throw new ApiException(ErrorCode.AUTH_001);
+            throw new ApiException(ErrorCode.CH_004);
         }
 
         Channel channel = channelRepository.findByWorkspaceIdAndId(workspaceId, channelId)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+                .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
 
         channelMemberRepository.deleteByChannelId(channel.getId());
         channelRepository.delete(channel);
@@ -193,19 +181,15 @@ public class ChannelService {
     }
 
     public ChannelMemberJoinResponseData joinChannelMembers(Long workspaceId, Long channelId) {
-        // 현재 id를 JWT SecurityContextHolder에서 추출
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if(authentication == null || authentication.getName() == null) {
-            throw new ApiException(ErrorCode.AUTH_003); // 추후 커스텀 에러 작성 및 교체 필요
-        }
-        Long uid = Long.valueOf(authentication.getName());
+
+        Long uid = getCurrentUserId();
 
         if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, uid)) {
             throw new ApiException(ErrorCode.AUTH_004); // 워크스페이스 멤버가 아님
         }
 
         if (channelMemberRepository.existsByChannelIdAndUserId(channelId, uid)) {
-            throw new ApiException(ErrorCode.AUTH_001); // 이미 참가한 멤버
+            throw new ApiException(ErrorCode.CH_005); // 이미 참가한 멤버
         }
 
         ChannelMember channelMember = ChannelMember.builder()
@@ -221,5 +205,12 @@ public class ChannelService {
         return data;
     }
 
-
+    private Long getCurrentUserId() {
+        // 현재 userId를 JWT SecurityContextHolder에서 추출
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null || authentication.getName() == null) {
+            throw new ApiException(ErrorCode.AUTH_003);
+        }
+        return Long.valueOf(authentication.getName());
+    }
 }
