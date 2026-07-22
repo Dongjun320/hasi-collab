@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
 
   postgres:
@@ -11,11 +9,26 @@ services:
       POSTGRES_USER: hasi
       POSTGRES_PASSWORD: hasi1234
     ports:
-      - "5432:5432"
+      - "8200:5432"
 
   redis:
     image: redis:7-alpine
     container_name: hasi-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "8201:6379"
+
+  rabbitMq:
+    build:
+      context: ./docker/rabbitmq
+    image: hasi-rabbitmq:stomp
+    container_name: rabbit-mq
+    restart: no
+    ports:
+      - "8202:5672" # AMQP
+      - "8203:15672" # 관리 UI
+      - "8204:61613" # STOMP
+    environment:
+      # 테스트용 유저.
+      RABBITMQ_DEFAULT_USER: "hasi"
+      RABBITMQ_DEFAULT_PASS: "1234"

@@ -1,0 +1,34 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: hasi-messenger
+
+  # ── PostgreSQL (service와 같은 DB 공유) ──────────────────
+  datasource:
+    url: jdbc:postgresql://localhost:8200/collaboration_db
+    username: hasi
+    password: hasi1234
+    driver-class-name: org.postgresql.Driver
+
+  # ── JPA / Hibernate ───────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+app:
+  broker:
+    relay-host: localhost
+    relay-port: 8204
+    login: hasi
+    passcode: "1234"
+
+# ── JWT 검증 (service와 동일한 시크릿 사용) ───────────────
+jwt:
+  secret: 1234567890987654323456789087654323456789

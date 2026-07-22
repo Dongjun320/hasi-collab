@@ -1,95 +1,318 @@
-# 개발 REAMDE
+# Hasi Collab Platform
 
-- [개발 REAMDE](#개발-reamde)
-  - [디렉터리 구조](#디렉터리-구조)
-  - [백엔드 설정/Dependency 설명](#백엔드-설정dependency-설명)
-  - [프로젝트 구조](#프로젝트-구조)
+[![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/Dongjun320/hasi-collab/blob/main/docs/readme/README.en.md)
+[![日本語](https://img.shields.io/badge/lang-日本語-green.svg)](https://github.com/Dongjun320/hasi-collab/blob/main/README.md)
+[![한국어](https://img.shields.io/badge/lang-한국어-yellow.svg)](https://github.com/Dongjun320/hasi-collab/blob/main/docs/readme/README.ko.md)
 
-배포 전까지 가이드로 사용할 README입니다. 프로젝트 구조, 공유/공지사항, 기타 필요한 내용을 적어주시기 바랍니다. 배포 시 `README.ja.md`를 `README.md`로 변경 후 상단 다국어 부분 수정 바랍니다.
+- [Hasi Collab Platform](#hasi-collab-platform)
+  - [概要](#概要)
+    - [こんなチームのために作りました](#こんなチームのために作りました)
+  - [主な機能](#主な機能)
+    - [アカウント · 認証](#アカウント--認証)
+    - [ワークスペース](#ワークスペース)
+    - [メンバー · 招待](#メンバー--招待)
+    - [チャンネルチャット](#チャンネルチャット)
+    - [ダイレクトメッセージ](#ダイレクトメッセージ)
+    - [通知 · フレンド](#通知--フレンド)
+    - [メール連携](#メール連携)
+  - [技術スタック](#技術スタック)
+  - [システム構成](#システム構成)
+    - [サービス構成](#サービス構成)
+    - [データの流れ](#データの流れ)
+    - [フォルダ構成](#フォルダ構成)
+  - [はじめかた](#はじめかた)
+    - [事前準備](#事前準備)
+    - [実行](#実行)
+    - [テストアカウント](#テストアカウント)
+  - [開発ガイド](#開発ガイド)
+    - [API 仕様の管理](#api-仕様の管理)
+    - [状態管理のルール](#状態管理のルール)
+    - [環境変数](#環境変数)
+  - [進捗状況](#進捗状況)
+  - [チーム](#チーム)
 
-## 디렉터리 구조
+## 概要
 
-[draw.io 구조도](https://app.diagrams.net/#G1COs3ki7hNw0kXD8R9KgHeJLCuKDZ_73y#%7B%22pageId%22%3A%226SzYYcsKjpKCU_VJULNv%22%7D)(구글 로그인하기)
+Hasi Collab は **チームをひとつにまとめるプラットフォーム** です。
 
-Mono Repo에 /client, /service, /messenger로 나눴습니다.
+メッセンジャーはメッセンジャー、タスクは別のツールにばらばら、という状況を解決するために作りました。ひとつのワークスペースで会話し、その会話がそのまま業務カードになり、チーム全体が同じ文脈を共有することを目指しています。
 
-`/client`: 프론트엔드. React 기반.
+### こんなチームのために作りました
 
-`/service`: 메인 백엔드. 유저 인증, JWT/Refresh Token 생성, 
+- 複数のツールを行き来して **文脈が途切れてしまう** チーム
+- 会話は多いのに **誰が何をしているのか曖昧になる** チーム
 
-`/messenger`: 메신저 서비스. STOMP를 받고 authorization 등 확인 후 통신 설정
+---
 
-PostgreSQL DB, Redis 등은 Docker 형태로 Railway에서 시작할 생각입니다. JPA 등을 이용해서 PostgreSQL 초기화 예정입니다.
+## 主な機能
 
-## 백엔드 설정/Dependency 설명
+### アカウント · 認証
 
-[Spring Initializr](https://start.spring.io/)로 템플릿 생성했습니다. 프로젝트별 사용된 dependency는 `pom.xml`을 참고해주세요
+メール認証を経てアカウントを作成し、発行されたトークンでログイン状態を維持します。
 
-백엔드 코드는 `<백엔드>/src/main/java/<group 이름>/<package 이름>`에 있습니다. 지저분하긴 하지만 Spring Boot 방식이고 IDE에서 자동으로 collapse 해 줍니다!
+| 機能 | ユーザー視点の説明 |
+| --- | --- |
+| 会員登録 | メールアドレス入力 → 認証コード受信 → コード確認 → ニックネーム · パスワード設定 |
+| メール認証 | 6桁のコードがメールで送信され、10分間有効です |
+| ログイン | ログイン後に発行されたトークンにより、次回接続時は自動ログインされます |
+| ソーシャルログイン | Google · LINE · Amazon · X アカウントで手軽に始められます |
+| パスワード再設定 | 登録したメールアドレスに認証コードを受け取り、新しいパスワードに変更します |
+| ログアウト | サーバー側の認証情報を失効させ、ローカルの状態を初期化します |
 
-설정:
+### ワークスペース
 
-- Java 25(LTS): 가장 최신 버전의 Java LTS입니다.
-- Maven: 프로젝트가 작으므로 Gradle을 쓸 필요 없이 간단하게
-- Group명: com.hasi로 했습니다.
-- Package명: 각각 service, messenger입니다.
+チーム単位の作業空間です。ユーザーは **自分が所属するワークスペースのみ** を閲覧できます。
 
-공통 Dependencies:
+- ワークスペースを作成すると、作成者が自動的にオーナー(OWNER)になります
+- ホーム画面で参加中のワークスペースを一覧で確認し、切り替えられます
+- 各ワークスペースは独立したチャンネル · メンバー · ボードを持ちます
 
-- Spring Web: RESTful, Spring MVC 기반 웹앱 생성 
-- Spring Security: Authentication & Authorization 관리. (비밀번호 Hashing/Salting 등 포함)
-- OAuth2 Resource Server: JWT 확인/관리
-- Spring Data Redis (Access+Driver): Redis 연결에 사용
-- SpringDoc OpenAPI: API 문서화
-- Lombok: 보일러플레이트 최소화(e.g, Getter, Setter 등 자동설정)
-- Validation: Hibernate Validator.
-- Spring Data JPA: Spring Data + Hibernate를 사용하여 SQL DB에 데이터 저장(JDBC-SQL 쿼리 직접 쓰기/JPA-Java Class를 @Entity해서 생성)
-- PostgreSQL Driver: PostgreSQL 연결에 사용
+### メンバー · 招待
 
-`/messenger` Dependencies:
+- **メンバー一覧** — 参加者とそれぞれの役割(オーナー / 管理者 / メンバー)、接続状態を確認します
+- **招待** — ニックネームでチームメンバーを招待し、招待された人は承諾 · 拒否ができます
+- **権限管理** — オーナー · 管理者はメンバーの役割を変更したり、退出させたりできます
 
-- WebSocket: SockJS와 STOMP 이용한 WebSocket 앱 만들기
+### チャンネルチャット
 
-기타:
+トピックごとのチャンネルで、チームがリアルタイムに会話します。
 
-- JUnit: Java의 테스팅 suite. 기본적으로 포함됨.
+- チャンネルに入ると **過去の会話が自動的に読み込まれます**
+- メッセージはリアルタイムに届き、再読み込みは不要です
+- 送信したメッセージを **編集 · 削除** でき、削除されたメッセージは跡だけが残ります
 
-## 프로젝트 구조
+### ダイレクトメッセージ
 
-## 초기 세팅 사항
-hasi-collab 초기 세팅 안내
-처음 시작하는 법
-1. 저장소 클론
+特定のチームメンバーと 1:1 で会話します。相手を選ぶと二人だけの空間が開き、チャンネルと同じくリアルタイムの送受信 · 編集 · 削除に対応しています。
 
-git clone [저장소 주소]
+### 通知 · フレンド
+
+- **通知** — 新着メッセージ · メンション · 招待 · システムのお知らせを一箇所で確認し、既読にできます
+- **フレンド** — よくやり取りするチームメンバーをフレンドに登録して、接続状態と未読メッセージをすばやく確認します
+
+### メール連携
+
+外部のメールアカウント(Gmail など)を連携して、アプリを離れずにメールを確認します。
+
+---
+
+## 技術スタック
+
+| 領域 | 技術 |
+| --- | --- |
+| フロントエンド | React 18, TypeScript, Vite, Tailwind CSS v4, Zustand, React Router |
+| バックエンド | Spring Boot 4, Spring Security, Spring Data JPA |
+| リアルタイム通信 | WebSocket, STOMP, RabbitMQ |
+| データベース | PostgreSQL 15, Redis 7 |
+| API 管理 | OpenAPI 3, openapi-typescript, openapi-generator |
+| インフラ | Docker Compose |
+| 国際化 | i18next (韓国語 / 日本語) |
+
+---
+
+## システム構成
+
+### サービス構成
+
+3つのアプリケーションと3つのインフラコンテナで構成されます。
+
+| 構成要素 | ポート | 役割 |
+| --- | --- | --- |
+| `app/client` | 5173 | Web フロントエンド (Vite Dev Server) |
+| `app/service` | 8080 | 認証 · ワークスペース · メンバー · ボードの REST API |
+| `app/messenger` | 8081 | チャット · DM のリアルタイム処理 (STOMP) |
+| PostgreSQL | 8200 | ユーザー · ワークスペース · メッセージの永続化 |
+| Redis | 8201 | 認証コード · リフレッシュトークン · セッションキャッシュ |
+| RabbitMQ | 8202 / 8203 / 8204 | STOMP メッセージブローカー (AMQP / 管理 UI / STOMP) |
+
+> REST API とリアルタイムメッセージングを **別々のアプリケーションに分離** し、チャットのトラフィックが通常の API レスポンスに影響しないよう設計しています。
+
+### データの流れ
+
+フロントエンドは単方向の流れに従います。
+
+```
+network  →  hook  →  store  →  component
+(通信)      (調整)    (状態)     (画面)
+```
+
+| レイヤー | 役割 | 例 |
+| --- | --- | --- |
+| network | サーバーとのやり取りのみを担当 | `api/client.ts`, `api/stomp.ts`, `api/messenger.ts` |
+| hook | 通信結果を状態に反映、購読 · 解除の管理 | `useChannelMessage` |
+| store | グローバルな状態の保持 | `authStore`, `channelStore`, `workspaceStore` |
+| component | 状態を購読して画面を描画 | `ChannelsPage`, `WorkspaceHome` |
+
+- 画面は **store だけを見ます。** データがリアルタイム(STOMP)から来たのか、履歴(REST)から来たのかを区別しません
+- メッセージ送信時は画面を直接更新せず、サーバーからのブロードキャストを受けて反映することで **すべての参加者の画面が同一** になるようにしています
+
+### フォルダ構成
+
+```
+hasi-collab/
+├── app/
+│   ├── client/                 # React フロントエンド
+│   │   └── src/
+│   │       ├── api/            # 通信レイヤー (client.ts, stomp.ts, messenger.ts)
+│   │       ├── components/     # 共通 UI コンポーネント
+│   │       ├── hooks/          # 調整レイヤー (useAuth, useChannelMessage)
+│   │       ├── pages/          # 画面単位のコンポーネント
+│   │       ├── store/          # Zustand グローバル状態
+│   │       └── types/          # openapi.ts (自動生成)
+│   ├── service/                # Spring Boot REST API (8080)
+│   │   └── src/main/java/com/hasi/service/
+│   │       ├── auth/           # 認証 · ソーシャルログイン
+│   │       ├── workspace/      # ワークスペース · メンバー · チャンネル · ボード
+│   │       ├── mail/           # メール連携
+│   │       └── common/         # 共通レスポンス · 例外処理
+│   └── messenger/              # Spring Boot リアルタイムサーバー (8081)
+│       └── src/main/java/com/hasi/messenger/
+│           ├── channel/        # チャンネルメッセージ
+│           └── dm/             # ダイレクトメッセージ
+├── docs/
+│   ├── openapi/                # API 仕様 (単一ソース)
+│   │   ├── openapi.yaml        # ルート仕様
+│   │   ├── paths/              # エンドポイント定義
+│   │   └── components/         # リクエスト · レスポンス · エラースキーマ
+│   ├── readme/                 # 多言語 README
+│   └── tutorials/              # チームオンボーディング文書
+├── docker-compose.yml          # インフラコンテナ
+├── start.sh                    # 全体実行スクリプト
+└── seed.sh                     # テストデータ投入
+```
+
+---
+
+## はじめかた
+
+### 事前準備
+
+- Docker Desktop
+- JDK 25 以上
+- Node.js 20 以上
+- Git Bash (Windows の場合)
+
+### 実行
+
+```bash
+# 1. リポジトリのクローン
+git clone https://github.com/Dongjun320/hasi-collab.git
 cd hasi-collab
-2. Docker 실행 (PostgreSQL + Redis)
 
-docker compose up -d
-3. 프론트엔드 의존성 설치
+# 2. 環境変数の設定 (チームから受け取った値を入力)
+#    app/service/.env を作成
 
-cd client
-npm install
-개발 시작하는 법
-프론트엔드만 작업할 때 (UI 작업)
+# 3. 全体実行 (インフラ + バックエンド + フロントエンド)
+bash start.sh
+```
 
-cd client
-npm run dev
-→ Docker, Spring Boot 안 켜도 됩니다. 더미 데이터로 UI 개발 가능합니다.
-→ 브라우저에서 http://localhost:5173 접속
+実行後、ブラウザで `http://localhost:5173` にアクセスします。
 
-백엔드 작업하거나 API 연동할 때
+| アドレス | 説明 |
+| --- | --- |
+| http://localhost:5173 | Web アプリケーション |
+| http://localhost:8080/swagger-ui.html | REST API ドキュメント |
+| http://localhost:8203 | RabbitMQ 管理 UI |
 
-# 1. Docker 먼저 켜기
-docker compose up -d
+### テストアカウント
 
-# 2. IntelliJ에서 ServiceApplication 또는 MessengerApplication 실행
-개발 환경 포트 정리
-서비스	포트
-프론트엔드 (Vite)	5173
-백엔드 (service)	8080
-메신저 (messenger)	8081
-PostgreSQL	5432
-Redis	6379
+ローカル DB にテストアカウントとワークスペースを投入します。
 
-## Reference
+```bash
+bash seed.sh
+```
+
+| アカウント | パスワード | 役割 |
+| --- | --- | --- |
+| test_user1@example.com | 12345678 | test_workspace のオーナー |
+| test_user2@example.com | 12345678 | メンバー |
+| test_user3@example.com | 12345678 | メンバー |
+
+> 複数回実行しても重複して作成されません。コラボレーション機能をテストする際は、**通常ウィンドウとシークレットウィンドウで別々のアカウントにログイン** すると便利です。
+
+---
+
+## 開発ガイド
+
+### API 仕様の管理
+
+`docs/openapi/openapi.yaml` が **API の単一ソース** です。仕様を修正すると、フロントエンドの型とバックエンドのインターフェースが自動生成されます。
+
+```bash
+# フロントエンドの型を再生成 (app/client)
+npm run generate:api
+
+# バックエンドのインターフェースを再生成 (app/service)
+./mvnw clean compile
+```
+
+> `openapi.ts` は自動生成ファイルのため Git には含まれません。仕様が変更されたら **各自で再生成** してください。
+
+### 状態管理のルール
+
+| ストア | 担当ドメイン |
+| --- | --- |
+| `authStore` | ログインユーザー · トークン |
+| `workspaceStore` | ワークスペース一覧 · 現在のワークスペース · チャンネル |
+| `memberStore` | ワークスペースのメンバー一覧 |
+| `channelStore` | チャンネルメッセージ |
+| `dmStore` | ダイレクトメッセージ |
+| `friendStore` | フレンド一覧 |
+| `notificationStore` | 通知 |
+| `uiStore` | サイドバー · パネルなどの画面状態 |
+
+- 複数の画面で共有する状態のみをストアに置きます。ひとつの画面でしか使わない値はコンポーネントのローカル状態で管理します
+- 通信レイヤー(`api/`)はストアを認識しません。状態への反映は **フックで** 処理します
+
+### 環境変数
+
+`app/service/.env` に次の値が必要です。実際の値はチームから非公開で受け取ります。
+
+```bash
+# ソーシャルログイン
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+LINE_CLIENT_ID=
+LINE_CLIENT_SECRET=
+AMAZON_CLIENT_ID=
+AMAZON_CLIENT_SECRET=
+TWITTER_CLIENT_ID=
+TWITTER_CLIENT_SECRET=
+
+# メール送信
+MAIL_USERNAME=
+MAIL_PASSWORD=
+```
+
+> `.env` は Git に含まれません。絶対にコミットしないでください。
+
+---
+
+## 進捗状況
+
+| 機能 | バックエンド | フロントエンド |
+| --- | --- | --- |
+| 会員登録 · メール認証 | 完了 | 完了 |
+| ログイン · ログアウト | 完了 | 完了 |
+| ソーシャルログイン | 完了 | 完了 |
+| パスワード再設定 | 完了 | 進行中 |
+| ワークスペース | 完了 | 進行中 |
+| メンバー · 招待 | 完了 | 予定 |
+| チャンネルチャット | 完了 | 進行中 |
+| ダイレクトメッセージ | 完了 | 予定 |
+| カンバンボード | 進行中 | 予定 |
+| 通知 · フレンド | 予定 | 進行中 |
+| メール連携 | 完了 | 完了 |
+
+---
+
+## チーム
+
+| 役割 | 担当 |
+| --- | --- |
+| チームリーダー · API 設計 · 状態管理 | キム・ドンジュン |
+| 認証バックエンド · ソーシャルログイン | キム・ジファン |
+| ワークスペース · メンバー · チャンネルのバックエンド | パク・ジョンソ |
+| リアルタイムメッセージング · インフラ | チョン・ジンウ |
+| 認証フロントエンド · デザインシステム | パク・ギュテ |
+| ホーム · 通知 · フレンドのフロントエンド | キム・サンヒョン |

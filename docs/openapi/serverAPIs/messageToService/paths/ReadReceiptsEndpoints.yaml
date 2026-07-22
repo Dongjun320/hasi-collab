@@ -1,0 +1,25 @@
+paths:
+  # 마지막으로 읽음 필드가 있는 테이블에 작업. 엔드포인트 변경 가능
+  /api/channels/{channelId}:
+    parameters:
+      - name: channelId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    patch:
+      summary: "프론트에서의 기독 기능 구현을 위해, 마지막으로 읽은 메시지 id 업데이트"
+      tags:
+        - Channel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../components/ReadReceiptRequestBodies.yaml#/components/schemas/updateReadReceipt"
+      responses:
+        200:
+          description: "기독 업데이트"
+
+

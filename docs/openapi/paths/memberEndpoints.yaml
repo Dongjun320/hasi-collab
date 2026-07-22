@@ -1,0 +1,536 @@
+paths:
+  /api/workspaces/{workspaceId}/members:
+    post:
+      summary: "닉네임 이용 워크스페이스로 멤버 초대"
+      tags:
+        - WorkspaceMember
+      operationId: inviteWorkspaceMember
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/MemberRequestBodies.yaml#/components/schemas/WorkspaceMemberInviteRequest"
+      responses:
+        '200':
+          description: "멤버 초대 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/WorkspaceMemberInviteResponse"
+        '400':
+          description: "Bad Request, 유효하지 않은 닉네임 형식"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR004Error"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 멤버 초대 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '409':
+          description: "Conflict, 이미 워크스페이스에 속한 멤버"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR002Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+    get:
+      summary: "워크스페이스 멤버 조회"
+      tags:
+        - WorkspaceMember
+      operationId: getWorkspaceMembers
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "멤버 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/WorkspaceMemberListResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 조회 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 워크스페이스가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS002Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+    
+  /api/workspaces/{workspaceId}/members/me:
+    delete:
+      summary: "워크스페이스 멤버 자진탈퇴"
+      tags:
+        - WorkspaceMember
+      operationId: leaveWorkspaceMember
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "워크스페이스 탈퇴 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/WorkspaceMemberLeaveResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 탈퇴 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 워크스페이스 또는 멤버가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR005Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/workspaces/{workspaceId}/members/{userId}:
+    patch:
+      summary: "워크스페이스 멤버 일부 수정"
+      tags:
+        - WorkspaceMember
+      operationId: patchWorkspaceMember
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/MemberRequestBodies.yaml#/components/schemas/WorkspaceMemberPatchRequest"
+      responses:
+        '200':
+          description: "멤버 일부 수정 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/WorkspaceMemberPatchResponse"
+        '400':
+          description: "Bad Request, 유효하지 않은 값"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR004Error"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 수정 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 멤버가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+    delete:
+      summary: "워크스페이스 멤버 추방"
+      tags:
+        - WorkspaceMember
+      operationId: removeWorkspaceMember
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "워크스페이스 멤버 추방 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/WorkspaceMemberRemoveResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 추방 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 워크스페이스 또는 멤버가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR005Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/members:
+    post:
+      summary: "채널 멤버 참가"
+      tags:
+        - WorkspaceMember
+      operationId: joinChannelMembers
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '201':
+          description: "채널 멤버 참가 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/ChannelMemberJoinResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+    get:
+      summary: "채널 멤버 목록 조회"
+      tags:
+        - WorkspaceMember
+      operationId: getChannelMembers
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "채널 멤버 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/ChannelMemberListResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/members/me:
+    delete:
+      summary: "채널 멤버 자진탈퇴"
+      tags:
+        - WorkspaceMember
+      operationId: leaveChannelMember
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "채널 탈퇴 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/ChannelMemberLeaveResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 탈퇴 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 채널 또는 멤버가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR005Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/members/{userId}:
+    delete:
+      summary: "채널 멤버 추방"
+      tags:
+        - WorkspaceMember
+      operationId: removeChannelMember
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "채널 멤버 추방 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/ChannelMemberRemoveResponse"
+        '400':
+          description: "Bad Request, 유효하지 않은 값"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR004Error"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/invitations/sent:
+    get:
+      summary: "해당 유저가 보낸 초대 목록 조회"
+      tags:
+        - WorkspaceMember
+      operationId: getSentInvitation
+      responses:
+        '200':
+          description: "해당 유저가 보낸 초대 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/MemberInviteListResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/invitations/received:
+    get:
+      summary: "해당 유저가 받은 초대 목록 조회"
+      tags:
+        - WorkspaceMember
+      operationId: getReceivedInvitation
+      responses:
+        '200':
+          description: "해당 유저가 받은 초대 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/MemberInviteListResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+
+  /api/invitations/{invitationId}:
+    patch:
+      summary: "초대 수락 / 거절 / 취소"
+      tags:
+        - WorkspaceMember
+      operationId: responseInvitation
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/MemberRequestBodies.yaml#/components/schemas/MemberInvitePatchRequest"
+      responses:
+        '200':
+          description: "초대 수락 또는 거절 또는 취소 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/MemberInviteResponse"
+        '400':
+          description: "Bad Request, 유효하지 않은 값"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR004Error"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '404':
+          description: "Not Found, 초대가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR006Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"

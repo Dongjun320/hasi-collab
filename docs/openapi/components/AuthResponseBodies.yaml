@@ -1,0 +1,52 @@
+components:
+  schemas:
+    LogInResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+        - user
+      properties:
+        accessToken:
+          type: string
+          description: "액세스 토큰 (1시간)"
+        refreshToken:
+          type: string
+          description: "리프레시 토큰 (7일)"
+        user:
+          $ref: "#/components/schemas/UserData"
+
+    RegisterResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: "처리 결과 메시지"
+        userId:
+          type: integer
+          format: int64
+          description: "생성된 유저 ID"
+
+    UserData:
+      type: object
+      required:
+        - uid
+        - nickname
+        - createdAt
+        - updatedAt
+      properties:
+        uid:
+          type: integer
+          format: int64
+          description: "유저 ID"
+        nickname:
+          type: string
+          description: "유저 닉네임"
+        createdAt:
+          type: string
+          format: date-time
+          description: "생성일시"
+        updatedAt:
+          type: string
+          format: date-time
+          description: "수정일시"

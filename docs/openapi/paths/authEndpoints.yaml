@@ -1,0 +1,150 @@
+paths:
+  /api/auth/register:
+    post:
+      summary: "회원가입 → 이메일 인증코드 자동 발송."
+      tags:
+        - Auth
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/RegisterRequest"
+      responses:
+        '201':
+          description: "회원가입 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/AuthResponseBodies.yaml#/components/schemas/RegisterResponse"
+  /api/auth/email/send:
+    post:
+      summary: "이메일 인증코드 발송 (10분 유효)."
+      tags:
+        - Auth
+      operationId: emailSend
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/EmailSendRequest"
+      responses:
+        '200':
+          description: "발송 완료"
+        '404':
+          description: "가입되지 않은 이메일 (purpose=reset일 때)"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth006Error"
+        '409':
+          description: "이미 가입된 이메일 (purpose=register일 때)"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth005Error"
+  /api/auth/email/verify:
+    post:
+      summary: "이메일 인증코드 확인."
+      tags:
+        - Auth
+      operationId: emailVerify
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/EmailVerifyRequest"
+      responses:
+        '200':
+          description: "인증 완료"
+  /api/auth/password/send:
+    post:
+      summary: "비밀번호 재설정용 인증코드 발송 (가입된 이메일만, 10분 유효)."
+      tags:
+        - Auth
+      operationId: passwordSend
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/EmailSendRequest"
+      responses:
+        '200':
+          description: "발송 완료"
+        '404':
+          description: "가입되지 않은 이메일"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth006Error"
+  /api/auth/password/verify:
+    post:
+      summary: "비밀번호 재설정용 인증코드 확인 (성공 시 password:verified 플래그 저장)."
+      tags:
+        - Auth
+      operationId: passwordVerify
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/EmailVerifyRequest"
+      responses:
+        '200':
+          description: "인증 완료"
+        '400':
+          description: "인증코드 오류 / 만료"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Verify001Error"
+  /api/auth/login:
+    post:
+      summary: "로그인 성공 시 accessToken(1h) + refreshToken(7d) 발급."
+      tags:
+        - Auth
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/LogInRequest"
+      responses:
+        '200':
+          description: "로그인 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/AuthResponseBodies.yaml#/components/schemas/LogInResponse"
+        '401':
+          description: "이메일 혹은 pw 틀림"
+  /api/auth/logout:
+    post:
+      summary: "refreshToken을 Redis 블랙리스트에 등록 (TTL = 남은 만료 시간)."
+      tags:
+        - Auth
+      operationId: logout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/LogOutRequest"
+  /api/auth/password/reset:
+    post:
+      summary: "비밀번호 재설정 — 이메일 인증(email/verify) 완료 후 새 비밀번호로 교체"
+      tags:
+        - Auth
+      operationId: resetPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/PasswordResetRequest"
+      responses:
+        '200':
+          description: "비밀번호 재설정 성공"
+        '400':
+          description: "인증 미완료 또는 유효하지 않은 값"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Verify001Error"

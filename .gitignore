@@ -5,10 +5,12 @@
 .DS_Store
 
 # 환경변수 / 시크릿
+env
 .env
 .env.local
 .env.*.local
 **/application-secret.yml
+postgres_data/
 
 # Maven 빌드 산출물
 **/target/
@@ -18,7 +20,17 @@
 **/dist/
 **/.next/
 **/build/
+*.tsbuildinfo
 
 # 로그
 *.log
 logs/
+
+# Docker PostgreSQL 데이터
+postgres_data/
+
+# 자동 생성 파일 (openapi-typescript)
+app/client/src/types/openapi.ts
+
+##
+.claude

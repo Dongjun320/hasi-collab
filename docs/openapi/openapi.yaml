@@ -1,15 +1,96 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
   title: Service
-  description: Service는 Authentication/Authorization, RESTful API 등을 처리하는 백엔드 서비스입니다.
+  description: Service는 Authentication/Authorization, RESTful API, DB와의 연결 등을 처리하는 백엔드 서비스입니다.
   version: 1.0.0
-servers:
-  - url: 'https'
+
+security:
+  - BearerAuth: []
+
 paths:
-  /api/v1/messages:
-    $ref: "./paths/messages.yaml"
+  /api/auth/register:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1register"
+
+  /api/auth/email/send:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1email~1send"
+
+  /api/auth/email/verify:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1email~1verify"
+
+  /api/auth/password/send:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1password~1send"
+
+  /api/auth/password/verify:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1password~1verify"
+
+  /api/auth/login:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1login"
+
+  /api/auth/logout:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1logout"
+
+  /api/auth/password/reset:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1password~1reset"
+
+  /api/workspaces:
+    $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces"
+
+  /api/workspaces/me:
+    $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces~1me"
+
+  /api/workspaces/{workspaceId}:
+    $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}"
+
+  /api/workspaces/search:
+    $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces~1search"
+
+  /api/workspaces/{workspaceId}/channels:
+    $ref: "./paths/channelEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}:
+    $ref: "./paths/channelEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}"
+
+  /api/workspaces/{workspaceId}/members:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1members"
+
+  /api/workspaces/{workspaceId}/members/me:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1members~1me"
+
+  /api/workspaces/{workspaceId}/members/{userId}:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1members~1{userId}"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/members:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}~1members"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/members/me:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}~1members~1me"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/members/{userId}:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}~1members~1{userId}"
+
+  /api/workspaces/{workspaceId}/boards:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards"
+
+  /api/workspaces/{workspaceId}/boards/{boardId}/tasks:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1tasks"
+
+  /api/workspaces/{workspaceId}/boards/{boardId}/tasks/{taskId}:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1tasks~1{taskId}"
+
+  /api/invitations/sent:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1invitations~1sent"
+
+  /api/invitations/received:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1invitations~1received"
+
+  /api/invitations/{invitationId}:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1invitations~1{invitationId}"
 
 components:
-  schemas:
-    Messages:
-      $ref: "./components/Message.yaml"
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
+

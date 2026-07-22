@@ -17,8 +17,8 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>service</module>
-        <module>messenger</module>
+        <module>app/service</module>
+        <module>app/messenger</module>
     </modules>
 
     <properties>
@@ -27,5 +27,6 @@
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
 
 </project>

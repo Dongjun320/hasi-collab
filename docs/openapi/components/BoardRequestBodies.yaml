@@ -1,0 +1,51 @@
+components:
+  schemas:
+    BoardCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: "보드 이름"
+
+    TaskCreateRequest:
+      type: object
+      required:
+        - title
+        - status
+      properties:
+        title:
+          type: string
+          description: "태스크 제목"
+        status:
+          type: string
+          enum: [TODO, IN_PROGRESS, REVIEW, DONE]
+          description: "태스크 상태"
+        assigneeId:
+          type: integer
+          format: int64
+          description: "담당자 userId"
+        priority:
+          type: string
+          enum: [high, medium, low]
+          description: "우선순위"
+
+    TaskUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: "태스크 제목"
+        status:
+          type: string
+          enum: [TODO, IN_PROGRESS, REVIEW, DONE]
+          description: "태스크 상태 (칸반 컬럼 이동시 변경)"
+        assigneeId:
+          type: integer
+          format: int64
+          description: "담당자 userId"
+        priority:
+          type: string
+          enum: [high, medium, low]
+          description: "우선순위"

@@ -1,0 +1,139 @@
+components:
+  schemas:
+    WorkspaceData:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: "워크스페이스 ID"
+        name:
+          type: string
+          description: "워크스페이스 이름"
+        ownerId:
+          type: integer
+          format: int64
+          description: "워크스페이스 생성 소유자 ID"
+        isPrivate:
+          type: boolean
+          description: "공개/비공개"
+        iconUrl:
+          type: string
+          nullable: true
+          description: "워크스페이스 대표 이미지 URL"
+        description:
+          type: string
+          nullable: true
+          description: "워크스페이스 설명"
+        createdAt:
+          type: string
+          format: date-time
+          description: "생성일시"
+        updatedAt:
+          type: string
+          format: date-time
+          description: "수정일시"
+
+    WorkspaceCreateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: "#/components/schemas/WorkspaceData"
+        error:
+          nullable: true
+          example: null
+    
+    WorkspacePatchResponse:
+      allOf:
+        - $ref: "#/components/schemas/WorkspaceCreateResponse"
+
+    WorkspaceGetResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: "#/components/schemas/WorkspaceData"
+        error:
+          nullable: true
+          example: null
+
+    WorkspaceGetUserSpaceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                format: int64
+              name:
+                type: string
+              role:
+                type: string
+              iconUrl: 
+                type: string
+                nullable: true
+        error:
+          nullable: true
+          example: null
+
+    WorkspaceSearchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int64
+                  name:
+                    type: string
+                  memberCount:
+                    type: integer
+                    description: "워크스페이스 멤버 수"
+                  isPrivate:
+                    type: boolean
+            nextCursor:
+              type: string
+              nullable: true
+            hasMore:
+              type: boolean
+        error:
+          nullable: true
+          example: null
+
+    WorkspaceDeleteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: "워크스페이스 삭제 메시지"
+        error:
+          nullable: true
+          example: null
+
