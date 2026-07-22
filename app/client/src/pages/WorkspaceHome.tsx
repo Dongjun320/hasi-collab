@@ -23,7 +23,9 @@ export function WorkspaceHome() {
   const { refreshToken, clear } = useAuthStore();
   const handleLogout = async () => {
     try {
-      await api.POST('/api/auth/logout', { body: { refreshToken } });
+      if (refreshToken) {
+        await api.POST('/api/auth/logout', {body: {refreshToken}})
+      }
     } catch (error) {
       console.error("로그아웃 실패:", error);
     } finally {
@@ -32,7 +34,6 @@ export function WorkspaceHome() {
     }
   };
 
-  const logout = () => {navigate("/")};
   const { activeRightPanel, toggleRightPanel } = useUiStore();
   const { friends } = useFriendStore();
   const { workspaces, setWorkspace } = useWorkspaceStore();
@@ -105,7 +106,7 @@ export function WorkspaceHome() {
           {/* 스크롤 영역 */}
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
-            <div className="bg-white rounded-2x1 p-4 shadow-sm border border-[#e8f8ed]">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#e8f8ed]">
               <div className="flex items-center gap-2 mb-3">
                 <LayoutGrid size={15} className="text-[#5CC87A]"/>
                 <h2 className="text-sm font-bold text-[#2C3E50]">워크스페이스 · {workspaces.length}개</h2>
@@ -308,7 +309,7 @@ export function WorkspaceHome() {
 
         {/* 홈 버튼 */}
         <div>
-          <img src={hasiClean} alt="HASI" className="w-11 h-11 rounded-2x1 object-contain"/>
+          <img src={hasiClean} alt="HASI" className="w-11 h-11 rounded-2xl object-contain"/>
         </div>
 
         {/* 구분선 */}

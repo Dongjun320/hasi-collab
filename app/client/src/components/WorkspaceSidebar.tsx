@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Hash, Home, Plus, X,
+  Hash, Plus, X,
   PanelLeftClose, PanelLeftOpen, Settings, UserPlus,
 } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
@@ -269,16 +269,6 @@ export function WorkspaceSidebar({
 
       {/* ── 서버 레일 ── */}
       <div className="w-[72px] h-full bg-[#1e3a28] flex flex-col items-center py-3 gap-2 flex-shrink-0">
-        <button
-          onClick={() => navigate("/WorkspaceHome")}
-          title="홈"
-          className="w-11 h-11 rounded-2xl bg-[#5CC87A] hover:bg-[#4ab869] flex items-center justify-center shadow-lg transition-colors flex-shrink-0"
-        >
-          <Home size={20} className="text-white" />
-        </button>
-
-        <div className="w-8 h-[2px] bg-white/20 rounded-full my-1 flex-shrink-0" />
-
         <div
           ref={railRef}
           onMouseDown={handleRailMouseDown}

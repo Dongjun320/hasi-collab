@@ -6,6 +6,7 @@ export interface Friend {
     status: 'online' | 'away' | 'busy' | 'offline';
     statusMessage?: string;
     avatar?: string;
+    memo?: string;          // 내가 이 친구에게 붙인 메모 (나만 보임)
     unreadCount: number;
 }
 
@@ -20,6 +21,8 @@ export const FRIEND_STATUS = {
 interface FriendState {
     friends: Friend[];
     setFriends: (list: Friend[]) => void;
+    removeFriend: (id: number) => void;
+    setMemo: (id: number, memo: string) => void;
     clear: () => void;
 }
 
@@ -33,5 +36,14 @@ export const useFriendStore = create<FriendState>((set) => ({
         { id: 6, name: '정민호', status: 'offline',                             unreadCount: 1 },
     ],
     setFriends: (list) => set({ friends: list }),
+    removeFriend: (id) => set((s) => ({
+        friends: s.friends.filter((f) => f.id !== id),
+    })),
+    setMemo: (id, memo) => set((s) => ({
+        // 빈 문자열이면 메모 자체를 지움
+        friends: s.friends.map((f) =>
+            f.id === id ? { ...f, memo: memo.trim() || undefined } : f
+        ),
+    })),
     clear: () => set ({ friends: []}),
 }))
