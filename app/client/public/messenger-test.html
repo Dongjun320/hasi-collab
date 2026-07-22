@@ -108,6 +108,13 @@
     }
   }
 
+  // {uid1}_{uid2} 형태로, 두 참여자가 항상 같은 이름을 유도하도록 작은 uid를 앞에 둡니다.
+  function dmTopicKey(peerId) {
+    const a = Number(myUid);
+    const b = Number(peerId);
+    return a <= b ? `${a}_${b}` : `${b}_${a}`;
+  }
+
   // kind: 'connected' | 'disconnected' | 'reconnecting'
   function setStatus(text, kind) {
     const el = document.getElementById('status');
@@ -194,12 +201,12 @@
 
   document.getElementById('subscribeDmBtn').onclick = () => {
     if (!client?.connected) return alert('connect first');
-    // /user/queue/dm carries ALL of this user's DMs (any peer), not one topic per pair —
-    // Spring rewrites it to a session-private queue, so subscribing once is enough.
-    client.subscribe('/user/queue/dm', (msg) => {
+    const peerId = document.getElementById('peerId').value;
+    const topic = `/topic/dm/${dmTopicKey(peerId)}`;
+    client.subscribe(topic, (msg) => {
       log('dmLog', `RECV ${msg.body}`);
     });
-    log('dmLog', 'subscribed to /user/queue/dm');
+    log('dmLog', `subscribed to ${topic}`);
   };
 
   document.getElementById('sendDmBtn').onclick = () => {

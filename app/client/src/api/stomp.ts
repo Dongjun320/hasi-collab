@@ -4,6 +4,26 @@ const MESSENGER_WS_URL = 'ws://localhost:8081/ws';
 
 let client: Client | null = null;
 let connectPromise: Promise<void> | null = null;
+let myUserId: string | null = null;
+
+function decodeJwtSubject(token: string): string | null {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload.sub ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// {uid1}_{uid2} 형태로, 두 참여자가 항상 같은 이름을 유도하도록 작은 uid를 앞에 둡니다.
+function dmTopicKey(peerId: number | string): string {
+  if (myUserId === null) {
+    throw new Error('STOMP client is not connected. Call connectStomp(token) first.');
+  }
+  const a = Number(myUserId);
+  const b = Number(peerId);
+  return a <= b ? `${a}_${b}` : `${b}_${a}`;
+}
 
 // 이미 연결된 client가 있으면 그대로 재사용합니다.
 export function connectStomp(token: string): Promise<void> {
@@ -13,6 +33,8 @@ export function connectStomp(token: string): Promise<void> {
   if (connectPromise) {
     return connectPromise;
   }
+
+  myUserId = decodeJwtSubject(token);
 
   const stompClient = new Client({
     brokerURL: MESSENGER_WS_URL,
@@ -46,6 +68,7 @@ export function disconnectStomp(): void {
   client?.deactivate();
   client = null;
   connectPromise = null;
+  myUserId = null;
 }
 
 function requireClient(): Client {
@@ -88,12 +111,12 @@ export function subscribeToChannel(
   return () => subscription.unsubscribe();
 }
 
-// /user/queue/dm 구독. 서버가 세션별 큐로 변환해 전달하므로 상대방과 무관하게 내 DM 전체가 하나의 큐로 옵니다.
-// 특정 상대방과의 대화만 필요하면 onMessage 콜백에서 message.sender/receiver로 걸러야 합니다.
+// /topic/dm/{작은 uid}_{큰 uid} 구독. 대화 상대방과 함께 같은 토픽을 구독하는 방식입니다.
 export function subscribeToDm(
+  peerId: number | string,
   onMessage: (message: DmOutboundMessage) => void
 ): () => void {
-  const subscription = requireClient().subscribe('/user/queue/dm', (message) => {
+  const subscription = requireClient().subscribe(`/topic/dm/${dmTopicKey(peerId)}`, (message) => {
     onMessage(parseBody<DmOutboundMessage>(message));
   });
   return () => subscription.unsubscribe();

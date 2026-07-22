@@ -32,7 +32,7 @@ public class DmService {
 
         DirectMessage saved = messageRepository.save(message);
         DmDtos.OutboundMessage outbound = toOutbound(saved);
-        broadcast(outbound);
+        broadcast(saved, outbound);
         return outbound;
     }
 
@@ -44,7 +44,7 @@ public class DmService {
         message.setUpdatedAt(LocalDateTime.now());
 
         DmDtos.OutboundMessage outbound = toOutbound(message);
-        broadcast(outbound);
+        broadcast(message, outbound);
         return outbound;
     }
 
@@ -56,7 +56,7 @@ public class DmService {
         message.setDeletedAt(LocalDateTime.now());
 
         DmDtos.OutboundMessage outbound = toOutbound(message);
-        broadcast(outbound);
+        broadcast(message, outbound);
         return outbound;
     }
 
@@ -82,9 +82,13 @@ public class DmService {
         return message;
     }
 
-    private void broadcast(DmDtos.OutboundMessage outbound){
-        messageTemplate.convertAndSendToUser(outbound.sender(), "/queue/dm", outbound);
-        messageTemplate.convertAndSendToUser(outbound.receiver(), "/queue/dm", outbound);
+    // 두 참여자가 함께 구독하는 /topic/dm/{작은 uid}_{큰 uid} 로 방송합니다.
+    private void broadcast(DirectMessage message, DmDtos.OutboundMessage outbound){
+        messageTemplate.convertAndSend("/topic/dm/" + dmTopic(message.getSenderId(), message.getReceiverId()), outbound);
+    }
+
+    private String dmTopic(Long userA, Long userB){
+        return userA <= userB ? userA + "_" + userB : userB + "_" + userA;
     }
 
     private DmDtos.OutboundMessage toOutbound(DirectMessage message){
