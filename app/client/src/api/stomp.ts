@@ -1,29 +1,13 @@
-import { Client, IMessage } from '@stomp/stompjs';
+import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 
 const MESSENGER_WS_URL = 'ws://localhost:8081/ws';
 
+const DM_INBOX_DESTINATION = '/user/queue/dm';
+
+const ERROR_DESTINATION = '/user/queue/errors';
+
 let client: Client | null = null;
 let connectPromise: Promise<void> | null = null;
-let myUserId: string | null = null;
-
-function decodeJwtSubject(token: string): string | null {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return payload.sub ?? null;
-  } catch {
-    return null;
-  }
-}
-
-// {uid1}_{uid2} 형태로, 두 참여자가 항상 같은 이름을 유도하도록 작은 uid를 앞에 둡니다.
-function dmTopicKey(peerId: number | string): string {
-  if (myUserId === null) {
-    throw new Error('STOMP client is not connected. Call connectStomp(token) first.');
-  }
-  const a = Number(myUserId);
-  const b = Number(peerId);
-  return a <= b ? `${a}_${b}` : `${b}_${a}`;
-}
 
 // 이미 연결된 client가 있으면 그대로 재사용합니다.
 export function connectStomp(token: string): Promise<void> {
@@ -33,8 +17,6 @@ export function connectStomp(token: string): Promise<void> {
   if (connectPromise) {
     return connectPromise;
   }
-
-  myUserId = decodeJwtSubject(token);
 
   const stompClient = new Client({
     brokerURL: MESSENGER_WS_URL,
@@ -48,6 +30,13 @@ export function connectStomp(token: string): Promise<void> {
 
   connectPromise = new Promise<void>((resolve, reject) => {
     stompClient.onConnect = () => {
+      errorSubscription = null;
+      dmInboxSubscription = null;
+
+      ensureErrorSubscription();
+      if (dmListeners.size > 0) {
+        ensureDmInboxSubscription();
+      }
       resolve();
     };
     stompClient.onStompError = (frame) => {
@@ -68,7 +57,10 @@ export function disconnectStomp(): void {
   client?.deactivate();
   client = null;
   connectPromise = null;
-  myUserId = null;
+  dmInboxSubscription = null;
+  dmListeners.clear();
+  errorSubscription = null;
+  errorListeners.clear();
 }
 
 function requireClient(): Client {
@@ -100,7 +92,42 @@ export type DmOutboundMessage = {
   isDeleted: boolean;
 };
 
-// /topic/channel.{channelId} 구독. 반환된 함수로 구독 해제합니다.
+export type MessengerErrorCode = 'ACCESS_DENIED' | 'INVALID_REQUEST' | 'INTERNAL_ERROR';
+
+export type MessengerError = {
+  code: MessengerErrorCode;
+  message: string;
+  destination: string | null;
+};
+
+type ErrorListener = (error: MessengerError) => void;
+
+let errorSubscription: StompSubscription | null = null;
+const errorListeners = new Set<ErrorListener>();
+
+function ensureErrorSubscription(): void {
+  if (errorSubscription) {
+    return;
+  }
+  errorSubscription = requireClient().subscribe(ERROR_DESTINATION, (message) => {
+    const error = parseBody<MessengerError>(message);
+    if (errorListeners.size === 0) {
+      console.error('messenger 요청 거부됨:', error);
+      return;
+    }
+    for (const listener of errorListeners) {
+      listener(error);
+    }
+  });
+}
+
+export function subscribeToErrors(listener: ErrorListener): () => void {
+  errorListeners.add(listener);
+  return () => {
+    errorListeners.delete(listener);
+  };
+}
+
 export function subscribeToChannel(
   channelId: number | string,
   onMessage: (message: ChannelOutboundMessage) => void
@@ -111,15 +138,44 @@ export function subscribeToChannel(
   return () => subscription.unsubscribe();
 }
 
-// /topic/dm/{작은 uid}_{큰 uid} 구독. 대화 상대방과 함께 같은 토픽을 구독하는 방식입니다.
+type DmListener = {
+  peerId: string;
+  onMessage: (message: DmOutboundMessage) => void;
+};
+
+let dmInboxSubscription: StompSubscription | null = null;
+const dmListeners = new Set<DmListener>();
+
+function ensureDmInboxSubscription(): void {
+  if (dmInboxSubscription) {
+    return;
+  }
+  dmInboxSubscription = requireClient().subscribe(DM_INBOX_DESTINATION, (message) => {
+    const dm = parseBody<DmOutboundMessage>(message);
+    for (const listener of dmListeners) {
+      if (dm.sender === listener.peerId || dm.receiver === listener.peerId) {
+        listener.onMessage(dm);
+      }
+    }
+  });
+}
+
+// /user/queue/dm
 export function subscribeToDm(
   peerId: number | string,
   onMessage: (message: DmOutboundMessage) => void
 ): () => void {
-  const subscription = requireClient().subscribe(`/topic/dm/${dmTopicKey(peerId)}`, (message) => {
-    onMessage(parseBody<DmOutboundMessage>(message));
-  });
-  return () => subscription.unsubscribe();
+  const listener: DmListener = { peerId: String(peerId), onMessage };
+  ensureDmInboxSubscription();
+  dmListeners.add(listener);
+
+  return () => {
+    dmListeners.delete(listener);
+    if (dmListeners.size === 0) {
+      dmInboxSubscription?.unsubscribe();
+      dmInboxSubscription = null;
+    }
+  };
 }
 
 export function sendChannelMessage(channelId: number | string, content: string): void {

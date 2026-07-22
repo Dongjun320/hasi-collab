@@ -1,5 +1,6 @@
 package com.hasi.messenger.channel;
 
+import com.hasi.messenger.directory.ServiceDirectory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -13,15 +14,20 @@ public class ChannelService {
 
     private final ChannelMessageRepository messageRepository;
     private final SimpMessagingTemplate messageTemplate;
+    private final ServiceDirectory serviceDirectory;
 
-    public ChannelService(ChannelMessageRepository messageRepository, SimpMessagingTemplate messageTemplate){
+    public ChannelService(ChannelMessageRepository messageRepository,
+                          SimpMessagingTemplate messageTemplate,
+                          ServiceDirectory serviceDirectory){
         this.messageRepository = messageRepository;
         this.messageTemplate = messageTemplate;
+        this.serviceDirectory = serviceDirectory;
     }
 
     // 메시지 POST
     @Transactional
     public ChannelDtos.OutboundMessage createMessage(Long channelId, String sender, String content){
+        requireMembership(channelId, sender);
         LocalDateTime now = LocalDateTime.now();
 
         ChannelMessage message = new ChannelMessage();
@@ -63,13 +69,23 @@ public class ChannelService {
 
     // 입장시 채널방 구성할 history 반환
     @Transactional(readOnly = true)
-    public List<ChannelDtos.OutboundMessage> history(Long channelId){
+    public List<ChannelDtos.OutboundMessage> history(Long channelId, String requester){
+        requireMembership(channelId, requester);
         return messageRepository.findByChannelIdOrderByCreatedAtAsc(channelId).stream()
                 .map(this::toOutbound)
                 .toList();
     }
 
+    // channel_member로 채널 멤버쉽 확인
+    private void requireMembership(Long channelId, String userId){
+        if (!serviceDirectory.isChannelMember(channelId, Long.valueOf(userId))) {
+            throw new AccessDeniedException("User " + userId + " is not a member of channel " + channelId);
+        }
+    }
+
     private ChannelMessage requireOwnedMessage(Long channelId, String sender, Long id){
+        requireMembership(channelId, sender);
+
         ChannelMessage message = messageRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Message not found: " + id));
 

@@ -1,5 +1,6 @@
 package com.hasi.messenger.dm;
 
+import com.hasi.messenger.directory.ServiceDirectory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -12,15 +13,23 @@ import java.util.List;
 public class DmService {
     private final DirectMessageRepository messageRepository;
     private final SimpMessagingTemplate messageTemplate;
+    private final ServiceDirectory serviceDirectory;
 
-    public DmService(DirectMessageRepository messageRepository, SimpMessagingTemplate messageTemplate){
+    public DmService(DirectMessageRepository messageRepository,
+                     SimpMessagingTemplate messageTemplate,
+                     ServiceDirectory serviceDirectory){
         this.messageRepository = messageRepository;
         this.messageTemplate = messageTemplate;
+        this.serviceDirectory = serviceDirectory;
     }
 
     // 메시지 POST
     @Transactional
     public DmDtos.OutboundMessage createMessage(String sender, Long receiverId, String content){
+        if (!serviceDirectory.userExists(receiverId)) {
+            throw new IllegalArgumentException("Receiver not found: " + receiverId);
+        }
+
         LocalDateTime now = LocalDateTime.now();
 
         DirectMessage message = new DirectMessage();
@@ -32,7 +41,7 @@ public class DmService {
 
         DirectMessage saved = messageRepository.save(message);
         DmDtos.OutboundMessage outbound = toOutbound(saved);
-        broadcast(saved, outbound);
+        broadcast(outbound);
         return outbound;
     }
 
@@ -44,7 +53,7 @@ public class DmService {
         message.setUpdatedAt(LocalDateTime.now());
 
         DmDtos.OutboundMessage outbound = toOutbound(message);
-        broadcast(message, outbound);
+        broadcast(outbound);
         return outbound;
     }
 
@@ -56,7 +65,7 @@ public class DmService {
         message.setDeletedAt(LocalDateTime.now());
 
         DmDtos.OutboundMessage outbound = toOutbound(message);
-        broadcast(message, outbound);
+        broadcast(outbound);
         return outbound;
     }
 
@@ -82,13 +91,13 @@ public class DmService {
         return message;
     }
 
-    // 두 참여자가 함께 구독하는 /topic/dm/{작은 uid}_{큰 uid} 로 방송합니다.
-    private void broadcast(DirectMessage message, DmDtos.OutboundMessage outbound){
-        messageTemplate.convertAndSend("/topic/dm/" + dmTopic(message.getSenderId(), message.getReceiverId()), outbound);
-    }
+    // 각자의 개인 큐(/user/queue/dm)로 전달합니다.
+    private void broadcast(DmDtos.OutboundMessage outbound){
+        messageTemplate.convertAndSendToUser(outbound.sender(), "/queue/dm", outbound);
 
-    private String dmTopic(Long userA, Long userB){
-        return userA <= userB ? userA + "_" + userB : userB + "_" + userA;
+        if (!outbound.sender().equals(outbound.receiver())) {
+            messageTemplate.convertAndSendToUser(outbound.receiver(), "/queue/dm", outbound);
+        }
     }
 
     private DmDtos.OutboundMessage toOutbound(DirectMessage message){
