@@ -17,7 +17,7 @@ interface Workspace {
 // parentId: null이면 최상위 채널, 값이 있으면 해당 채널의 하위 채널 (트리 구조)
 // ※ 백엔드 id는 number. API 연결 시 매핑에서 문자열로 변환하거나 타입 통일 필요
 interface Channel {
-  id: string
+  id: number
   name: string
   parentId?: number | null  // 백엔드: 상위 채널 ID
   workspaceId?: number      // 백엔드
@@ -35,23 +35,23 @@ interface WorkspaceState {
   clear: () => void
   updateWorkspace: (w: Workspace) => void
   deleteWorkspace: (id: number) => void
+  channelsByWorkspace: Record<number, Channel[]>
+  setWorkspaceChannels: (workspaceId: number, list: Channel[]) => void
+  addChannel: (workspaceId: number, c: Channel) => void
+  updateChannel: (workspaceId: number, id: number, name: string) => void
+  removeChannel: (workspaceId: number, id: number) => void
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   currentWorkspace: null,
   channels: [],
-  workspaces: [
-    { id: 1, name: "디자인팀", avatar: "디", colors: ["#A8E6B8", "#5CC87A"], unread: true },
-    { id: 2, name: "개발팀",   avatar: "개", colors: ["#5CC87A", "#2E8B4F"], unread: true },
-    { id: 3, name: "마케팅팀", avatar: "마", colors: ["#A8E6B8", "#FFE66D"], unread: false },
-    { id: 4, name: "영업팀",   avatar: "영", colors: ["#5CC87A", "#FFD93D"], unread: true },
-    { id: 5, name: "기획팀",   avatar: "기", colors: ["#2E8B4F", "#5CC87A"], unread: false },
-  ],
+  workspaces: [],
+  channelsByWorkspace: {},   // 목데이터 없음 — API로만 채움
+
+  // ── 워크스페이스 ──
   setWorkspace: (w) => set({ currentWorkspace: w }),
   setWorkspaces: (list) => set({ workspaces: list }),
-  setChannels: (c) => set({ channels: c }),
-  addWorkspace: (w) => set((s) =>({ workspaces: [...s.workspaces, w] })),
-  clear: () => set({ currentWorkspace: null, channels: [] }),
+  addWorkspace: (w) => set((s) => ({ workspaces: [...s.workspaces, w] })),
   updateWorkspace: (w) => set((s) => ({
     workspaces: s.workspaces.map((ws) => (ws.id === w.id ? w : ws)),
     currentWorkspace: s.currentWorkspace?.id === w.id ? w : s.currentWorkspace,
@@ -59,10 +59,40 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   deleteWorkspace: (id) => set((s) => {
     const remaining = s.workspaces.filter((w) => w.id !== id);
     const wasCurrent = s.currentWorkspace?.id === id;
+    const nextChannels = { ...s.channelsByWorkspace };
+    delete nextChannels[id];
     return {
       workspaces: remaining,
+      channelsByWorkspace: nextChannels,
       currentWorkspace: wasCurrent ? (remaining[0] ?? null) : s.currentWorkspace,
     };
-  })
+  }),
 
+  // ── 채널 ──
+  setChannels: (c) => set({ channels: c }),
+  setWorkspaceChannels: (workspaceId, list) => set((s) => ({
+    channelsByWorkspace: { ...s.channelsByWorkspace, [workspaceId]: list },
+  })),
+  addChannel: (workspaceId, c) => set((s) => ({
+    channelsByWorkspace: {
+      ...s.channelsByWorkspace,
+      [workspaceId]: [...(s.channelsByWorkspace[workspaceId] ?? []), c],
+    },
+  })),
+  updateChannel: (workspaceId, id, name) => set((s) => ({
+    channelsByWorkspace: {
+      ...s.channelsByWorkspace,
+      [workspaceId]: (s.channelsByWorkspace[workspaceId] ?? []).map((c) =>
+          c.id === id ? { ...c, name } : c
+      ),
+    },
+  })),
+  removeChannel: (workspaceId, id) => set((s) => ({
+    channelsByWorkspace: {
+      ...s.channelsByWorkspace,
+      [workspaceId]: (s.channelsByWorkspace[workspaceId] ?? []).filter((c) => c.id !== id),
+    },
+  })),
+
+  clear: () => set({ currentWorkspace: null, channels: [], channelsByWorkspace: {} }),
 }))

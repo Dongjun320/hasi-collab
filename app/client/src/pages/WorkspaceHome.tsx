@@ -14,6 +14,7 @@ import hasiClean from "./HasiClean.png"
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { NotificationSidebar } from "../components/NotificationSidebar";
 import { useNotificationStore } from "../store/notificationStore";
+import { Tooltip } from "../components/Tooltip";
 
 
 export function WorkspaceHome() {
@@ -110,6 +111,14 @@ export function WorkspaceHome() {
               <div className="flex items-center gap-2 mb-3">
                 <LayoutGrid size={15} className="text-[#5CC87A]"/>
                 <h2 className="text-sm font-bold text-[#2C3E50]">워크스페이스 · {workspaces.length}개</h2>
+                {workspaces.length === 0 && (
+                    <button
+                        onClick={() => navigate("/workspace")}
+                        className="ml-auto px-3 py-1 text-xs font-medium bg-[#5CC87A] hover:bg-[#2E8B4F] text-white rounded-lg transition-all"
+                    >
+                      워크스페이스 시작하기
+                    </button>
+                )}
               </div>
               <div className="flex flex-wrap gap-3">
                 {workspaces.map((ws) => (
@@ -323,49 +332,64 @@ export function WorkspaceHome() {
 
         {/* 개인 메뉴 */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            onClick={() => toggleRightPanel('calendar')}
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all
-              ${activeRightPanel === 'calendar' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
-            title="달력"
-          >
-            <Calendar size={19} className="text-white/60" />
-          </button>
-          <button
-            onClick={() => toggleRightPanel('friend')}
-            className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
-              ${activeRightPanel === 'friend' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
-            title="친구 목록"
-          >
-            <Users size={19} className="text-white/60" />
-            {activeRightPanel !== 'friend' && totalUnread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                {totalUnread}
-              </span>
-            )}
-          </button>
-          <button
+          <Tooltip label="달력" side="top">
+            <button
+              onClick={() => toggleRightPanel('calendar')}
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all
+                ${activeRightPanel === 'calendar' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+            >
+              <Calendar size={19} className="text-white/60" />
+            </button>
+          </Tooltip>
+
+          <Tooltip label="친구 목록" side="top">
+            <button
+              onClick={() => toggleRightPanel('friend')}
+              className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
+                ${activeRightPanel === 'friend' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+            >
+              <Users size={19} className="text-white/60" />
+              {activeRightPanel !== 'friend' && totalUnread > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {totalUnread}
+                </span>
+              )}
+            </button>
+          </Tooltip>
+
+          <Tooltip label="알림" side="top">
+            <button
               onClick={() => toggleRightPanel('notification')}
               className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
-              ${activeRightPanel === 'notification' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
-              title="알림"
-          >
-            <Bell size={19} className="text-white/60" />
-            {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
+                ${activeRightPanel === 'notification' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+            >
+              <Bell size={19} className="text-white/60" />
+              {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
                 <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
-            )}
-          </button>
-          <button className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all" title="설정">
-            <Settings size={19} className="text-white/60" />
-          </button>
-          <button
-                onClick={handleLogout}
-                className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all" title="로그아웃">
-            <LogOut size={19} className="text-white/60 group-hover:text-red-400 transition-colors" />
-          </button>
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold cursor-pointer ml-1 hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all">
-            나
-          </div>
+              )}
+            </button>
+          </Tooltip>
+
+          <Tooltip label="설정" side="top">
+            <button className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all">
+              <Settings size={19} className="text-white/60" />
+            </button>
+          </Tooltip>
+
+          <Tooltip label="로그아웃" side="top">
+            <button
+              onClick={handleLogout}
+              className="group w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all"
+            >
+              <LogOut size={19} className="text-white/60 group-hover:text-red-400 transition-colors" />
+            </button>
+          </Tooltip>
+
+          <Tooltip label="내 프로필" side="top" align="end">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold cursor-pointer ml-1 hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all">
+              나
+            </div>
+          </Tooltip>
         </div>
 
       </div>

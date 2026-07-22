@@ -3,6 +3,7 @@ import { X, MoreHorizontal, Trash2, StickyNote } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
 import { useFriendStore, FRIEND_STATUS } from "../store/friendStore";
 import Modal from "./Modal";
+import { Tooltip } from "./Tooltip";
 
 export function FriendSidebar() {
     const { activeRightPanel, closeRightPanel } = useUiStore();
@@ -44,13 +45,14 @@ export function FriendSidebar() {
                 <h2 className="font-bold text-[#2C3E50] text-sm">
                     친구 <span className="text-[#5CC87A]">· {onlineCount}명 온라인</span>
                 </h2>
-                <button
-                    onClick={closeRightPanel}
-                    title="친구 목록 닫기"
-                    className="p-1 hover:bg-[#f0f9f4] rounded-md transition-all"
-                >
-                    <X size={16} className="text-gray-400" />
-                </button>
+                <Tooltip label="친구 목록 닫기" side="bottom" align="end">
+                    <button
+                        onClick={closeRightPanel}
+                        className="p-1 hover:bg-[#f0f9f4] rounded-md transition-all"
+                    >
+                        <X size={16} className="text-gray-400" />
+                    </button>
+                </Tooltip>
             </div>
 
             {/* 친구 목록 */}

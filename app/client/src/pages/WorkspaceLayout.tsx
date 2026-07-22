@@ -2,9 +2,9 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Settings, Calendar, LayoutGrid,
   Plus, Bell, User, Grid3x3, Search,
-  Phone, Mail, MessageSquare, LogOut, Users, Home,
+  Phone, MessageSquare, LogOut, Users, Home,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WorkspaceSidebar } from "../components/WorkspaceSidebar";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { useFriendStore } from "../store/friendStore";
@@ -13,6 +13,7 @@ import { FriendSidebar } from "../components/FriendSidebar";
 import { NotificationSidebar } from "../components/NotificationSidebar";
 import { useNotificationStore } from "../store/notificationStore";
 import { Tooltip } from "../components/Tooltip";
+import { api } from "../api/client";
 
 
 const TOOLS = [
@@ -22,24 +23,15 @@ const TOOLS = [
 ];
 
 export function WorkspaceLayout() {
-  const { currentWorkspace, deleteWorkspace } = useWorkspaceStore();
+  const {currentWorkspace, deleteWorkspace,
+    channelsByWorkspace, setWorkspaceChannels, addChannel, updateChannel, removeChannel,
+  } = useWorkspaceStore();
   const location = useLocation();
   const navigate = useNavigate();
   const { friends } = useFriendStore();
   const { activeRightPanel, toggleRightPanel } = useUiStore();
-
-  const [channelsByWorkspace, setChannelsByWorkspace] = useState<Record<number, { id: string; name: string }[]>>({
-    1: [{ id: "design-general", name: "일반" }],
-    2: [{ id: "general", name: "일반" }, { id: "dev", name: "개발" }, { id: "design", name: "디자인" }],
-    3: [{ id: "marketing-general", name: "일반" }],
-    4: [{ id: "sales-general", name: "일반" }],
-    5: [{ id: "plan-general", name: "일반" }],
-  });
-  const channels = currentWorkspace ? channelsByWorkspace[currentWorkspace.id] ?? [
-    {id: "general", name: "일반"}
-  ] : [];
+  const channels = currentWorkspace ? channelsByWorkspace[currentWorkspace.id] ?? [] : [];
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
-
 
   const isActive = (path: string) =>
     path !== "/workspace"
@@ -47,57 +39,116 @@ export function WorkspaceLayout() {
       : location.pathname === "/workspace";
 
   const isInChannel = location.pathname.startsWith("/workspace/channels");
+
   const activeChannelId = isInChannel
-    ? location.pathname.split("/workspace/channels/")[1]
-    : null;
+      ? Number(location.pathname.split("/workspace/channels/")[1]) || null
+      : null;
 
-  const [lastChannelByWorkspace, setLastChannelByWorkspace] = useState<Record<number, string>>({});
+  const [lastChannelByWorkspace, setLastChannelByWorkspace] = useState<Record<number, number>>({});
 
-  const handleAddChannel = (name: string) => {
+  // 워크스페이스가 바뀔 때마다 채널 목록 조회
+  useEffect(() => {
     if (!currentWorkspace) return;
-    const id = name.toLowerCase().replace(/\s+/g, "-");
-    setChannelsByWorkspace((prev) => ({
-      ...prev,
-      [currentWorkspace.id]: [...(prev[currentWorkspace.id] ?? []), { id, name }],
-    }));
-    navigate(`/workspace/channels/${id}`);
-  };
+    const wsId = currentWorkspace.id;
+    (async () => {
+      try {
+        const { data, error } = await api.GET('/api/workspaces/{workspaceId}/channels', {
+          params: { path: { workspaceId: wsId } },
+        });
+        if (error || !data?.success) {
+          console.error('채널 목록 조회 실패:', error);
+          return;
+        }
+        setWorkspaceChannels(wsId, (data.data ?? []).map((c) => ({
+          id: c.id!,
+          name: c.name ?? '',
+          parentId: c.parentId ?? null,
+          workspaceId: c.workspaceId,
+          isPrivate: c.isPrivate,
+        })));
+      } catch (e) {
+        console.error('채널 목록 조회 실패:', e);
+      }
+    })();
+  }, [currentWorkspace?.id]);
 
-  const handleDeleteChannel = (channelId: string) => {
+  const handleAddChannel = async (name: string) => {
     if (!currentWorkspace) return;
-    setChannelsByWorkspace((prev) => ({
-      ...prev,
-      [currentWorkspace.id]: prev[currentWorkspace.id].filter((c) => c.id !== channelId),
-    }));
-    if (activeChannelId === channelId) navigate("/workspace");
-  };
-
-  const handleRenameChannel = (channelId: string, newName: string) => {
-    if (!currentWorkspace) return;
-    setChannelsByWorkspace((prev) => ({
-      ...prev,
-      [currentWorkspace.id]: prev[currentWorkspace.id].map((c) =>
-        c.id === channelId ? { ...c, name: newName } : c
-      ),
-    }));
-  };
-
-  const handleDeleteWorkspace = (workspaceId: number) => {
-    deleteWorkspace(workspaceId);
-    setChannelsByWorkspace((prev) => {
-      const next = { ...prev };
-      delete next[workspaceId];
-      return next;
-    });
-
-    const newCurrent = useWorkspaceStore.getState().currentWorkspace;
-    if (newCurrent) {
-      navigate(`/workspace/channels/${getDefaultChannelId(newCurrent.id)}`);
+    const wsId = currentWorkspace.id;
+    try {
+      const { data, error } = await api.POST('/api/workspaces/{workspaceId}/channels', {
+        params: { path: { workspaceId: wsId } },
+        body: { name, isPrivate: false },   // parentId 생략 = 최상위 채널
+      });
+      if (error || !data?.data?.id) {
+        console.error('채널 생성 실패:', error);
+        return;
+      }
+      const created = data.data;
+      addChannel(wsId, {
+        id: created.id!,
+        name: created.name ?? name,
+        parentId: created.parentId ?? null,
+        workspaceId: created.workspaceId,
+        isPrivate: created.isPrivate,
+      });
+      navigate(`/workspace/channels/${created.id}`);
+    } catch (e) {
+      console.error('채널 생성 실패:', e);
     }
   };
 
-  const getDefaultChannelId = (workspaceId: number) =>
-      lastChannelByWorkspace[workspaceId] ?? channelsByWorkspace[workspaceId]?.[0]?.id ?? "general";
+  const handleDeleteChannel = async (channelId: number) => {
+    if (!currentWorkspace) return;
+    const wsId = currentWorkspace.id;
+    try {
+      const { error } = await api.DELETE('/api/workspaces/{workspaceId}/channels/{channelId}', {
+        params: { path: { workspaceId: wsId, channelId } },
+      });
+      if (error) {
+        console.error('채널 삭제 실패:', error);
+        return;
+      }
+      removeChannel(wsId, channelId);
+      if (activeChannelId === channelId) navigate("/workspace");
+    } catch (e) {
+      console.error('채널 삭제 실패:', e);
+    }
+  };
+
+  const handleRenameChannel = async (channelId: number, newName: string) => {
+    if (!currentWorkspace) return;
+    const wsId = currentWorkspace.id;
+    try {
+      const { error } = await api.PATCH('/api/workspaces/{workspaceId}/channels/{channelId}', {
+        params: { path: { workspaceId: wsId, channelId } },
+        body: { name: newName },
+      });
+      if (error) {
+        console.error('채널 이름 변경 실패:', error);
+        return;
+      }
+      updateChannel(wsId, channelId, newName);
+    } catch (e) {
+      console.error('채널 이름 변경 실패:', e);
+    }
+  };
+
+  const handleDeleteWorkspace = (workspaceId: number) => {
+    // store의 deleteWorkspace가 채널 캐시(channelsByWorkspace)까지 함께 정리함
+    deleteWorkspace(workspaceId);
+
+    const newCurrent = useWorkspaceStore.getState().currentWorkspace;
+    if (newCurrent) {
+      const ch = getDefaultChannelId(newCurrent.id);
+      navigate(ch ? `/workspace/channels/${ch}` : "/workspace");
+    } else {
+      navigate("/workspace");
+    }
+  };
+
+  const getDefaultChannelId = (workspaceId: number): number | null =>
+      lastChannelByWorkspace[workspaceId] ?? channelsByWorkspace[workspaceId]?.[0]?.id ?? null;
 
   const QUICK_ITEMS = [
     {
@@ -108,7 +159,6 @@ export function WorkspaceLayout() {
     { icon: Calendar, label: "달력",   to: "/workspace/calendar" },
     { icon: User,     label: "내정보", to: "/workspace/profile" },
     { icon: Phone,    label: "전화",   to: "#" },
-    { icon: Mail,     label: "메일",   to: "/workspace/mail" },
     { icon: LogOut,   label: "로그아웃", to: "/" },
   ];
 
@@ -143,37 +193,26 @@ export function WorkspaceLayout() {
 
         {/* ── 상단 헤더 ── */}
         <div className="h-14 bg-white border-b border-[#e8f8ed] flex items-center px-5 gap-3 flex-shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm"
-              style={{
-                background: currentWorkspace
-                ? `linear-gradient(to bottom right, ${currentWorkspace.colors[0]},
-                ${currentWorkspace.colors[1]})`
-                    : undefined,
-            }}
-            >
-              {currentWorkspace?.avatar}
-            </div>
-            <h1 className="font-bold text-[#2C3E50] text-base">{currentWorkspace?.name}</h1>
-          </div>
+          {currentWorkspace && (
+              <div className="flex items-center gap-2.5">
+                <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm"
+                    style={{
+                      background: `linear-gradient(to bottom right, ${currentWorkspace.colors[0]}, ${currentWorkspace.colors[1]})`,
+                    }}
+                >
+                  {currentWorkspace.avatar}
+                </div>
+                <h1 className="font-bold text-[#2C3E50] text-base">{currentWorkspace.name}</h1>
+              </div>
+          )}
           <div className="flex-1" />
           <Tooltip label="검색" side="bottom">
             <button className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all">
               <Search size={18} className="text-[#5CC87A]" />
             </button>
           </Tooltip>
-          <Tooltip label="알림" side="bottom">
-            <button
-                onClick={() => toggleRightPanel('notification')}
-                className={`relative p-2 rounded-xl transition-all
-                ${activeRightPanel === 'notification' ? "bg-[#d4f4dd]" : "hover:bg-[#f0f9f4]"}`}
-            >
-              <Bell size={18} className="text-[#5CC87A]" />
-              {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
-                  <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
-              )}
-            </button>
-          </Tooltip>
+
           <Tooltip label="설정" side="bottom">
             <Link to="/workspace/settings" className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all">
               <Settings size={18} className="text-[#5CC87A]" />
@@ -190,7 +229,21 @@ export function WorkspaceLayout() {
 
         {/* ── 메인 콘텐츠 ── */}
         <div className="flex-1 overflow-hidden relative">
-          <Outlet context={{ channels }} />
+          {currentWorkspace ? (
+              <Outlet context={{ channels }} />
+          ) : (
+              <div className="h-full flex flex-col items-center justify-center gap-3 text-center px-6">
+                <div className="w-16 h-16 rounded-2xl bg-[#f0f9f4] flex items-center justify-center">
+                  <LayoutGrid size={28} className="text-[#5CC87A]" />
+                </div>
+                <p className="text-sm font-semibold text-[#2C3E50]">
+                  참여 중인 워크스페이스가 없습니다
+                </p>
+                <p className="text-xs text-gray-400">
+                  왼쪽의 <span className="font-semibold text-[#5CC87A]">+</span> 버튼으로 워크스페이스를 만들어보세요
+                </p>
+              </div>
+          )}
         </div>
 
         {/* 퀵 메뉴 팝업 */}
@@ -283,7 +336,18 @@ export function WorkspaceLayout() {
                 <Grid3x3 size={19} className="text-white" />
               </button>
             </Tooltip>
-
+            <Tooltip label="알림" side="top">
+              <button
+                  onClick={() => toggleRightPanel('notification')}
+                  className={`relative p-2 rounded-xl transition-all
+                ${activeRightPanel === 'notification' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+              >
+                <Bell size={18} className="text-white" />
+                {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
+                    <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                )}
+              </button>
+            </Tooltip>
             <Tooltip label="친구 목록" side="top">
               <button
                 onClick={() => toggleRightPanel('friend')}

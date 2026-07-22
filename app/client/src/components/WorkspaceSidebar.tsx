@@ -8,29 +8,18 @@ import { useUiStore } from "../store/uiStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import Modal from "@/components/Modal.tsx";
 import { api } from '../api/client';
-
-// 목데이터 — 나중에 "닉네임 사용자 검색 API"로 교체 예정 (현재 백엔드에 없음)
-const MOCK_USERS = [
-  { id: 1, nickname: "김민준" },
-  { id: 2, nickname: "이서연" },
-  { id: 3, nickname: "박지훈" },
-  { id: 4, nickname: "강하은" },
-  { id: 5, nickname: "최수진" },
-  { id: 6, nickname: "정민호" },
-  { id: 7, nickname: "홍길동" },
-  { id: 8, nickname: "김철수" },
-];
+import { Tooltip } from "./Tooltip";
 
 
 interface WorkspaceSidebarProps {
-  channels: { id: string; name: string }[];
-  activeChannelId: string | null;
-  onSelectChannel: (id: string) => void;
+  channels: { id: number; name: string }[];
+  activeChannelId: number | null;
+  onSelectChannel: (id: number) => void;
   onAddChannel: (name: string) => void;
-  onDeleteChannel: (channelId: string) => void;
-  onRenameChannel: (channelId: string, newName: string) => void;
+  onDeleteChannel: (channelId: number) => void;
+  onRenameChannel: (channelId: number, newName: string) => void;
   onDeleteWorkspace: (workspaceId: number) => void;
-  getDefaultChannelId: (workspaceId: number) => string;
+  getDefaultChannelId: (workspaceId: number) => number | null;
 }
 
 export function WorkspaceSidebar({
@@ -38,28 +27,77 @@ export function WorkspaceSidebar({
 }: WorkspaceSidebarProps) {
   const navigate = useNavigate();
   const {isSidebarOpen, toggleSidebar} = useUiStore();
-  const {currentWorkspace, setWorkspace, workspaces, addWorkspace, updateWorkspace, setWorkspaces} = useWorkspaceStore();
+  const {
+    currentWorkspace,
+    setWorkspace,
+    workspaces,
+    addWorkspace,
+    updateWorkspace,
+    setWorkspaces
+  } = useWorkspaceStore();
   const [showNewInput, setShowNewInput] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [showNewWorkspaceInput, setShowNewWorkspaceInput] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
-  const [channelMenuOpenId, setChannelMenuOpenId] = useState<string | null>(null);
-  const [renamingChannelId, setRenamingChannelId] = useState<string | null>(null);
+  const [channelMenuOpenId, setChannelMenuOpenId] = useState<number | null>(null);
+  const [renamingChannelId, setRenamingChannelId] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteQuery, setInviteQuery] = useState("");
-  const [invitedIds, setInvitedIds] = useState<number[]>([]);
+  const [inviteNickname, setInviteNickname] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [invitedList, setInvitedList] = useState<string[]>([]);
   const railRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef({ dragging: false, startY: 0, startScroll: 0 });
+  const dragState = useRef({dragging: false, startY: 0, startScroll: 0});
+  const [wsLoading, setWsLoading] = useState(true);
+  const [wsError, setWsError] = useState("");
+
+
 
   const handleRailMouseDown = (e: React.MouseEvent) => {
-    dragState.current = { dragging: true, startY: e.pageY, startScroll: railRef.current?.scrollTop ?? 0 };
+    dragState.current = {dragging: true, startY: e.pageY, startScroll: railRef.current?.scrollTop ?? 0};
   };
   const handleRailMouseMove = (e: React.MouseEvent) => {
     if (!dragState.current.dragging || !railRef.current) return;
     railRef.current.scrollTop = dragState.current.startScroll - (e.pageY - dragState.current.startY);
   };
+  const handleInvite = async () => {
+    const nickname = inviteNickname.trim();
+    if (!nickname || !currentWorkspace) return;
+
+    setInviteLoading(true);
+    setInviteError("");
+
+    try {
+      const {data, error} = await api.POST(
+          '/api/workspaces/{workspaceId}/members',
+          {
+            params: {path: {workspaceId: currentWorkspace.id}},
+            body: {nickname, role: "member"},   // 스펙상 role이 required로 바뀌어 명시
+          }
+      );
+
+      if (error || !data?.success) {
+        // 서버가 한국어 메시지를 내려줌 (MBR_001 없는 닉네임 / MBR_002 이미 멤버 등)
+        const msg = (error as any)?.error?.message;
+        setInviteError(msg ?? "초대에 실패했습니다. 닉네임을 확인해주세요.");
+        return;
+      }
+
+      setInvitedList((prev) => [...prev, nickname]);
+      setInviteNickname("");
+    } catch (e) {
+      // 네트워크 자체가 끊긴 경우 (서버 다운 등) — fetch가 reject 하므로 여기로 옴
+      console.error("초대 요청 실패:", e);
+      setInviteError("서버에 연결할 수 없습니다.");
+    } finally {
+      // 성공/실패/예외 어느 경로로 빠져나가도 로딩은 반드시 해제
+      setInviteLoading(false);
+    }
+  }
+
+
   const stopRailDrag = () => {
     dragState.current.dragging = false;
   };
@@ -97,19 +135,34 @@ export function WorkspaceSidebar({
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await api.GET('/api/workspaces/me')
-      if (error || !data?.data) return
-      const mapped = data.data.map((w, i) => ({
-        id: w.id!,
-        name: w.name ?? '',
-        avatar: (w.name ?? '?').charAt(0),
-        colors: DEFAULT_COLORS[i % DEFAULT_COLORS.length],
-        unread: false,
-      }))
-      setWorkspaces(mapped)
-      if (!currentWorkspace && mapped[0]) {
-        setWorkspace(mapped[0])
-        navigate(`/workspace/channels/${getDefaultChannelId(mapped[0].id)}`)
+      try {
+        const { data, error } = await api.GET('/api/workspaces/me')
+
+        if (error || !data?.success) {
+          const msg = (error as any)?.error?.message
+          setWsError(msg ?? '워크스페이스를 불러오지 못했습니다')
+          return
+        }
+
+        const mapped = (data.data ?? []).map((w, i) => ({
+          id: w.id!,
+          name: w.name ?? '',
+          avatar: (w.name ?? '?').charAt(0),
+          colors: DEFAULT_COLORS[i % DEFAULT_COLORS.length],
+          unread: false,
+          role: w.role,
+        }))
+        setWorkspaces(mapped)
+
+        if (!currentWorkspace && mapped[0]) {
+          setWorkspace(mapped[0])
+          navigate(`/workspace/channels/${getDefaultChannelId(mapped[0].id)}`)
+        }
+      } catch (e) {
+        console.error('워크스페이스 조회 실패:', e)
+        setWsError('서버에 연결할 수 없습니다')
+      } finally {
+        setWsLoading(false)
       }
     })()
   }, [])
@@ -216,54 +269,52 @@ export function WorkspaceSidebar({
 
       {/* ── 인원 추가 모달 ── */}
       <Modal
-        isOpen={showInviteModal}
-        onClose={() => setShowInviteModal(false)}
-        title="인원 추가"
+          isOpen={showInviteModal}
+          onClose={() => setShowInviteModal(false)}
+          title="인원 추가"
       >
         <div className="flex flex-col gap-3">
-          <input
-            type="text"
-            value={inviteQuery}
-            onChange={(e) => setInviteQuery(e.target.value)}
-            placeholder="닉네임으로 검색"
-            autoFocus
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]"
-          />
-
-          <div className="max-h-60 overflow-y-auto flex flex-col gap-1">
-            {inviteQuery.trim() &&
-              MOCK_USERS.filter((u) => u.nickname.includes(inviteQuery.trim())).map((u) => {
-                const invited = invitedIds.includes(u.id);
-                return (
-                  <div key={u.id} className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold">
-                        {u.nickname.charAt(0)}
-                      </div>
-                      <span className="text-sm text-[#2C3E50]">{u.nickname}</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        // TODO: 실제 초대 API 연결 (POST /api/workspaces/{id}/members)
-                        setInvitedIds((prev) => [...prev, u.id]);
-                      }}
-                      disabled={invited}
-                      className={`px-3 py-1 text-xs font-medium rounded-lg transition-all
-                        ${invited
-                          ? "bg-gray-100 text-gray-400 cursor-default"
-                          : "bg-[#5CC87A] hover:bg-[#2E8B4F] text-white"}`}
-                    >
-                      {invited ? "초대됨" : "초대"}
-                    </button>
-                  </div>
-                );
-              })}
-
-            {inviteQuery.trim() &&
-              MOCK_USERS.filter((u) => u.nickname.includes(inviteQuery.trim())).length === 0 && (
-                <p className="text-xs text-gray-400 text-center py-4">검색 결과가 없습니다</p>
-              )}
+          <div>
+            <input
+                type="text"
+                value={inviteNickname}
+                onChange={(e) => { setInviteNickname(e.target.value); setInviteError(""); }}
+                onKeyDown={(e) => e.key === "Enter" && !inviteLoading && handleInvite()}
+                placeholder="초대할 사용자의 닉네임"
+                autoFocus
+                maxLength={50}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]"
+            />
+            {inviteError && (
+                <p className="text-xs text-red-500 mt-1.5">{inviteError}</p>
+            )}
           </div>
+
+          <button
+              onClick={handleInvite}
+              disabled={!inviteNickname.trim() || inviteLoading}
+              className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all"
+          >
+            {inviteLoading ? "초대 중..." : "초대 보내기"}
+          </button>
+
+          {/* 이번에 보낸 초대 */}
+          {invitedList.length > 0 && (
+              <div className="border-t border-gray-100 pt-3">
+                <p className="text-xs text-gray-400 mb-2">초대를 보냈습니다</p>
+                <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
+                  {invitedList.map((nick) => (
+                      <div key={nick} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#f8fdf9]">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-xs font-bold">
+                          {nick.charAt(0)}
+                        </div>
+                        <span className="text-sm text-[#2C3E50]">{nick}</span>
+                        <span className="ml-auto text-xs text-gray-400">대기 중</span>
+                      </div>
+                  ))}
+                </div>
+              </div>
+          )}
         </div>
       </Modal>
 
@@ -277,55 +328,65 @@ export function WorkspaceSidebar({
           onMouseLeave={stopRailDrag}
           className="flex-1 w-full flex flex-col items-center gap-2 overflow-y-auto overflow-x-hidden no-scrollbar cursor-grab active:cursor-grabbing"
         >
+          {wsLoading && (
+              <div className="w-11 h-11 rounded-[22px] bg-white/10 animate-pulse flex-shrink-0" />
+          )}
+
+          {!wsLoading && wsError && (
+              <Tooltip label={wsError} side="right">
+                <div className="w-11 h-11 rounded-[22px] bg-red-500/20 border border-red-400/40 flex items-center justify-center flex-shrink-0 cursor-help">
+                  <span className="text-red-300 text-lg font-bold">!</span>
+                </div>
+              </Tooltip>
+          )}
           {workspaces.map((ws) => {
             const active = ws.id === currentWorkspace?.id;
             return (
-              <button
-                key={ws.id}
-                onClick={() => {
-                  setWorkspace(ws);
-                  navigate(`/workspace/channels/${getDefaultChannelId(ws.id)}`);
-                }}
-                title={ws.name}
-                className="relative group flex-shrink-0"
-              >
-                <div
-                  className={`w-11 h-11 flex items-center justify-center text-white font-bold text-base shadow-md transition-all duration-200
-                    ${active ? "rounded-xl" : "rounded-[22px] group-hover:rounded-xl"}`}
-                  style={{ background: `linear-gradient(to bottom right, ${ws.colors[0]}, ${ws.colors[1]})` }}
+              <Tooltip key={ws.id} label={ws.name} side="right">
+                <button
+                  onClick={() => {
+                    setWorkspace(ws);
+                    navigate(`/workspace/channels/${getDefaultChannelId(ws.id)}`);
+                  }}
+                  className="relative group flex-shrink-0"
                 >
-                  {ws.avatar}
-                </div>
-                {active && (
-                  <div className="absolute -left-[14px] top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
-                )}
-                {ws.unread && !active && (
-                  <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-[#1e3a28]" />
-                )}
-                <div className="absolute left-[60px] top-1/2 -translate-y-1/2 bg-[#1e3a28] text-white text-xs font-semibold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl">
-                  {ws.name}
-                </div>
-              </button>
+                  <div
+                    className={`w-11 h-11 flex items-center justify-center text-white font-bold text-base shadow-md transition-all duration-200
+                      ${active ? "rounded-xl" : "rounded-[22px] group-hover:rounded-xl"}`}
+                    style={{ background: `linear-gradient(to bottom right, ${ws.colors[0]}, ${ws.colors[1]})` }}
+                  >
+                    {ws.avatar}
+                  </div>
+                  {active && (
+                    <div className="absolute -left-[14px] top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
+                  )}
+                  {ws.unread && !active && (
+                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-[#1e3a28]" />
+                  )}
+                </button>
+              </Tooltip>
             );
           })}
-          <button
-            onClick={()=>setShowNewWorkspaceInput(true)}
-            className="w-11 h-11 rounded-full bg-white/10 hover:bg-[#5CC87A] flex items-center justify-center transition-all duration-200 group flex-shrink-0"
-            title="새 워크스페이스"
-          >
-            <Plus size={20} className="text-[#5CC87A] group-hover:text-white transition-colors" />
-          </button>
+          <Tooltip label="새 워크스페이스" side="right">
+            <button
+              onClick={()=>setShowNewWorkspaceInput(true)}
+              className="w-11 h-11 rounded-full bg-white/10 hover:bg-[#5CC87A] flex items-center justify-center transition-all duration-200 group flex-shrink-0"
+            >
+              <Plus size={20} className="text-[#5CC87A] group-hover:text-white transition-colors" />
+            </button>
+          </Tooltip>
         </div>
 
-        <button
-          onClick={toggleSidebar}
-          title={isSidebarOpen ? "채널 목록 접기" : "채널 목록 펼치기"}
-          className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all flex-shrink-0"
-        >
-          {isSidebarOpen
-            ? <PanelLeftClose size={19} className="text-white/60" />
-            : <PanelLeftOpen size={19} className="text-white/60" />}
-        </button>
+        <Tooltip label={isSidebarOpen ? "채널 목록 접기" : "채널 목록 펼치기"} side="right">
+          <button
+            onClick={toggleSidebar}
+            className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all flex-shrink-0"
+          >
+            {isSidebarOpen
+              ? <PanelLeftClose size={19} className="text-white/60" />
+              : <PanelLeftOpen size={19} className="text-white/60" />}
+          </button>
+        </Tooltip>
       </div>
 
       {/* ── 채널 목록 패널 ── */}
@@ -335,38 +396,51 @@ export function WorkspaceSidebar({
       >
         <div className="w-56 flex flex-col h-full">
           <div className="h-14 px-4 flex items-center justify-between border-b border-white/10 flex-shrink-0">
-            <h2 className="text-white font-bold text-sm truncate">{currentWorkspace?.name}</h2>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <button
-                onClick={() => { setInviteQuery(""); setShowInviteModal(true); }}
-                title="인원 추가"
-                className="p-1 hover:bg-white/10 rounded-md"
-              >
-                <UserPlus size={14} className="text-white/50" />
-              </button>
-              <button
-                onClick={() => {
-                  setEditName(currentWorkspace?.name ?? "");
-                  setShowWorkspaceSettings(true);
-                }}
-                title="서버 설정"
-                className="p-1 hover:bg-white/10 rounded-md"
-              >
-                <Settings size={14} className="text-white/50" />
-              </button>
-            </div>
+            <h2 className="text-white font-bold text-sm truncate">
+              {currentWorkspace?.name ?? (wsLoading ? "불러오는 중..." : "워크스페이스 없음")}
+            </h2>
+            {currentWorkspace && (
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Tooltip label="인원 추가" side="bottom">
+                  <button
+                    onClick={() => {
+                      setInviteNickname("");
+                      setInviteError("");
+                      setInvitedList([]);
+                      setInviteLoading(false);   // 이전에 끊긴 요청의 로딩 상태가 남아있을 수 있음
+                      setShowInviteModal(true);
+                    }}
+                    className="p-1 hover:bg-white/10 rounded-md"
+                  >
+                    <UserPlus size={14} className="text-white/50" />
+                  </button>
+                </Tooltip>
+                <Tooltip label="서버 설정" side="bottom" align="end">
+                  <button
+                    onClick={() => {
+                      setEditName(currentWorkspace.name);
+                      setShowWorkspaceSettings(true);
+                    }}
+                    className="p-1 hover:bg-white/10 rounded-md"
+                  >
+                    <Settings size={14} className="text-white/50" />
+                  </button>
+                </Tooltip>
+              </div>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">
             <div className="flex items-center justify-between px-1 mb-1.5">
               <span className="text-white/40 text-xs font-semibold uppercase tracking-wide">채널</span>
-              <button
-                onClick={() => setShowNewInput(!showNewInput)}
-                title="새 채널"
-                className="p-1 hover:bg-white/10 rounded-md transition-all"
-              >
-                <Plus size={14} className="text-white/50" />
-              </button>
+              <Tooltip label="새 채널" side="bottom" align="end">
+                <button
+                  onClick={() => setShowNewInput(!showNewInput)}
+                  className="p-1 hover:bg-white/10 rounded-md transition-all"
+                >
+                  <Plus size={14} className="text-white/50" />
+                </button>
+              </Tooltip>
             </div>
 
             {showNewInput && (
