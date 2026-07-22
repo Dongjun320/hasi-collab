@@ -44,7 +44,11 @@ public enum ErrorCode {
     MBR_004(HttpStatus.BAD_REQUEST, "MBR_004", "멤버 입력값이 유효하지 않습니다"),
     MBR_005(HttpStatus.NOT_FOUND, "MBR_005", "워크스페이스 또는 채널 또는 멤버를 찾을 수 없습니다"),
     MBR_006(HttpStatus.NOT_FOUND, "MBR_006", "초대를 찾을 수 없습니다"),
-    MBR_007(HttpStatus.CONFLICT, "MBR_007", "초대 대기 중인 사용자입니다");
+    MBR_007(HttpStatus.CONFLICT, "MBR_007", "초대 대기 중인 사용자입니다"),
+
+    // FRIEND
+    FRIEND_001(HttpStatus.BAD_REQUEST, "FRIEND_001", "자기 자신을 친구로 추가할 수 없습니다"),
+    FRIEND_002(HttpStatus.CONFLICT,    "FRIEND_002", "이미 친구인 사용자입니다");
 
     private final HttpStatus status;
     private final String code;

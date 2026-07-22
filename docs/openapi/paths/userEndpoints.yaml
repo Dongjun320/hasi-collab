@@ -1,0 +1,23 @@
+paths:
+  /api/users/search:
+    get:
+      operationId: searchUser
+      summary: "닉네임으로 유저 검색 (친구 추가용)"
+      tags: [User]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: nickname
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "검색 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/userResponseBodies.yaml#/components/schemas/UserSearchResponse"
+        "404":
+          description: "해당 닉네임의 유저가 없음"
