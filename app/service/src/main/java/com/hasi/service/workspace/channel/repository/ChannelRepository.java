@@ -10,4 +10,6 @@ public interface ChannelRepository extends JpaRepository<Channel, Long> {
     Optional<Channel> findByWorkspaceIdAndId(Long workspaceId, Long channelId);
 
     List<Channel> findByWorkspaceId(Long workspaceId);
+
+    List<Channel> findByParentId(Long parentId);
 }

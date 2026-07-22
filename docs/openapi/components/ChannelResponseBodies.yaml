@@ -11,6 +11,11 @@ components:
           type: integer
           format: int64
           description: "워크스페이스 ID"
+        parentId:
+          type: integer
+          format: int64
+          nullable: true
+          description: "상위채널 ID"
         name:
           type: string
           description: "채널 이름"

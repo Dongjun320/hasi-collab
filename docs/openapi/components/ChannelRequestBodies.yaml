@@ -14,6 +14,11 @@ components:
         isPrivate:
           type: boolean
           description: "공개/비공개"
+        parentId:
+          type: integer
+          format: int64
+          nullable: true
+          description: "상위 채널 ID (NULL이면 최상위 채널)"
 
     ChannelPatchRequest:
       type: object
