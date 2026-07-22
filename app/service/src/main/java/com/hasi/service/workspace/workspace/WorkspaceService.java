@@ -10,6 +10,7 @@ import com.hasi.service.workspace.member.entity.WorkspaceMember;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
 import com.hasi.service.workspace.workspace.entity.Workspace;
 import com.hasi.service.workspace.workspace.repository.WorkspaceRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.security.core.Authentication;
@@ -27,6 +28,7 @@ public class WorkspaceService {
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
 
+    @Transactional
     public WorkspaceData createWorkspace(WorkspaceCreateRequest request) {
 
         // ownerId를 JWT SecurityContextHolder에서 추출

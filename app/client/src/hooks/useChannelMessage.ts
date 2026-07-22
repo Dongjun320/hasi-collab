@@ -20,15 +20,15 @@ export const useChannelMessage = (channelId: number) => {
 
     // 1. 히스토리 로드 (REST)
     fetchChannelHistory(channelId, token)
-      .then(setMessages)
-      .catch(console.error)
+        .then(setMessages)
+        .catch(console.error)
 
     // 2. STOMP 연결 후 채널 구독 (구독 = 실시간 수신)
     connectStomp(token)
-      .then(() => {
-        unsub = subscribeToChannel(channelId, (msg) => addMessage(msg))
-      })
-      .catch(console.error)
+        .then(() => {
+          unsub = subscribeToChannel(channelId, (msg) => addMessage(msg))
+        })
+        .catch(console.error)
 
     // 채널 나갈 때 구독 해제 + 비우기
     return () => {

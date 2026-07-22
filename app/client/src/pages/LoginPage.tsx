@@ -48,7 +48,7 @@ const LoginPage = () => {
     setToast({ open: true, message, type })
   }
 
-  // 로그인 로직
+  // 로그인 로직 (메인 폼에서 인증 성공 시에만 navigate 이동)
   const handleLogin = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
@@ -68,7 +68,6 @@ const LoginPage = () => {
       return
     }
     if (data && data.accessToken) {
-      // TS2345 에러 방지를 위해 data.user as any 로 타입 단언 유지
       setAuth(data.user as any, data.accessToken, data.refreshToken)
       triggerToast("ログインが完了しました。", "success")
       setTimeout(() => navigate('/WorkspaceHome'), 1200)
@@ -105,7 +104,7 @@ const LoginPage = () => {
     triggerToast("認証が完了しました。", "success")
   }
 
-  // 회원가입 제출
+  // 회원가입 제출 (완료 시 모달 닫기 및 메인 폼에 정보 채우기)
   const handleSignUpSubmit = async () => {
     if (!signUpEmail.trim() || !signUpPw.trim() || !signUpPwConfirm.trim()) {
       triggerToast("すべての情報を入力してください。", "warning")
@@ -119,15 +118,26 @@ const LoginPage = () => {
       triggerToast("パスワードが一致しません。", "error")
       return
     }
+
     const { error } = await api.POST('/api/auth/register', {
       body: { email: signUpEmail, password: signUpPw, nickname: signUpNickname }
     })
+
     if (error) {
       triggerToast("会員登録に失敗しました。", "error")
       return
     }
-    triggerToast("会員登録が完了しました。", "success")
+
+    triggerToast("会員登録が完了しました。ログインしてください。", "success")
+
+    // 사용자가 바로 로그인할 수 있도록 메인 폼에 이메일/비밀번호 자동 입력
+    setEmail(signUpEmail)
+    setPassword(signUpPw)
+
+    // 모달 닫기
     setSignUpOpen(false)
+
+    // 상태 초기화
     setSignUpEmail(''); setSignUpNickname(''); setSignUpPw(''); setSignUpPwConfirm(''); setSignUpCode('');
     setIsCodeSent(false); setIsVerified(false);
   }
@@ -138,8 +148,8 @@ const LoginPage = () => {
       triggerToast("E-mailを入力してください。", "warning")
       return
     }
-    const { error } = await api.POST('/api/auth/email/send', {
-      body: { email: findEmail, purpose: 'reset' } as any
+    const { error } = await api.POST('/api/auth/password/send', {
+      body: { email: findEmail } as any
     })
     if (error) {
       triggerToast("メール送信に失敗しました。", "error")
@@ -155,7 +165,7 @@ const LoginPage = () => {
       triggerToast("認証コードを入力してください。", "warning")
       return
     }
-    const { error } = await api.POST('/api/auth/email/verify', { body: { email: findEmail, code: findCode } })
+    const { error } = await api.POST('/api/auth/password/verify', { body: { email: findEmail, code: findCode } })
     if (error) {
       triggerToast("認証に失敗しました。コードをご確認ください。", "error")
       return
@@ -164,7 +174,7 @@ const LoginPage = () => {
     triggerToast("認証が完了しました。", "success")
   }
 
-  // 비밀번호 재설정 제출
+  // 비밀번호 재설정 제출 (완료 시 모달 닫기 및 메인 폼에 정보 채우기)
   const handleResetPasswordSubmit = async () => {
     if (!findEmail.trim() || !newPw.trim() || !newPwConfirm.trim()) {
       triggerToast("すべての情報を入力してください。", "warning")
@@ -188,8 +198,16 @@ const LoginPage = () => {
       return
     }
 
-    triggerToast("パスワードが変更されました。", "success")
+    triggerToast("パスワードが変更されました。新しいパスワードでログインしてください。", "success")
+
+    // 사용자가 바로 로그인할 수 있도록 메인 폼에 이메일/비밀번호 자동 입력
+    setEmail(findEmail)
+    setPassword(newPw)
+
+    // 모달 닫기
     setFindOpen(false)
+
+    // 상태 초기화
     setFindEmail(''); setFindCode(''); setNewPw(''); setNewPwConfirm('');
     setIsFindCodeSent(false); setIsFindVerified(false);
   }
@@ -300,7 +318,7 @@ const LoginPage = () => {
 
         {/* ── 3. 모달 영역 ── */}
 
-        {/* 회원가입 모달 (UI 코드 복구됨!) */}
+        {/* 회원가입 모달 */}
         <Modal isOpen={signUpOpen} onClose={() => setSignUpOpen(false)} title="新規会員登録">
           <div className="flex flex-col gap-4">
             <div className="flex items-end gap-2">

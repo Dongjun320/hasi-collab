@@ -1,6 +1,10 @@
-import { Client, IMessage } from '@stomp/stompjs';
+import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 
 const MESSENGER_WS_URL = 'ws://localhost:8081/ws';
+
+const DM_INBOX_DESTINATION = '/user/queue/dm';
+
+const ERROR_DESTINATION = '/user/queue/errors';
 
 let client: Client | null = null;
 let connectPromise: Promise<void> | null = null;
@@ -26,6 +30,13 @@ export function connectStomp(token: string): Promise<void> {
 
   connectPromise = new Promise<void>((resolve, reject) => {
     stompClient.onConnect = () => {
+      errorSubscription = null;
+      dmInboxSubscription = null;
+
+      ensureErrorSubscription();
+      if (dmListeners.size > 0) {
+        ensureDmInboxSubscription();
+      }
       resolve();
     };
     stompClient.onStompError = (frame) => {
@@ -46,6 +57,10 @@ export function disconnectStomp(): void {
   client?.deactivate();
   client = null;
   connectPromise = null;
+  dmInboxSubscription = null;
+  dmListeners.clear();
+  errorSubscription = null;
+  errorListeners.clear();
 }
 
 function requireClient(): Client {
@@ -77,7 +92,42 @@ export type DmOutboundMessage = {
   isDeleted: boolean;
 };
 
-// /topic/channel.{channelId} 구독. 반환된 함수로 구독 해제합니다.
+export type MessengerErrorCode = 'ACCESS_DENIED' | 'INVALID_REQUEST' | 'INTERNAL_ERROR';
+
+export type MessengerError = {
+  code: MessengerErrorCode;
+  message: string;
+  destination: string | null;
+};
+
+type ErrorListener = (error: MessengerError) => void;
+
+let errorSubscription: StompSubscription | null = null;
+const errorListeners = new Set<ErrorListener>();
+
+function ensureErrorSubscription(): void {
+  if (errorSubscription) {
+    return;
+  }
+  errorSubscription = requireClient().subscribe(ERROR_DESTINATION, (message) => {
+    const error = parseBody<MessengerError>(message);
+    if (errorListeners.size === 0) {
+      console.error('messenger 요청 거부됨:', error);
+      return;
+    }
+    for (const listener of errorListeners) {
+      listener(error);
+    }
+  });
+}
+
+export function subscribeToErrors(listener: ErrorListener): () => void {
+  errorListeners.add(listener);
+  return () => {
+    errorListeners.delete(listener);
+  };
+}
+
 export function subscribeToChannel(
   channelId: number | string,
   onMessage: (message: ChannelOutboundMessage) => void
@@ -88,15 +138,44 @@ export function subscribeToChannel(
   return () => subscription.unsubscribe();
 }
 
-// /user/queue/dm 구독. 서버가 세션별 큐로 변환해 전달하므로 상대방과 무관하게 내 DM 전체가 하나의 큐로 옵니다.
-// 특정 상대방과의 대화만 필요하면 onMessage 콜백에서 message.sender/receiver로 걸러야 합니다.
+type DmListener = {
+  peerId: string;
+  onMessage: (message: DmOutboundMessage) => void;
+};
+
+let dmInboxSubscription: StompSubscription | null = null;
+const dmListeners = new Set<DmListener>();
+
+function ensureDmInboxSubscription(): void {
+  if (dmInboxSubscription) {
+    return;
+  }
+  dmInboxSubscription = requireClient().subscribe(DM_INBOX_DESTINATION, (message) => {
+    const dm = parseBody<DmOutboundMessage>(message);
+    for (const listener of dmListeners) {
+      if (dm.sender === listener.peerId || dm.receiver === listener.peerId) {
+        listener.onMessage(dm);
+      }
+    }
+  });
+}
+
+// /user/queue/dm
 export function subscribeToDm(
+  peerId: number | string,
   onMessage: (message: DmOutboundMessage) => void
 ): () => void {
-  const subscription = requireClient().subscribe('/user/queue/dm', (message) => {
-    onMessage(parseBody<DmOutboundMessage>(message));
-  });
-  return () => subscription.unsubscribe();
+  const listener: DmListener = { peerId: String(peerId), onMessage };
+  ensureDmInboxSubscription();
+  dmListeners.add(listener);
+
+  return () => {
+    dmListeners.delete(listener);
+    if (dmListeners.size === 0) {
+      dmInboxSubscription?.unsubscribe();
+      dmInboxSubscription = null;
+    }
+  };
 }
 
 export function sendChannelMessage(channelId: number | string, content: string): void {

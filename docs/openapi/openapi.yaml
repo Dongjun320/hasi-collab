@@ -17,6 +17,12 @@ paths:
   /api/auth/email/verify:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1email~1verify"
 
+  /api/auth/password/send:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1password~1send"
+
+  /api/auth/password/verify:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1password~1verify"
+
   /api/auth/login:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1login"
 

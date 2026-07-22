@@ -1,5 +1,6 @@
 package com.hasi.messenger.dm;
 
+import com.hasi.messenger.directory.ServiceDirectory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -12,15 +13,23 @@ import java.util.List;
 public class DmService {
     private final DirectMessageRepository messageRepository;
     private final SimpMessagingTemplate messageTemplate;
+    private final ServiceDirectory serviceDirectory;
 
-    public DmService(DirectMessageRepository messageRepository, SimpMessagingTemplate messageTemplate){
+    public DmService(DirectMessageRepository messageRepository,
+                     SimpMessagingTemplate messageTemplate,
+                     ServiceDirectory serviceDirectory){
         this.messageRepository = messageRepository;
         this.messageTemplate = messageTemplate;
+        this.serviceDirectory = serviceDirectory;
     }
 
     // 메시지 POST
     @Transactional
     public DmDtos.OutboundMessage createMessage(String sender, Long receiverId, String content){
+        if (!serviceDirectory.userExists(receiverId)) {
+            throw new IllegalArgumentException("Receiver not found: " + receiverId);
+        }
+
         LocalDateTime now = LocalDateTime.now();
 
         DirectMessage message = new DirectMessage();
@@ -82,9 +91,13 @@ public class DmService {
         return message;
     }
 
+    // 각자의 개인 큐(/user/queue/dm)로 전달합니다.
     private void broadcast(DmDtos.OutboundMessage outbound){
         messageTemplate.convertAndSendToUser(outbound.sender(), "/queue/dm", outbound);
-        messageTemplate.convertAndSendToUser(outbound.receiver(), "/queue/dm", outbound);
+
+        if (!outbound.sender().equals(outbound.receiver())) {
+            messageTemplate.convertAndSendToUser(outbound.receiver(), "/queue/dm", outbound);
+        }
     }
 
     private DmDtos.OutboundMessage toOutbound(DirectMessage message){

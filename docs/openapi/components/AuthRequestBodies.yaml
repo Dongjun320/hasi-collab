@@ -75,9 +75,8 @@ components:
       type: object
       required:
         - email
-        - code
         - newPassword
-      description: "비밀번호 재설정(이메일 인증 완료되었을때)"
+      description: "비밀번호 재설정 (password/verify로 코드 확인 완료 후 호출. code는 서버가 password:verified 플래그로 확인하므로 불필요)"
       properties:
         email:
           type: string

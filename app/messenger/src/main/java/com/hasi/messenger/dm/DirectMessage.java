@@ -44,5 +44,4 @@ public class DirectMessage {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
-
 }

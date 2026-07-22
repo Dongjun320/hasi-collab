@@ -6,12 +6,19 @@ import type { ChannelOutboundMessage, DmOutboundMessage } from './stomp';
 
 const MESSENGER_API_BASE = 'http://localhost:8081/messenger-api';
 
+export class MessengerApiError extends Error {
+  constructor(readonly status: number, readonly path: string) {
+    super(`messenger-api request failed: ${status} ${path}`);
+    this.name = 'MessengerApiError';
+  }
+}
+
 async function getJson<T>(path: string, token: string): Promise<T> {
   const response = await fetch(`${MESSENGER_API_BASE}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
-    throw new Error(`messenger-api request failed: ${response.status} ${path}`);
+    throw new MessengerApiError(response.status, path);
   }
   return response.json() as Promise<T>;
 }

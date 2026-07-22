@@ -21,6 +21,9 @@ public class Channel {
     @Column(name = "workspace_id", nullable = false)
     private Long workspaceId;
 
+    @Column(name = "parent_id")
+    private Long parentId;
+
     @Column(nullable = false, length = 100)
     private String name;
 

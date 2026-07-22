@@ -13,7 +13,16 @@ interface Workspace {
   role?: string           // 백엔드: OWNER | ADMIN | MEMBER
   iconUrl?: string | null // 백엔드
 }
-interface Channel { id: string; name: string }
+// 백엔드 ChannelData 대응 (박종서)
+// parentId: null이면 최상위 채널, 값이 있으면 해당 채널의 하위 채널 (트리 구조)
+// ※ 백엔드 id는 number. API 연결 시 매핑에서 문자열로 변환하거나 타입 통일 필요
+interface Channel {
+  id: string
+  name: string
+  parentId?: number | null  // 백엔드: 상위 채널 ID
+  workspaceId?: number      // 백엔드
+  isPrivate?: boolean       // 백엔드
+}
 
 interface WorkspaceState {
   currentWorkspace: Workspace | null

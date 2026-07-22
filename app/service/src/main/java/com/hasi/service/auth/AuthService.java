@@ -181,12 +181,23 @@ public class AuthService {
         );
     }
 
-    @Transactional
-    public void resetPassword(String email, String code, String newPassword) {
-
-        // Redis에서 비밀번호 재설정 코드 확인
+    // 비밀번호 재설정 코드 확인만 (비밀번호 변경 X)
+    public void emailVerifyForPWReset(String email, String code) {
         String savedCode = redisTemplate.opsForValue().get("email:reset:" + email);
         if (savedCode == null || !savedCode.equals(code)) {
+            throw new ApiException(ErrorCode.VERIFY_001);
+        }
+        // 코드 확인 성공 플래그 저장 (5분)
+        redisTemplate.opsForValue()
+                .set("password:verified:" + email, "true", Duration.ofMinutes(5));
+    }
+
+    @Transactional
+    public void resetPassword(String email, String newPassword) {
+
+        // 코드 확인 완료 여부 체크
+        String verified = redisTemplate.opsForValue().get("password:verified:" + email);
+        if (!"true".equals(verified)) {
             throw new ApiException(ErrorCode.VERIFY_001);
         }
 

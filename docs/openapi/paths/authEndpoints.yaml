@@ -57,6 +57,46 @@ paths:
       responses:
         '200':
           description: "인증 완료"
+  /api/auth/password/send:
+    post:
+      summary: "비밀번호 재설정용 인증코드 발송 (가입된 이메일만, 10분 유효)."
+      tags:
+        - Auth
+      operationId: passwordSend
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/EmailSendRequest"
+      responses:
+        '200':
+          description: "발송 완료"
+        '404':
+          description: "가입되지 않은 이메일"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth006Error"
+  /api/auth/password/verify:
+    post:
+      summary: "비밀번호 재설정용 인증코드 확인 (성공 시 password:verified 플래그 저장)."
+      tags:
+        - Auth
+      operationId: passwordVerify
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/EmailVerifyRequest"
+      responses:
+        '200':
+          description: "인증 완료"
+        '400':
+          description: "인증코드 오류 / 만료"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Verify001Error"
   /api/auth/login:
     post:
       summary: "로그인 성공 시 accessToken(1h) + refreshToken(7d) 발급."

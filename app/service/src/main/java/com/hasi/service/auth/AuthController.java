@@ -2,7 +2,6 @@ package com.hasi.service.auth;
 
 import com.hasi.collab.api.AuthApi;
 import com.hasi.collab.model.*;
-import com.hasi.service.common.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -49,6 +48,14 @@ public class AuthController implements AuthApi {
         return ResponseEntity.ok().build();
     }
 
+    // 비밀번호 재설정 코드 확인
+    @PostMapping("/password/verify")
+    public ResponseEntity<Void> emailVerifyForPWReset(
+            @Valid @RequestBody EmailVerifyRequest request) {
+        authService.emailVerifyForPWReset(request.getEmail(), request.getCode());
+        return ResponseEntity.ok().build();
+    }
+
     // 로그인
     @PostMapping("/login")
     public ResponseEntity<LogInResponse> login(
@@ -71,7 +78,6 @@ public class AuthController implements AuthApi {
             @Valid @RequestBody PasswordResetRequest request) {
         authService.resetPassword(
                 request.getEmail(),
-                request.getCode(),
                 request.getNewPassword()
         );
         return ResponseEntity.ok().build();
