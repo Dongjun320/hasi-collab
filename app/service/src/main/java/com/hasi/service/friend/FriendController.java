@@ -1,6 +1,6 @@
 package com.hasi.service.friend;
 
-import com.hasi.collab.model.*;
+import com.hasi.collab.model.FriendResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
