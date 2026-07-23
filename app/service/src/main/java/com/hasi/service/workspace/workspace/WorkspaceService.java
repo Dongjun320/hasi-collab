@@ -1,9 +1,6 @@
 package com.hasi.service.workspace.workspace;
 
-import com.hasi.collab.model.WorkspaceCreateRequest;
-import com.hasi.collab.model.WorkspaceData;
-import com.hasi.collab.model.WorkspaceGetUserSpaceResponseDataInner;
-import com.hasi.collab.model.WorkspaceMemberData;
+import com.hasi.collab.model.*;
 import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
 import com.hasi.service.workspace.member.entity.WorkspaceMember;
@@ -49,7 +46,7 @@ public class WorkspaceService {
         WorkspaceMember ownerMember = WorkspaceMember.builder()
                 .workspaceId(saved.getId())
                 .userId(ownerId)
-                .role(WorkspaceMember.Role.owner)
+                .role(WorkspaceMember.Role.OWNER)
                 .build();
         workspaceMemberRepository.save(ownerMember);
 
@@ -118,5 +115,74 @@ public class WorkspaceService {
             throw new ApiException(ErrorCode.AUTH_003);
         }
             return Long.valueOf(authentication.getName());
+    }
+
+    @Transactional
+    public WorkspaceData patchWorkspace(Long workspaceId, WorkspacePatchRequest request) {
+
+        Long uid = getCurrentUserId();
+
+        // 워크스페이스에 소속한 멤버가 아니면 접근불가
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
+
+        // owner가 아니면 수정 불가
+        if(!workspaceMember.getRole().name().equals("OWNER")) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+
+        if(request.getName() != null) {
+            workspace.updateName(request.getName());
+        }
+        if(request.getDescription() != null) {
+            workspace.updateDescription(request.getDescription());
+        }
+        if(request.getIconUrl() != null) {
+            workspace.updateIconUrl(request.getIconUrl());
+        }
+        if(request.getIsPrivate() != null) {
+            workspace.updateIsPrivate(request.getIsPrivate());
+        }
+
+        WorkspaceData data = new WorkspaceData();
+        data.setId(workspace.getId());
+        data.setName(workspace.getName());
+        data.setOwnerId(workspace.getOwnerId());
+        data.setIsPrivate(workspace.isPrivate());
+        data.setDescription(JsonNullable.of(workspace.getDescription()));
+        data.setIconUrl(JsonNullable.of(workspace.getIconUrl()));
+        data.setCreatedAt(workspace.getCreatedAt().atOffset(ZoneOffset.UTC));
+        data.setUpdatedAt(workspace.getUpdatedAt().atOffset(ZoneOffset.UTC));
+
+        return data;
+    }
+
+    @Transactional
+    public WorkspaceDeleteResponseData deleteWorkspace(Long workspaceId) {
+
+        Long uid = getCurrentUserId();
+        
+        // 워크스페이스에 소속한 멤버가 아니면 접근불가
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
+
+        // owner가 아니면 삭제 불가
+        if(!workspaceMember.getRole().name().equals("OWNER")) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                        .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+
+        workspaceMemberRepository.deleteByWorkspaceId(workspaceId);
+        workspaceRepository.delete(workspace);
+        
+        WorkspaceDeleteResponseData data = new WorkspaceDeleteResponseData();
+        data.setMessage("워크스페이스 삭제 완료");
+
+        return data;
     }
 }

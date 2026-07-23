@@ -2,6 +2,7 @@ components:
   schemas:
     FriendResponse:
       type: object
+      description: "친구 정보"
       properties:
         id:
           type: integer
@@ -9,17 +10,14 @@ components:
           description: "친구 유저 ID"
         name:
           type: string
+          maxLength: 50
           description: "친구 닉네임"
         status:
           type: string
-          enum: [online, away, busy, offline]
+          enum: [ ONLINE, AWAY, BUSY, OFFLINE ]
           description: "상태 코드"
         statusMessage:
           type: string
           nullable: true
+          maxLength: 100
           description: "상태 메시지"
-
-    FriendListResponse:
-      type: array
-      items:
-        $ref: "#/components/schemas/FriendResponse"

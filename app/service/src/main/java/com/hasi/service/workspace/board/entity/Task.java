@@ -59,6 +59,6 @@ public class Task {
 
     // priority ENUM 정의 (openapi 스펙과 동일)
     public enum Priority {
-        high, medium, low
+        HIGH, MEDIUM, LOW
     }
 }

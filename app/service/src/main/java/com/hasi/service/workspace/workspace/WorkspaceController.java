@@ -46,4 +46,28 @@ public class WorkspaceController implements WorkspaceApi {
 
         return ResponseEntity.ok(response);
     }
+
+    @Override
+    public ResponseEntity<WorkspacePatchResponse> patchWorkspace(Long workspaceId, WorkspacePatchRequest request) {
+        WorkspaceData data = workspaceService.patchWorkspace(workspaceId, request);
+        WorkspacePatchResponse response = new WorkspacePatchResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.ok(response);
+
+    }
+
+    @Override
+    public ResponseEntity<WorkspaceDeleteResponse> deleteWorkspace(Long workspaceId) {
+        WorkspaceDeleteResponseData data = workspaceService.deleteWorkspace(workspaceId);
+        WorkspaceDeleteResponse response = new WorkspaceDeleteResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.ok(response);
+    }
+
 }

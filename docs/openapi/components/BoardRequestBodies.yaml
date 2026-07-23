@@ -28,7 +28,7 @@ components:
           description: "담당자 userId"
         priority:
           type: string
-          enum: [high, medium, low]
+          enum: [HIGH, MEDIUM, LOW]
           description: "우선순위"
 
     TaskUpdateRequest:
@@ -47,5 +47,5 @@ components:
           description: "담당자 userId"
         priority:
           type: string
-          enum: [high, medium, low]
+          enum: [HIGH, MEDIUM, LOW]
           description: "우선순위"

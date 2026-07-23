@@ -34,7 +34,7 @@ public class ChannelService {
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
-        if(!workspaceMember.getRole().name().equals("owner")) {
+        if(!workspaceMember.getRole().name().equals("OWNER")) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -56,7 +56,7 @@ public class ChannelService {
         ChannelMember channelMember = ChannelMember.builder()
                 .channelId(channel.getId())
                 .userId(uid)
-                .role(ChannelMember.Role.owner)
+                .role(ChannelMember.Role.OWNER)
                 .build();
 
         channelMemberRepository.save(channelMember);
@@ -123,7 +123,7 @@ public class ChannelService {
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
-        if(!workspaceMember.getRole().name().equals("owner")) {
+        if(!workspaceMember.getRole().name().equals("OWNER")) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -158,7 +158,7 @@ public class ChannelService {
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
         // owner가 아니면 삭제 불가
-        if(!workspaceMember.getRole().name().equals("owner")) {
+        if(!workspaceMember.getRole().name().equals("OWNER")) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 

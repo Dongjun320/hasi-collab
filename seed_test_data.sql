@@ -3,9 +3,9 @@
 
 INSERT INTO users (email, password_hash, nickname, is_active, is_admin, is_email_verified, status_code, created_at, updated_at)
 VALUES
-    ('test_user1@example.com', '$2b$10$XNmP3kHfJN8vaksCue2wRer5cLobVdBn8nYTuMjldoHATZU3Yvd1G', 'test_user1', true, false, true, 'online', NOW(), NOW()),
-    ('test_user2@example.com', '$2b$10$h7Vf6NwtjzYjsa9GbkHCres0jtux40wDKmU/msFXm7aQpkaMBzQTW', 'test_user2', true, false, true, 'online', NOW(), NOW()),
-    ('test_user3@example.com', '$2b$10$iFSRem.VJoeHYcvOrqhxXeU7097TG4RDBYsemGrpdZ4VaRFPRb0/S', 'test_user3', true, false, true, 'online', NOW(), NOW())
+    ('test_user1@example.com', '$2b$10$XNmP3kHfJN8vaksCue2wRer5cLobVdBn8nYTuMjldoHATZU3Yvd1G', 'test_user1', true, false, true, 'ONLINE', NOW(), NOW()),
+    ('test_user2@example.com', '$2b$10$h7Vf6NwtjzYjsa9GbkHCres0jtux40wDKmU/msFXm7aQpkaMBzQTW', 'test_user2', true, false, true, 'ONLINE', NOW(), NOW()),
+    ('test_user3@example.com', '$2b$10$iFSRem.VJoeHYcvOrqhxXeU7097TG4RDBYsemGrpdZ4VaRFPRb0/S', 'test_user3', true, false, true, 'ONLINE', NOW(), NOW())
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO workspaces (owner_id, name, is_private, description, created_at, updated_at)

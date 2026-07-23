@@ -28,7 +28,7 @@ public class ChannelMember {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private Role role = Role.member;
+    private Role role = Role.MEMBER;
 
     @Column(name = "last_read_message_id")
     private Long lastReadMessageId;
@@ -38,6 +38,6 @@ public class ChannelMember {
     private LocalDateTime createdAt;
 
     public enum Role {
-        owner, admin, member
+        OWNER, ADMIN, MEMBER
     }
 }
