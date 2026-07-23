@@ -9,6 +9,7 @@ import { useWorkspaceStore } from "../store/workspaceStore";
 import Modal from "@/components/Modal.tsx";
 import { api } from '../api/client';
 import { Tooltip } from "./Tooltip";
+import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
 
 
 interface WorkspaceSidebarProps {
@@ -33,7 +34,9 @@ export function WorkspaceSidebar({
     workspaces,
     addWorkspace,
     updateWorkspace,
-    setWorkspaces
+    fetchWorkspaces,
+    wsLoading,
+    wsError,
   } = useWorkspaceStore();
   const [showNewInput, setShowNewInput] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
@@ -44,16 +47,10 @@ export function WorkspaceSidebar({
   const [renameValue, setRenameValue] = useState("");
   const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteNickname, setInviteNickname] = useState("");
-  const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState("");
-  const [invitedList, setInvitedList] = useState<string[]>([]);
+  const [invitedList, setInvitedList] = useState<SearchedUser[]>([]);
   const railRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({dragging: false, startY: 0, startScroll: 0});
-  const [wsLoading, setWsLoading] = useState(true);
-  const [wsError, setWsError] = useState("");
-
-
 
   const handleRailMouseDown = (e: React.MouseEvent) => {
     dragState.current = {dragging: true, startY: e.pageY, startScroll: railRef.current?.scrollTop ?? 0};
@@ -62,11 +59,8 @@ export function WorkspaceSidebar({
     if (!dragState.current.dragging || !railRef.current) return;
     railRef.current.scrollTop = dragState.current.startScroll - (e.pageY - dragState.current.startY);
   };
-  const handleInvite = async () => {
-    const nickname = inviteNickname.trim();
-    if (!nickname || !currentWorkspace) return;
-
-    setInviteLoading(true);
+  const handleInvite = async (user: SearchedUser) => {
+    if (!currentWorkspace) return;
     setInviteError("");
 
     try {
@@ -74,29 +68,23 @@ export function WorkspaceSidebar({
           '/api/workspaces/{workspaceId}/members',
           {
             params: {path: {workspaceId: currentWorkspace.id}},
-            body: {nickname, role: "member"},   // 스펙상 role이 required로 바뀌어 명시
+            body: {nickname: user.nickname, role: "member"},   // 스펙상 role이 required로 바뀌어 명시
           }
       );
 
       if (error || !data?.success) {
         // 서버가 한국어 메시지를 내려줌 (MBR_001 없는 닉네임 / MBR_002 이미 멤버 등)
         const msg = (error as any)?.error?.message;
-        setInviteError(msg ?? "초대에 실패했습니다. 닉네임을 확인해주세요.");
+        setInviteError(msg ?? "초대에 실패했습니다.");
         return;
       }
 
-      setInvitedList((prev) => [...prev, nickname]);
-      setInviteNickname("");
+      setInvitedList((prev) => [...prev, user]);
     } catch (e) {
-      // 네트워크 자체가 끊긴 경우 (서버 다운 등) — fetch가 reject 하므로 여기로 옴
       console.error("초대 요청 실패:", e);
       setInviteError("서버에 연결할 수 없습니다.");
-    } finally {
-      // 성공/실패/예외 어느 경로로 빠져나가도 로딩은 반드시 해제
-      setInviteLoading(false);
     }
   }
-
 
   const stopRailDrag = () => {
     dragState.current.dragging = false;
@@ -128,46 +116,18 @@ export function WorkspaceSidebar({
     setShowNewWorkspaceInput(false);
   };
 
-  const DEFAULT_COLORS = [
-    ["#A8E6B8", "#5CC87A"], ["#5CC87A", "#2E8B4F"],
-    ["#A8E6B8", "#FFE66D"], ["#5CC87A", "#FFD93D"], ["#2E8B4F", "#5CC87A"],
-  ]
-
   useEffect(() => {
     (async () => {
-      try {
-        const { data, error } = await api.GET('/api/workspaces/me')
+      await fetchWorkspaces();
 
-        if (error || !data?.success) {
-          const msg = (error as any)?.error?.message
-          setWsError(msg ?? '워크스페이스를 불러오지 못했습니다')
-          return
-        }
-
-        const mapped = (data.data ?? []).map((w, i) => ({
-          id: w.id!,
-          name: w.name ?? '',
-          avatar: (w.name ?? '?').charAt(0),
-          colors: DEFAULT_COLORS[i % DEFAULT_COLORS.length],
-          unread: false,
-          role: w.role,
-        }))
-        setWorkspaces(mapped)
-
-        if (!currentWorkspace && mapped[0]) {
-          setWorkspace(mapped[0])
-          navigate(`/workspace/channels/${getDefaultChannelId(mapped[0].id)}`)
-        }
-      } catch (e) {
-        console.error('워크스페이스 조회 실패:', e)
-        setWsError('서버에 연결할 수 없습니다')
-      } finally {
-        setWsLoading(false)
+      const {workspaces: list, currentWorkspace: cur} = useWorkspaceStore.getState();
+      if (!cur && list[0]) {
+        setWorkspace(list[0]);
+        const ch = getDefaultChannelId(list[0].id);
+        navigate(ch ? `/workspace/channels/${ch}` : "/workspace");
       }
-    })()
-  }, [])
-
-
+    })();
+  }, []);
 
   return (
     <div className="flex h-full flex-shrink-0">
@@ -274,41 +234,29 @@ export function WorkspaceSidebar({
           title="인원 추가"
       >
         <div className="flex flex-col gap-3">
-          <div>
-            <input
-                type="text"
-                value={inviteNickname}
-                onChange={(e) => { setInviteNickname(e.target.value); setInviteError(""); }}
-                onKeyDown={(e) => e.key === "Enter" && !inviteLoading && handleInvite()}
-                placeholder="초대할 사용자의 닉네임"
-                autoFocus
-                maxLength={50}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]"
-            />
-            {inviteError && (
-                <p className="text-xs text-red-500 mt-1.5">{inviteError}</p>
-            )}
-          </div>
+          <UserSearchBox
+              placeholder="초대할 사용자의 닉네임"
+              actionLabel="초대"
+              doneLabel="대기 중"
+              doneIds={invitedList.map((u) => u.uid)}
+              onSelect={handleInvite}
+          />
 
-          <button
-              onClick={handleInvite}
-              disabled={!inviteNickname.trim() || inviteLoading}
-              className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all"
-          >
-            {inviteLoading ? "초대 중..." : "초대 보내기"}
-          </button>
+          {inviteError && (
+              <p className="text-xs text-red-500">{inviteError}</p>
+          )}
 
           {/* 이번에 보낸 초대 */}
           {invitedList.length > 0 && (
               <div className="border-t border-gray-100 pt-3">
                 <p className="text-xs text-gray-400 mb-2">초대를 보냈습니다</p>
                 <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
-                  {invitedList.map((nick) => (
-                      <div key={nick} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#f8fdf9]">
+                  {invitedList.map((u) => (
+                      <div key={u.uid} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#f8fdf9]">
                         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-xs font-bold">
-                          {nick.charAt(0)}
+                          {u.nickname.charAt(0)}
                         </div>
-                        <span className="text-sm text-[#2C3E50]">{nick}</span>
+                        <span className="text-sm text-[#2C3E50]">{u.nickname}</span>
                         <span className="ml-auto text-xs text-gray-400">대기 중</span>
                       </div>
                   ))}
@@ -404,10 +352,8 @@ export function WorkspaceSidebar({
                 <Tooltip label="인원 추가" side="bottom">
                   <button
                     onClick={() => {
-                      setInviteNickname("");
                       setInviteError("");
                       setInvitedList([]);
-                      setInviteLoading(false);   // 이전에 끊긴 요청의 로딩 상태가 남아있을 수 있음
                       setShowInviteModal(true);
                     }}
                     className="p-1 hover:bg-white/10 rounded-md"

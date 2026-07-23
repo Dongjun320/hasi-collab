@@ -1,19 +1,51 @@
-import { useState } from "react";
-import { X, MoreHorizontal, Trash2, StickyNote } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, MoreHorizontal, Trash2, UserPlus, StickyNote } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
 import { useFriendStore, FRIEND_STATUS } from "../store/friendStore";
 import Modal from "./Modal";
 import { Tooltip } from "./Tooltip";
+import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
+import { api } from "../api/client";
 
 export function FriendSidebar() {
     const { activeRightPanel, closeRightPanel } = useUiStore();
-    const { friends, removeFriend, setMemo } = useFriendStore();
+    const { friends, setFriends, removeFriend, setMemo } = useFriendStore();
 
     // 지금 ⋯ 메뉴가 열려있는 친구 id
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
     // 메모 모달 대상 + 입력값
     const [memoTarget, setMemoTarget] = useState<number | null>(null);
     const [memoText, setMemoText] = useState("");
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [addedIds, setAddedIds] = useState<number[]>([]);
+    const [loadError, setLoadError] = useState("");
+
+    // 패널이 열릴 때마다 친구 목록 조회
+    useEffect(() => {
+        if (activeRightPanel !== 'friend') return;
+        (async () => {
+            try {
+                const { data, error } = await api.GET('/api/friends');
+                if (error) {
+                    setLoadError('친구 목록을 불러오지 못했습니다');
+                    return;
+                }
+                setLoadError('');
+                // 서버가 단일 객체 또는 배열을 줄 수 있어 양쪽 모두 처리
+                const list = Array.isArray(data) ? data : data ? [data] : [];
+                setFriends(list.map((f: any) => ({
+                    id: f.id,
+                    name: f.name ?? '',
+                    status: f.status ?? 'offline',
+                    statusMessage: f.statusMessage ?? undefined,
+                    unreadCount: 0,   // 서버 미제공 — DM 연동 시 채울 예정
+                })));
+            } catch (e) {
+                console.error('친구 목록 조회 실패:', e);
+                setLoadError('서버에 연결할 수 없습니다');
+            }
+        })();
+    }, [activeRightPanel]);
 
     if (activeRightPanel !== 'friend') return null;
 
@@ -31,11 +63,40 @@ export function FriendSidebar() {
         setMemoTarget(null);
     };
 
-    // TODO: 친구 API 연결 시 DELETE /api/friends/{id} 호출로 교체
-    const handleDelete = (id: number, name: string) => {
+    const handleAddFriend = async (u: SearchedUser) => {
+        try {
+            const { error } = await api.POST('/api/friends/{friendId}', {
+                params: { path: { friendId: u.uid } },
+            });
+            if (error) {
+                console.error('친구 추가 실패:', error);
+                return;
+            }
+            setAddedIds((prev) => [...prev, u.uid]);
+            // 목록에 즉시 반영 (상태는 다음 조회 때 갱신됨)
+            setFriends([...friends, {
+                id: u.uid, name: u.nickname, status: 'offline', unreadCount: 0,
+            }]);
+        } catch (e) {
+            console.error('친구 추가 실패:', e);
+        }
+    };
+
+    const handleDelete = async (id: number, name: string) => {
         if (!confirm(`${name}님을 친구 목록에서 삭제할까요?`)) return;
-        removeFriend(id);
         setOpenMenuId(null);
+        try {
+            const { error } = await api.DELETE('/api/friends/{friendId}', {
+                params: { path: { friendId: id } },
+            });
+            if (error) {
+                console.error('친구 삭제 실패:', error);
+                return;
+            }
+            removeFriend(id);
+        } catch (e) {
+            console.error('친구 삭제 실패:', e);
+        }
     };
 
     return (
@@ -45,19 +106,32 @@ export function FriendSidebar() {
                 <h2 className="font-bold text-[#2C3E50] text-sm">
                     친구 <span className="text-[#5CC87A]">· {onlineCount}명 온라인</span>
                 </h2>
-                <Tooltip label="친구 목록 닫기" side="bottom" align="end">
-                    <button
-                        onClick={closeRightPanel}
-                        className="p-1 hover:bg-[#f0f9f4] rounded-md transition-all"
-                    >
-                        <X size={16} className="text-gray-400" />
-                    </button>
-                </Tooltip>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    <Tooltip label="친구 추가" side="bottom">
+                        <button
+                            onClick={() => { setAddedIds([]); setShowAddModal(true); }}
+                            className="p-1 hover:bg-[#f0f9f4] rounded-md transition-all"
+                        >
+                            <UserPlus size={16} className="text-[#5CC87A]" />
+                        </button>
+                    </Tooltip>
+                    <Tooltip label="친구 목록 닫기" side="bottom" align="end">
+                        <button
+                            onClick={closeRightPanel}
+                            className="p-1 hover:bg-[#f0f9f4] rounded-md transition-all"
+                        >
+                            <X size={16} className="text-gray-400" />
+                        </button>
+                    </Tooltip>
+                </div>
             </div>
 
             {/* 친구 목록 */}
             <div className="flex-1 overflow-y-auto p-2">
-                {friends.length === 0 && (
+                {loadError && (
+                    <p className="text-xs text-red-500 text-center mt-6">{loadError}</p>
+                )}
+                {!loadError && friends.length === 0 && (
                     <p className="text-xs text-gray-400 text-center mt-6">친구가 없습니다</p>
                 )}
                 {friends.map((f) => (
@@ -124,6 +198,20 @@ export function FriendSidebar() {
                     </div>
                 ))}
             </div>
+
+            {/* 친구 추가 모달 */}
+            <Modal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                title="친구 추가"
+            >
+                <UserSearchBox
+                    actionLabel="추가"
+                    doneLabel="추가됨"
+                    doneIds={[...friends.map((f) => f.id), ...addedIds]}
+                    onSelect={handleAddFriend}
+                />
+            </Modal>
 
             {/* 메모 모달 */}
             <Modal

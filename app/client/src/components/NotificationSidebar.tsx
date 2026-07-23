@@ -4,11 +4,13 @@ import { Tooltip } from "./Tooltip";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { useNotificationStore, NOTIFICATION_TYPE, type Notification } from "../store/notificationStore";
+import { useWorkspaceStore } from "../store/workspaceStore";
 
 export function NotificationSidebar() {
     const { activeRightPanel, closeRightPanel } = useUiStore();
     const { notifications, markRead, markAllRead, addNotifications, removeNotification } = useNotificationStore();
     const [busyId, setBusyId] = useState<number | null>(null);
+    const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
 
     useEffect(() => {
         if (activeRightPanel !== 'notification') return;
@@ -42,7 +44,8 @@ export function NotificationSidebar() {
             });
             if (error) return;
             removeNotification(n.id);
-            // TODO: 수락 시 워크스페이스 목록 새로고침 필요
+            // 수락하면 워크스페이스 멤버가 되므로 목록을 다시 불러옴
+            if (action === 'ACCEPTED') await fetchWorkspaces();
         } catch (e) {
             console.error('초대 응답 실패:', e);
         } finally {

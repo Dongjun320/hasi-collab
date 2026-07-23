@@ -1,6 +1,7 @@
 // PM 담당 — 사용법: const { currentWorkspace, channels } = useWorkspaceStore()
 
 import { create } from 'zustand'
+import { api } from "../api/client"
 
 // 백엔드 필드(role, iconUrl) = API 응답(GET /workspaces/me)에서 옴
 // 장식 필드(avatar, colors, unread) = 화면 표시용. API 연결 시 매핑에서 채움
@@ -40,6 +41,9 @@ interface WorkspaceState {
   addChannel: (workspaceId: number, c: Channel) => void
   updateChannel: (workspaceId: number, id: number, name: string) => void
   removeChannel: (workspaceId: number, id: number) => void
+  wsLoading: boolean;
+  wsError: string;
+  fetchWorkspaces: () => Promise<void>;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
@@ -68,6 +72,37 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
     };
   }),
 
+  // 워크스페이스 목록 조회 — 로그인 직후, 초대 수락 후 등에서 호출
+  fetchWorkspaces: async () => {
+    // 화면 표시용 그라디언트 (서버에 색 개념 없음)
+    const DEFAULT_COLORS = [
+      ["#A8E6B8", "#5CC87A"], ["#5CC87A", "#2E8B4F"],
+      ["#A8E6B8", "#FFE66D"], ["#5CC87A", "#FFD93D"], ["#2E8B4F", "#5CC87A"],
+    ]
+    try {
+      const { data, error } = await api.GET('/api/workspaces/me')
+      if (error || !data?.success) {
+        const msg = (error as any)?.error?.message
+        set({ wsError: msg ?? '워크스페이스를 불러오지 못했습니다' })
+        return
+      }
+      const mapped = (data.data ?? []).map((w, i) => ({
+        id: w.id!,
+        name: w.name ?? '',
+        avatar: (w.name ?? '?').charAt(0),
+        colors: DEFAULT_COLORS[i % DEFAULT_COLORS.length],
+        unread: false,
+        role: w.role,
+      }))
+      set({ workspaces: mapped, wsError: '' })
+    } catch (e) {
+      console.error('워크스페이스 조회 실패:', e)
+      set({ wsError: '서버에 연결할 수 없습니다' })
+    } finally {
+      set({ wsLoading: false })
+    }
+  },
+
   // ── 채널 ──
   setChannels: (c) => set({ channels: c }),
   setWorkspaceChannels: (workspaceId, list) => set((s) => ({
@@ -93,6 +128,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
       [workspaceId]: (s.channelsByWorkspace[workspaceId] ?? []).filter((c) => c.id !== id),
     },
   })),
-
+  wsLoading: true,
+  wsError: '',
   clear: () => set({ currentWorkspace: null, channels: [], channelsByWorkspace: {} }),
 }))
