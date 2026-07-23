@@ -16,8 +16,8 @@ const AVATAR_COLORS = [
 interface Member {
   userId: number;
   nickname: string;
-  role: "owner" | "admin" | "member";
-  status: "online" | "away" | "busy" | "offline" | "outside" | "remote";
+  role: "OWNER" | "ADMIN" | "MEMBER";
+  status: "ONLINE" | "AWAY" | "BUSY" | "OFFLINE" | "OUTSIDE" | "REMOTE";
 }
 const colorOf = (uid: number) => AVATAR_COLORS[uid % AVATAR_COLORS.length];
 
@@ -53,8 +53,8 @@ export function ChannelsPage() {
         setAllMembers((data.data ?? []).map((m) => ({
           userId: m.userId!,
           nickname: m.nickname ?? '',
-          role: m.role ?? 'member',
-          status: m.statusCode ?? 'offline',
+          role: m.role ?? 'MEMBER',
+          status: m.statusCode ?? 'OFFLINE',
         })));
       } catch (e) {
         console.error('멤버 조회 실패:', e);
@@ -70,7 +70,7 @@ export function ChannelsPage() {
     let filtered = [...allMembers];
 
     if (memberSortType === "online") {
-      filtered = filtered.filter((m) => m.status === "online");
+      filtered = filtered.filter((m) => m.status === "ONLINE");
     }
     return filtered.sort((a, b) => a.nickname.localeCompare(b.nickname));
   };
@@ -89,7 +89,7 @@ export function ChannelsPage() {
       }, {} as Record<string, Member[]>)
       : null;
 
-  const onlineCount = allMembers.filter(m => m.status === "online").length;
+  const onlineCount = allMembers.filter(m => m.status === "ONLINE").length;
   const totalCount = allMembers.length;
 
   const handleSend = () => {
@@ -286,13 +286,13 @@ export function ChannelsPage() {
                                       {member.nickname.charAt(0)}
                                     </div>
                                     <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                                        member.status === "online" ? "bg-green-500" : "bg-gray-400"
+                                        member.status === "ONLINE" ? "bg-green-500" : "bg-gray-400"
                                     }`} />
                                   </div>
                                   <div className="flex-1">
                                     <p className="text-sm font-medium text-[#2C3E50]">{member.nickname}</p>
                                     <p className="text-xs text-gray-500">
-                                      {member.status === "online" ? "온라인" : "오프라인"}
+                                      {member.status === "ONLINE" ? "온라인" : "오프라인"}
                                     </p>
                                   </div>
                                 </div>
@@ -311,13 +311,13 @@ export function ChannelsPage() {
                               {member.nickname.charAt(0)}
                             </div>
                             <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                                member.status === "online" ? "bg-green-500" : "bg-gray-400"
+                                member.status === "ONLINE" ? "bg-green-500" : "bg-gray-400"
                             }`} />
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium text-[#2C3E50]">{member.nickname}</p>
                             <p className="text-xs text-gray-500">
-                              {ROLE_LABEL[member.role] ?? member.role} • {member.status === "online" ? "온라인" : "오프라인"}
+                              {ROLE_LABEL[member.role] ?? member.role} • {member.status === "ONLINE" ? "온라인" : "오프라인"}
                             </p>
                           </div>
                         </div>
