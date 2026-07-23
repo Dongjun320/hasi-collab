@@ -43,4 +43,18 @@ public class Workspace {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+    public void updateIsPrivate(boolean isPrivate) {
+        this.isPrivate = isPrivate;
+    }
+    public void updateIconUrl(String iconUrl) {
+        this.iconUrl = iconUrl;
+    }
+    public void updateDescription(String description) {
+        this.description = description;
+    }
+
 }
