@@ -54,7 +54,7 @@ components:
           #여기 추가 했습니다.
         purpose:
           type: string
-          enum: [register, reset]
+          enum: [REGISTER, RESET]
           description: "발송 목적입니다, 생략시 register로 간주(register=회원가입, reset=비밀번호 재설정)"
 
     EmailVerifyRequest:

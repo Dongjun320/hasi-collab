@@ -12,7 +12,7 @@ components:
           description: "초대할 사용자의 닉네임"
         role:
           type: string
-          enum: [admin, member]
+          enum: [ADMIN, MEMBER]
           default: member
           description: "멤버 역할"
 
@@ -22,7 +22,7 @@ components:
       properties:
         role:
           type: string
-          enum: [admin, member]
+          enum: [ADMIN, MEMBER]
           description: "변경할 멤버 역할"
 
     MemberInvitePatchRequest:

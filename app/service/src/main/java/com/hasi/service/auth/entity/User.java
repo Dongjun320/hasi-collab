@@ -35,7 +35,7 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(name = "status_code", nullable = false)
     @Builder.Default
-    private StatusCode statusCode = StatusCode.online;
+    private StatusCode statusCode = StatusCode.ONLINE;
 
     @Column(name = "status_message", length = 100)
     private String statusMessage;
@@ -79,6 +79,6 @@ public class User {
 
     // status_code ENUM 정의
     public enum StatusCode {
-        online, away, busy, offline, outside, remote
+        ONLINE, AWAY, BUSY, OFFLINE, OUTSIDE, REMOTE
     }
 }

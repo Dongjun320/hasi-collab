@@ -144,7 +144,7 @@ public class InvitationService {
                         WorkspaceMember.builder()
                                 .workspaceId(invitation.getWorkspaceId())
                                 .userId(userId)
-                                .role(WorkspaceMember.Role.member)
+                                .role(WorkspaceMember.Role.MEMBER)
                                 .build()
                 );
                 message = "초대 수락 완료";
