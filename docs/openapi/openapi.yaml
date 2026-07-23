@@ -92,6 +92,21 @@ paths:
   /api/friends/{friendId}:
     $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1{friendId}"
 
+  /api/friends/requests/{receiverId}:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1requests~1{receiverId}"
+
+  /api/friends/requests/received:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1requests~1received"
+
+  /api/friends/requests/sent:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1requests~1sent"
+
+  /api/friends/requests/{requestId}/accept:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1requests~1{requestId}~1accept"
+
+  /api/friends/requests/{requestId}/reject:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1requests~1{requestId}~1reject"
+
   /api/users/search:
     $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1search"
 

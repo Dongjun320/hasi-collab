@@ -47,8 +47,10 @@ public enum ErrorCode {
     MBR_007(HttpStatus.CONFLICT, "MBR_007", "초대 대기 중인 사용자입니다"),
 
     // FRIEND
-    FRIEND_001(HttpStatus.BAD_REQUEST, "FRIEND_001", "자기 자신을 친구로 추가할 수 없습니다"),
-    FRIEND_002(HttpStatus.CONFLICT,    "FRIEND_002", "이미 친구인 사용자입니다"),
+    FRIEND_001(HttpStatus.BAD_REQUEST, "FRIEND_001", "자기 자신에게 친구 요청을 보낼 수 없습니다"),
+    FRIEND_002(HttpStatus.CONFLICT,    "FRIEND_002", "이미 요청했거나 친구인 사용자입니다"),
+    FRIEND_003(HttpStatus.NOT_FOUND,  "FRIEND_003", "존재하지 않는 친구 요청입니다"),
+    FRIEND_004(HttpStatus.FORBIDDEN,  "FRIEND_004", "본인에게 온 요청이 아닙니다"),
 
     // USER
     USER_001(HttpStatus.NOT_FOUND, "USER_001", "해당 닉네임의 사용자를 찾을 수 없습니다");

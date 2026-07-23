@@ -47,6 +47,12 @@ const LoginPage = () => {
   const triggerToast = (message: string, type: 'success' | 'error' | 'info' | 'warning') => {
     setToast({ open: true, message, type })
   }
+  // 엔터키 감지 핸들러 추가
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter') {
+      handleLogin()
+    }
+  }
 
   // 로그인 로직 (메인 폼에서 인증 성공 시에만 navigate 이동)
   const handleLogin = async () => {
@@ -55,6 +61,7 @@ const LoginPage = () => {
       triggerToast("有効なE-mail形式で入力してください。", "error")
       return
     }
+
     setLoadingOpen(true)
     const { data, error } = await api.POST('/api/auth/login', { body: { email, password } })
     if (error) {
@@ -220,7 +227,7 @@ const LoginPage = () => {
           <div className="flex-1 flex flex-col justify-center p-8">
             <h2 className="text-2xl font-bold text-gray-800 text-center mb-8 tracking-wider">LOGIN</h2>
 
-            <div className="flex flex-col gap-4 mb-6">
+            <div className="flex flex-col gap-4 mb-6" onKeyDown={handleKeyDown}>
               <Input
                   label="E-mail"
                   type="email"
