@@ -19,6 +19,8 @@ export function FriendSidebar() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [addedIds, setAddedIds] = useState<number[]>([]);
     const [loadError, setLoadError] = useState("");
+    // 삭제 확인 모달 대상
+    const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
     // 패널이 열릴 때마다 친구 목록 조회
     useEffect(() => {
@@ -82,9 +84,15 @@ export function FriendSidebar() {
         }
     };
 
-    const handleDelete = async (id: number, name: string) => {
-        if (!confirm(`${name}님을 친구 목록에서 삭제할까요?`)) return;
+    const askDelete = (id: number, name: string) => {
+        setDeleteTarget({ id, name });
         setOpenMenuId(null);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        const { id } = deleteTarget;
+        setDeleteTarget(null);
         try {
             const { error } = await api.DELETE('/api/friends/{friendId}', {
                 params: { path: { friendId: id } },
@@ -100,7 +108,7 @@ export function FriendSidebar() {
     };
 
     return (
-        <div className="w-64 h-full bg-white border-l border-[#e8f8ed] flex flex-col flex-shrink-0">
+        <div className="app-chrome w-64 h-full bg-white border-l border-[#e8f8ed] flex flex-col flex-shrink-0">
             {/* 헤더 */}
             <div className="h-14 px-4 flex items-center justify-between border-b border-[#e8f8ed] flex-shrink-0">
                 <h2 className="font-bold text-[#2C3E50] text-sm">
@@ -184,7 +192,7 @@ export function FriendSidebar() {
                                         메모
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(f.id, f.name)}
+                                        onClick={() => askDelete(f.id, f.name)}
                                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50 transition-colors text-left"
                                     >
                                         <Trash2 size={13} />
@@ -242,6 +250,33 @@ export function FriendSidebar() {
                         className="px-3 py-1.5 text-sm bg-[#5CC87A] text-white rounded-lg hover:bg-[#4ab869] transition-colors"
                     >
                         저장
+                    </button>
+                </div>
+            </Modal>
+            {/* 친구 삭제 확인 모달 */}
+            <Modal
+                isOpen={deleteTarget !== null}
+                onClose={() => setDeleteTarget(null)}
+                title="친구 삭제"
+            >
+                <p className="text-sm text-[#2C3E50]">
+                    <span className="font-semibold">{deleteTarget?.name}</span>님을 친구 목록에서 삭제할까요?
+                </p>
+                <p className="text-[11px] text-gray-400 mt-2">
+                    상대방의 친구 목록에서도 삭제됩니다.
+                </p>
+                <div className="flex justify-end gap-2 mt-4">
+                    <button
+                        onClick={() => setDeleteTarget(null)}
+                        className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        취소
+                    </button>
+                    <button
+                        onClick={confirmDelete}
+                        className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    >
+                        삭제
                     </button>
                 </div>
             </Modal>

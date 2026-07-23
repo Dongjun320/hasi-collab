@@ -37,7 +37,7 @@ export function WorkspaceHome() {
 
   const { activeRightPanel, toggleRightPanel } = useUiStore();
   const { friends } = useFriendStore();
-  const { workspaces, setWorkspace } = useWorkspaceStore();
+  const { workspaces, setWorkspace, fetchWorkspaces, wsLoading } = useWorkspaceStore();
   const { notifications } = useNotificationStore();
   const unreadNotifications = notifications.filter((n) => n.unread).length;
   const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0);
@@ -45,6 +45,12 @@ export function WorkspaceHome() {
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // HOME 진입 시에도 워크스페이스 조회
+  // (기존에는 WorkspaceSidebar에서만 호출해서, /workspace를 한 번 다녀와야 목록이 채워졌음)
+  useEffect(() => {
+    fetchWorkspaces();
   }, []);
 
   // friendStore에서 가져옴 (오프라인 제외 = 온라인 친구)
@@ -110,8 +116,10 @@ export function WorkspaceHome() {
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#e8f8ed]">
               <div className="flex items-center gap-2 mb-3">
                 <LayoutGrid size={15} className="text-[#5CC87A]"/>
-                <h2 className="text-sm font-bold text-[#2C3E50]">워크스페이스 · {workspaces.length}개</h2>
-                {workspaces.length === 0 && (
+                <h2 className="text-sm font-bold text-[#2C3E50]">
+                  워크스페이스 · {wsLoading ? "불러오는 중" : `${workspaces.length}개`}
+                </h2>
+                {!wsLoading && workspaces.length === 0 && (
                     <button
                         onClick={() => navigate("/workspace")}
                         className="ml-auto px-3 py-1 text-xs font-medium bg-[#5CC87A] hover:bg-[#2E8B4F] text-white rounded-lg transition-all"
@@ -314,11 +322,11 @@ export function WorkspaceHome() {
       </div>
 
       {/* 하단 내비게이션 바 (Windows 작업표시줄 스타일) */}
-      <div className="h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0">
+      <div className="app-chrome h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0">
 
         {/* 홈 버튼 */}
         <div>
-          <img src={hasiClean} alt="HASI" className="w-11 h-11 rounded-2xl object-contain"/>
+          <img src={hasiClean} alt="HASI" className="no-drag w-11 h-11 rounded-2xl object-contain"/>
         </div>
 
         {/* 구분선 */}

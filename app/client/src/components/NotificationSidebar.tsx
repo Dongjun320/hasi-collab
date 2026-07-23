@@ -58,7 +58,7 @@ export function NotificationSidebar() {
     const unreadCount = notifications.filter((n) => n.unread).length;
 
     return (
-        <div className="w-64 h-full bg-white border-l border-[#e8f8ed] flex flex-col flex-shrink-0">
+        <div className="app-chrome w-64 h-full bg-white border-l border-[#e8f8ed] flex flex-col flex-shrink-0">
             {/* 헤더 */}
             <div className="h-14 px-4 flex items-center justify-between border-b border-[#e8f8ed] flex-shrink-0">
                 <h2 className="font-bold text-[#2C3E50] text-sm">

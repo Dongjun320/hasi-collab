@@ -23,8 +23,8 @@ const TOOLS = [
 ];
 
 export function WorkspaceLayout() {
-  const {currentWorkspace, deleteWorkspace,
-    channelsByWorkspace, setWorkspaceChannels, addChannel, updateChannel, removeChannel,
+  const {currentWorkspace, channelsByWorkspace, setWorkspaceChannels, addChannel, updateChannel, removeChannel,
+      deleteWorkspace,
   } = useWorkspaceStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -72,13 +72,13 @@ export function WorkspaceLayout() {
     })();
   }, [currentWorkspace?.id]);
 
-  const handleAddChannel = async (name: string) => {
+  const handleAddChannel = async (name: string, parentId?: number | null) => {
     if (!currentWorkspace) return;
     const wsId = currentWorkspace.id;
     try {
       const { data, error } = await api.POST('/api/workspaces/{workspaceId}/channels', {
         params: { path: { workspaceId: wsId } },
-        body: { name, isPrivate: false },   // parentId 생략 = 최상위 채널
+        body: { name, isPrivate: false, parentId: parentId ?? null },   // parentId 생략 = 최상위 채널
       });
       if (error || !data?.data?.id) {
         console.error('채널 생성 실패:', error);
@@ -134,21 +134,35 @@ export function WorkspaceLayout() {
     }
   };
 
-  const handleDeleteWorkspace = (workspaceId: number) => {
-    // store의 deleteWorkspace가 채널 캐시(channelsByWorkspace)까지 함께 정리함
-    deleteWorkspace(workspaceId);
+  const handleDeleteWorkspace = async (workspaceId: number) => {
+      try {
+          const {error} = await api.DELETE('/api/workspaces/{workspaceId}', {
+              params: {path: {workspaceId}},
+          });
+          if (error) {
+              console.error('워크스페이스 삭제 실패:', error);
+              return;
+          }
+      } catch (e) {
+          console.error('워크스페이스 삭제 실패:', e);
+          return;
+      }
+      // store의 deleteWorkspace가 채널 캐시(channelsByWorkspace)까지 함께 정리함
+      deleteWorkspace(workspaceId);
 
-    const newCurrent = useWorkspaceStore.getState().currentWorkspace;
-    if (newCurrent) {
-      const ch = getDefaultChannelId(newCurrent.id);
-      navigate(ch ? `/workspace/channels/${ch}` : "/workspace");
-    } else {
-      navigate("/workspace");
-    }
-  };
+      const newCurrent = useWorkspaceStore.getState().currentWorkspace;
+      if (newCurrent) {
+          const ch = getDefaultChannelId(newCurrent.id);
+          navigate(ch ? `/workspace/channels/${ch}` : "/workspace");
+      } else {
+          navigate("/workspace");
+      }
+  }
 
-  const getDefaultChannelId = (workspaceId: number): number | null =>
+
+      const getDefaultChannelId = (workspaceId: number): number | null =>
       lastChannelByWorkspace[workspaceId] ?? channelsByWorkspace[workspaceId]?.[0]?.id ?? null;
+
 
   const QUICK_ITEMS = [
     {
@@ -192,7 +206,7 @@ export function WorkspaceLayout() {
       <div className="flex-1 flex flex-col overflow-hidden relative">
 
         {/* ── 상단 헤더 ── */}
-        <div className="h-14 bg-white border-b border-[#e8f8ed] flex items-center px-5 gap-3 flex-shrink-0">
+        <div className="app-chrome h-14 bg-white border-b border-[#e8f8ed] flex items-center px-5 gap-3 flex-shrink-0">
           {currentWorkspace && (
               <div className="flex items-center gap-2.5">
                 <div
@@ -282,7 +296,7 @@ export function WorkspaceLayout() {
       </div>
 
       {/* ── 하단 작업표시줄 (윈도우 작업표시줄처럼 전체폭 고정) ── */}
-      <div className="h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0 z-30">
+      <div className="app-chrome h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0 z-30">
 
         {/* 홈버튼 */}
         <Tooltip label="홈" side="top" align="start">

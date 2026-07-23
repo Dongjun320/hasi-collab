@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Hash, Plus, X,
   PanelLeftClose, PanelLeftOpen, Settings, UserPlus,
+  ChevronRight, ChevronDown,
 } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
@@ -13,10 +14,10 @@ import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
 
 
 interface WorkspaceSidebarProps {
-  channels: { id: number; name: string }[];
+  channels: { id: number; name: string; parentId?: number | null }[];
   activeChannelId: number | null;
   onSelectChannel: (id: number) => void;
-  onAddChannel: (name: string) => void;
+  onAddChannel: (name: string, parentId?: number | null) => void;
   onDeleteChannel: (channelId: number) => void;
   onRenameChannel: (channelId: number, newName: string) => void;
   onDeleteWorkspace: (workspaceId: number) => void;
@@ -32,7 +33,6 @@ export function WorkspaceSidebar({
     currentWorkspace,
     setWorkspace,
     workspaces,
-    addWorkspace,
     updateWorkspace,
     fetchWorkspaces,
     wsLoading,
@@ -51,6 +51,10 @@ export function WorkspaceSidebar({
   const [invitedList, setInvitedList] = useState<SearchedUser[]>([]);
   const railRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({dragging: false, startY: 0, startScroll: 0});
+  const [collapsedIds, setCollapsedIds] = useState<number[]>([]);
+  const [addingChildOf, setAddingChildOf] = useState<number | null>(null);
+  const [childName, setChildName] = useState("");
+
 
   const handleRailMouseDown = (e: React.MouseEvent) => {
     dragState.current = {dragging: true, startY: e.pageY, startScroll: railRef.current?.scrollTop ?? 0};
@@ -99,21 +103,46 @@ export function WorkspaceSidebar({
     setShowNewInput(false);
   }
 
-  const handleAddWorkspace = () => {
+  const handleAddWorkspace = async () => {
     const name = newWorkspaceName.trim();
     if (!name) return;
-    const newWorkspace = {
-      id: Date.now(),
-      name,
-      avatar: name.charAt(0),
-      colors: ["#5CC87A", "#2E8B4F"],
-      unread: false,
-    };
-    addWorkspace(newWorkspace);
-    setWorkspace(newWorkspace);
-    navigate(`/workspace/channels/${getDefaultChannelId(newWorkspace.id)}`);
-    setNewWorkspaceName("");
-    setShowNewWorkspaceInput(false);
+      try {
+          const { data, error } = await api.POST('/api/workspaces', {
+              body: { name, isPrivate: false },
+          });
+          if (error || !data?.data?.id) {
+              console.error('워크스페이스 생성 실패:', error);
+              return;
+          }
+          // 목록을 서버 기준으로 다시 받아 색상 배정까지 일관되게 맞춤
+          await fetchWorkspaces();
+
+          const created = useWorkspaceStore.getState().workspaces.find((w) => w.id === data.data!.id);
+          if (created) {
+              setWorkspace(created);
+              navigate("/workspace");   // 새 워크스페이스는 채널이 0개
+          }
+          setNewWorkspaceName("");
+          setShowNewWorkspaceInput(false);
+      } catch (e) {
+          console.error('워크스페이스 생성 실패:', e);
+      }
+  };
+
+  const rootChannels = channels.filter((c) => !c.parentId);
+  const childrenOf = (parentId: number) => channels.filter((c) => c.parentId === parentId);
+
+  const toggleCollapse = (id: number) =>
+      setCollapsedIds((prev) =>
+          prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      );
+
+  const handleAddChild = (parentId: number) => {
+    const name = childName.trim();
+    if (!name) return;
+    onAddChannel(name, parentId);
+    setChildName("");
+    setAddingChildOf(null);
   };
 
   useEffect(() => {
@@ -129,8 +158,117 @@ export function WorkspaceSidebar({
     })();
   }, []);
 
+  const renderChannelRow = (ch: { id: number; name: string, parentId?: number | null }, hasKids: boolean, collapsed: boolean) => {
+    const active = ch.id === activeChannelId;
+    const isRenaming = renamingChannelId === ch.id;
+
+    if (isRenaming) {
+      return (
+          <div className="flex items-center gap-1.5 px-2 py-1.5">
+            <Hash size={14} className="text-[#5CC87A] flex-shrink-0" />
+            <input
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const name = renameValue.trim();
+                    if (name) onRenameChannel(ch.id, name);
+                    setRenamingChannelId(null);
+                  }
+                  if (e.key === "Escape") setRenamingChannelId(null);
+                }}
+                autoFocus
+                className="flex-1 bg-white/10 text-white text-sm px-2 py-1 rounded-md outline-none focus:bg-white/15 min-w-0"
+            />
+          </div>
+      );
+    }
+
+    const isRoot = !ch.parentId;
+
+    return (
+        <div className="relative group/channel">
+          <button
+              onClick={() => onSelectChannel(ch.id)}
+              className={`w-full flex items-center gap-1.5 px-2 py-1.5 ${isRoot ? "pr-14" : "pr-7"} rounded-lg text-sm font-medium transition-all text-left
+            ${active
+                  ? "bg-[#5CC87A] text-white shadow-md"
+                  : "text-white/60 hover:bg-white/10 hover:text-white"
+              }`}
+          >
+            {/* 하위 채널이 있으면 접기 화살표 — 채널 이동과 분리 */}
+            {hasKids ? (
+                <span
+                    role="button"
+                    onClick={(e) => { e.stopPropagation(); toggleCollapse(ch.id); }}
+                    className="flex-shrink-0 -ml-0.5 hover:bg-white/20 rounded"
+                >
+              {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+            </span>
+            ) : (
+                <Hash size={14} className="flex-shrink-0" />
+            )}
+            <span className="truncate">{ch.name}</span>
+          </button>
+            {/* 최상위 채널에만 하위 채널 추가 버튼 (깊이 2단 제한) */}
+            {isRoot && (
+                <button
+                    onClick={() => {
+                        setAddingChildOf(ch.id);
+                        setChildName("");
+                        setCollapsedIds((prev) => prev.filter((x) => x !== ch.id));
+                        setChannelMenuOpenId(null);
+                    }}
+                    title="하위 채널 추가"
+                    className="absolute right-7 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20"
+                >
+                    <Plus size={12} className="text-white/70" />
+                </button>
+            )}
+
+            <button
+                onClick={() => setChannelMenuOpenId(channelMenuOpenId === ch.id ? null : ch.id)}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20"
+            >
+                <Settings size={12} className="text-white/70" />
+            </button>
+          <button
+              onClick={() => setChannelMenuOpenId(channelMenuOpenId === ch.id ? null : ch.id)}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20"
+          >
+            <Settings size={12} className="text-white/70" />
+          </button>
+
+          {channelMenuOpenId === ch.id && (
+              <div className="absolute right-0 top-8 bg-[#1e3a28] rounded-lg shadow-xl z-50 py-1 w-32">
+                <button
+                    onClick={() => {
+                      setRenamingChannelId(ch.id);
+                      setRenameValue(ch.name);
+                      setChannelMenuOpenId(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+                >
+                  이름 변경
+                </button>
+                <button
+                    onClick={() => {
+                      onDeleteChannel(ch.id);
+                      setChannelMenuOpenId(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-white/10"
+                >
+                  삭제
+                </button>
+              </div>
+          )}
+        </div>
+    );
+  };
+
   return (
-    <div className="flex h-full flex-shrink-0">
+    <div className="app-chrome flex h-full flex-shrink-0">
       {/* ── 새 워크스페이스 모달 ── */}
       <Modal
         isOpen={showNewWorkspaceInput}
@@ -414,78 +552,43 @@ export function WorkspaceSidebar({
             )}
 
             <div className="space-y-0.5">
-              {channels.map((ch) => {
-                const active = ch.id === activeChannelId;
-                const isRenaming = renamingChannelId === ch.id;
-
-                if (isRenaming) {
-                  return (
-                    <div key={ch.id} className="flex items-center gap-1.5 px-2 py-1.5">
-                      <Hash size={14} className="text-[#5CC87A] flex-shrink-0" />
-                      <input
-                        type="text"
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            const name = renameValue.trim();
-                            if (name) onRenameChannel(ch.id, name);
-                            setRenamingChannelId(null);
-                          }
-                          if (e.key === "Escape") setRenamingChannelId(null);
-                        }}
-                        autoFocus
-                        className="flex-1 bg-white/10 text-white text-sm px-2 py-1 rounded-md outline-none focus:bg-white/15 min-w-0"
-                      />
-                    </div>
-                  );
-                }
+              {rootChannels.map((ch) => {
+                const kids = childrenOf(ch.id);
+                const collapsed = collapsedIds.includes(ch.id);
 
                 return (
-                  <div key={ch.id} className="relative group/channel">
-                    <button
-                      onClick={() => onSelectChannel(ch.id)}
-                      className={`w-full flex items-center gap-1.5 px-2 py-1.5 pr-7 rounded-lg text-sm font-medium transition-all text-left
-                        ${active
-                          ? "bg-[#5CC87A] text-white shadow-md"
-                          : "text-white/60 hover:bg-white/10 hover:text-white"
-                        }`}
-                    >
-                      <Hash size={14} className="flex-shrink-0" />
-                      <span className="truncate">{ch.name}</span>
-                    </button>
+                    <div key={ch.id}>
+                      {/* 상위 채널 */}
+                      {renderChannelRow(ch, kids.length > 0, collapsed)}
 
-                    <button
-                      onClick={() => setChannelMenuOpenId(channelMenuOpenId === ch.id ? null : ch.id)}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20"
-                    >
-                      <Settings size={12} className="text-white/70" />
-                    </button>
+                      {/* 하위 채널들 */}
+                      {!collapsed && kids.map((kid) => (
+                          <div key={kid.id} className="ml-4 border-l border-white/10 pl-1">
+                            {renderChannelRow(kid, false, false)}
+                          </div>
+                      ))}
 
-                    {channelMenuOpenId === ch.id && (
-                      <div className="absolute right-0 top-8 bg-[#1e3a28] rounded-lg shadow-xl z-50 py-1 w-32">
-                        <button
-                          onClick={() => {
-                            setRenamingChannelId(ch.id);
-                            setRenameValue(ch.name);
-                            setChannelMenuOpenId(null);
-                          }}
-                          className="w-full text-left px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
-                        >
-                          이름 변경
-                        </button>
-                        <button
-                          onClick={() => {
-                            onDeleteChannel(ch.id);
-                            setChannelMenuOpenId(null);
-                          }}
-                          className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-white/10"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                      {/* 하위 채널 추가 입력 */}
+                      {!collapsed && addingChildOf === ch.id && (
+                          <div className="ml-4 border-l border-white/10 pl-1">
+                            <div className="flex items-center gap-1.5 px-2 py-1.5">
+                              <Hash size={13} className="text-[#5CC87A] flex-shrink-0" />
+                              <input
+                                  type="text"
+                                  value={childName}
+                                  onChange={(e) => setChildName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleAddChild(ch.id);
+                                    if (e.key === "Escape") { setAddingChildOf(null); setChildName(""); }
+                                  }}
+                                  placeholder="하위 채널 이름"
+                                  autoFocus
+                                  className="flex-1 bg-white/10 text-white text-sm px-2 py-1 rounded-md outline-none focus:bg-white/15 min-w-0"
+                              />
+                            </div>
+                          </div>
+                      )}
+                    </div>
                 );
               })}
             </div>
