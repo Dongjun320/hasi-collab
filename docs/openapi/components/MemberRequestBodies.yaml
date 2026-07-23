@@ -13,7 +13,7 @@ components:
         role:
           type: string
           enum: [ADMIN, MEMBER]
-          default: member
+          default: MEMBER
           description: "멤버 역할"
 
     WorkspaceMemberPatchRequest:
