@@ -34,7 +34,7 @@ public class ChannelService {
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
-        if(!workspaceMember.getRole().name().equals("owner")) {
+        if(!workspaceMember.getRole().name().equals("OWNER")) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 

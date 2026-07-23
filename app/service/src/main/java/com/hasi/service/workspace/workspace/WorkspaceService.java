@@ -127,7 +127,7 @@ public class WorkspaceService {
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
         // owner가 아니면 수정 불가
-        if(!workspaceMember.getRole().name().equals("owner")) {
+        if(!workspaceMember.getRole().name().equals("OWNER")) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -170,7 +170,7 @@ public class WorkspaceService {
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
         // owner가 아니면 삭제 불가
-        if(!workspaceMember.getRole().name().equals("owner")) {
+        if(!workspaceMember.getRole().name().equals("OWNER")) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
