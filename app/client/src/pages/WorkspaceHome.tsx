@@ -8,7 +8,7 @@ import {
     LayoutGrid,
 } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
-import { useFriendStore, FRIEND_STATUS } from "../store/friendStore";
+import { useFriendStore, friendStatusOf } from "../store/friendStore";
 import { FriendSidebar } from "../components/FriendSidebar";
 import hasiClean from "./HasiClean.png"
 import { useWorkspaceStore } from "../store/workspaceStore";
@@ -54,7 +54,7 @@ export function WorkspaceHome() {
   }, []);
 
   // friendStore에서 가져옴 (오프라인 제외 = 온라인 친구)
-  const onlineFriends = friends.filter((f) => f.status !== "offline");
+  const onlineFriends = friends.filter((f) => f.status !== "OFFLINE");
 
   const recentActivities = [
     { ws: "개", name: "개발팀",   text: "새 메시지 5개",   time: "5분 전",  color: "from-[#5CC87A] to-[#2E8B4F]" },
@@ -183,11 +183,11 @@ export function WorkspaceHome() {
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-xs font-bold">
                         {f.avatar ?? f.name.charAt(0)}
                       </div>
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${FRIEND_STATUS[f.status].dot}`} />
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${friendStatusOf(f.status).dot}`} />
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-[#2C3E50]">{f.name}</p>
-                      <p className="text-[10px] text-gray-400">{f.statusMessage ?? FRIEND_STATUS[f.status].label}</p>
+                      <p className="text-[10px] text-gray-400">{f.statusMessage ?? friendStatusOf(f.status).label}</p>
                     </div>
                   </div>
                 ))}

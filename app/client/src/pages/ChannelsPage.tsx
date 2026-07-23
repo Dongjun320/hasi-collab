@@ -77,9 +77,9 @@ export function ChannelsPage() {
 
   // 역할별 보기용 그룹 (owner → admin → member 순)
   const ROLE_LABEL: Record<string, string> = {
-    owner: "소유자", admin: "관리자", member: "멤버",
+    OWNER: "소유자", ADMIN: "관리자", MEMBER: "멤버",
   };
-  const ROLE_ORDER = ["owner", "admin", "member"];
+  const ROLE_ORDER = ["OWNER", "ADMIN", "MEMBER"];
 
   const groupedMembers = memberSortType === "role"
       ? ROLE_ORDER.reduce((acc, role) => {

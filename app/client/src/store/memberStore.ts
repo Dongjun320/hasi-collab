@@ -8,8 +8,8 @@ import { create } from 'zustand'
 export interface WorkspaceMember {
   userId: number
   nickname: string
-  role: 'owner' | 'admin' | 'member'
-  statusCode: 'online' | 'away' | 'busy' | 'offline' | 'outside' | 'remote'
+  role: 'OWNER' | 'ADMIN' | 'MEMBER'
+  statusCode: 'ONLINE' | 'AWAY' | 'BUSY' | 'OFFLINE' | 'OUTSIDE' | 'REMOTE'
 }
 
 interface MemberState {

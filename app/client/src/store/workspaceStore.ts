@@ -16,7 +16,6 @@ interface Workspace {
 }
 // 백엔드 ChannelData 대응 (박종서)
 // parentId: null이면 최상위 채널, 값이 있으면 해당 채널의 하위 채널 (트리 구조)
-// ※ 백엔드 id는 number. API 연결 시 매핑에서 문자열로 변환하거나 타입 통일 필요
 interface Channel {
   id: number
   name: string
@@ -44,6 +43,7 @@ interface WorkspaceState {
   wsLoading: boolean;
   wsError: string;
   fetchWorkspaces: () => Promise<void>;
+  fetchChannels: (workspaceId: number) => Promise<number | null>;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
@@ -100,6 +100,31 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
       set({ wsError: '서버에 연결할 수 없습니다' })
     } finally {
       set({ wsLoading: false })
+    }
+  },
+
+  // 특정 워크스페이스의 채널 목록 조회 → 첫 채널 id 반환 (없으면 null)
+  fetchChannels: async (workspaceId: number) => {
+    try {
+      const { data, error } = await api.GET('/api/workspaces/{workspaceId}/channels', {
+        params: { path: { workspaceId } },
+      })
+      if (error || !data?.success) return null
+
+      const list = (data.data ?? []).map((c) => ({
+        id: c.id!,
+        name: c.name ?? '',
+        parentId: c.parentId ?? null,
+        workspaceId: c.workspaceId,
+        isPrivate: c.isPrivate,
+      }))
+      set((s) => ({
+        channelsByWorkspace: { ...s.channelsByWorkspace, [workspaceId]: list },
+      }))
+      return list[0]?.id ?? null
+    } catch (e) {
+      console.error('채널 목록 조회 실패:', e)
+      return null
     }
   },
 

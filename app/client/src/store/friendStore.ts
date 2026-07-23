@@ -1,9 +1,12 @@
 import { create } from "zustand";
 
+// 백엔드 User.StatusCode 와 동일 (대문자)
+export type FriendStatus = 'ONLINE' | 'AWAY' | 'BUSY' | 'OFFLINE' | 'OUTSIDE' | 'REMOTE';
+
 export interface Friend {
     id: number;
     name: string;
-    status: 'online' | 'away' | 'busy' | 'offline';
+    status: FriendStatus;
     statusMessage?: string;
     avatar?: string;
     memo?: string;          // 내가 이 친구에게 붙인 메모 (나만 보임)
@@ -11,12 +14,20 @@ export interface Friend {
 }
 
 // 상태 표시용 (점 색상 / 기본 라벨) — FriendSidebar, HOME 친구 카드 등에서 공용으로 사용
-export const FRIEND_STATUS = {
-    online:  { dot: 'bg-green-400', label: '온라인' },
-    away:    { dot: 'bg-amber-400', label: '자리 비움' },
-    busy:    { dot: 'bg-red-400',   label: '바쁨' },
-    offline: { dot: 'bg-gray-400',  label: '오프라인' },
-} as const;
+const FRIEND_STATUS_MAP: Record<FriendStatus, { dot: string; label: string }> = {
+    ONLINE:  { dot: 'bg-green-400', label: '온라인' },
+    AWAY:    { dot: 'bg-amber-400', label: '자리 비움' },
+    BUSY:    { dot: 'bg-red-400',   label: '바쁨' },
+    OFFLINE: { dot: 'bg-gray-400',  label: '오프라인' },
+    OUTSIDE: { dot: 'bg-gray-400',  label: '외근' },
+    REMOTE:  { dot: 'bg-blue-400',  label: '재택' },
+};
+
+// 서버가 모르는 값을 주더라도 화면이 죽지 않도록 폴백
+export const friendStatusOf = (status?: string) =>
+    FRIEND_STATUS_MAP[(status ?? '') as FriendStatus] ?? FRIEND_STATUS_MAP.OFFLINE;
+
+export const FRIEND_STATUS = FRIEND_STATUS_MAP;
 
 interface FriendState {
     friends: Friend[];

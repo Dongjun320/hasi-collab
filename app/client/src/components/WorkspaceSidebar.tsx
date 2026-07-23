@@ -35,6 +35,7 @@ export function WorkspaceSidebar({
     workspaces,
     updateWorkspace,
     fetchWorkspaces,
+    fetchChannels,
     wsLoading,
     wsError,
   } = useWorkspaceStore();
@@ -120,7 +121,9 @@ export function WorkspaceSidebar({
           const created = useWorkspaceStore.getState().workspaces.find((w) => w.id === data.data!.id);
           if (created) {
               setWorkspace(created);
-              navigate("/workspace");   // 새 워크스페이스는 채널이 0개
+              // 백엔드가 기본 채널(공지사항 등)을 만들어주므로 첫 채널로 진입
+              const firstCh = await fetchChannels(created.id);
+              navigate(firstCh ? `/workspace/channels/${firstCh}` : "/workspace");
           }
           setNewWorkspaceName("");
           setShowNewWorkspaceInput(false);
