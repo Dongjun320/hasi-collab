@@ -16,7 +16,7 @@ public class UserService {
 
     public UserSearchResponse searchByNickname(String nickname) {
         User user = userRepository.findByNickname(nickname)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_006));
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_001));
 
         return new UserSearchResponse()
                 .uid(user.getUid())

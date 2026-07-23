@@ -48,7 +48,10 @@ public enum ErrorCode {
 
     // FRIEND
     FRIEND_001(HttpStatus.BAD_REQUEST, "FRIEND_001", "자기 자신을 친구로 추가할 수 없습니다"),
-    FRIEND_002(HttpStatus.CONFLICT,    "FRIEND_002", "이미 친구인 사용자입니다");
+    FRIEND_002(HttpStatus.CONFLICT,    "FRIEND_002", "이미 친구인 사용자입니다"),
+
+    // USER
+    USER_001(HttpStatus.NOT_FOUND, "USER_001", "해당 닉네임의 사용자를 찾을 수 없습니다");
 
     private final HttpStatus status;
     private final String code;

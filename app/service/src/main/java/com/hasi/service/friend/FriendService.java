@@ -31,7 +31,7 @@ public class FriendService {
 
         // 상대 유저 존재 확인
         userRepository.findById(friendId)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_001)); // 상대 유저 존재하지 않음
 
         // 이미 친구인지 확인
         if (friendRepository.findByUserIdAndFriendId(userId, friendId).isPresent()) {
