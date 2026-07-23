@@ -22,40 +22,13 @@ paths:
                 $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
 
   /api/friends/{friendId}:
-    post:
-      summary: "친구 추가"
-      tags:
-        - Friend
-      operationId: addFriend
-      parameters:
-        - name: friendId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-          description: "추가할 친구의 유저 ID"
-      responses:
-        '200':
-          description: "추가 성공"
-        '400':
-          description: "자기 자신을 친구로 추가하려 함"
-          content:
-            application/json:
-              schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
-        '409':
-          description: "이미 친구인 사용자"
-          content:
-            application/json:
-              schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
-
     delete:
       summary: "친구 삭제"
       tags:
         - Friend
       operationId: removeFriend
+      security:
+        - BearerAuth: [ ]
       parameters:
         - name: friendId
           in: path
@@ -63,7 +36,141 @@ paths:
           schema:
             type: integer
             format: int64
-          description: "삭제할 친구의 유저 ID"
       responses:
         '200':
           description: "삭제 성공"
+        '404':
+          description: "존재하지 않는 친구 관계"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+
+  /api/friends/requests/{receiverId}:
+    post:
+      summary: "친구 요청 보내기"
+      tags:
+        - Friend
+      operationId: sendFriendRequest
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: receiverId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "요청 전송 성공"
+        '400':
+          description: "자기 자신에게 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+        '409':
+          description: "이미 요청했거나 친구인 사용자"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+
+  /api/friends/requests/received:
+    get:
+      summary: "받은 친구 요청 목록"
+      tags:
+        - Friend
+      operationId: getReceivedFriendRequests
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: "조회 성공"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "../components/FriendResponseBodies.yaml#/components/schemas/FriendResponse"
+
+  /api/friends/requests/sent:
+    get:
+      summary: "보낸 친구 요청 목록"
+      tags:
+        - Friend
+      operationId: getSentFriendRequests
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: "조회 성공"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "../components/FriendResponseBodies.yaml#/components/schemas/FriendResponse"
+
+  /api/friends/requests/{requestId}/accept:
+    post:
+      summary: "친구 요청 수락"
+      tags:
+        - Friend
+      operationId: acceptFriendRequest
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "수락 성공"
+        '403':
+          description: "본인에게 온 요청이 아님"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+        '404':
+          description: "존재하지 않는 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+
+  /api/friends/requests/{requestId}/reject:
+    post:
+      summary: "친구 요청 거절"
+      tags:
+        - Friend
+      operationId: rejectFriendRequest
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "거절 성공"
+        '403':
+          description: "본인에게 온 요청이 아님"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+        '404':
+          description: "존재하지 않는 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
