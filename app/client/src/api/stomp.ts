@@ -8,9 +8,15 @@ const ERROR_DESTINATION = '/user/queue/errors';
 
 let client: Client | null = null;
 let connectPromise: Promise<void> | null = null;
+let currentToken: string | null = null;
+
+let rejectConnect: ((reason: Error) => void) | null = null;
 
 // 이미 연결된 client가 있으면 그대로 재사용합니다.
 export function connectStomp(token: string): Promise<void> {
+  if (client && currentToken !== token) {
+    teardownConnection();
+  }
   if (client?.connected) {
     return Promise.resolve();
   }
@@ -28,19 +34,38 @@ export function connectStomp(token: string): Promise<void> {
     heartbeatOutgoing: 4000,
   });
 
+  let connectedOnce = false;
+
   connectPromise = new Promise<void>((resolve, reject) => {
+    rejectConnect = reject;
+
     stompClient.onConnect = () => {
+      if (client !== stompClient) {
+        return;
+      }
+      connectedOnce = true;
+      rejectConnect = null;
+
       errorSubscription = null;
       dmInboxSubscription = null;
+      channelSubscriptions.clear();
 
       ensureErrorSubscription();
       if (dmListeners.size > 0) {
         ensureDmInboxSubscription();
       }
+      for (const channelId of channelListeners.keys()) {
+        ensureChannelSubscription(channelId);
+      }
       resolve();
     };
     stompClient.onStompError = (frame) => {
       console.error('STOMP 브로커 에러:', frame.headers['message'], frame.body);
+      rejectConnect = null;
+
+      if (client === stompClient && !connectedOnce) {
+        teardownConnection();
+      }
       reject(new Error(frame.headers['message'] ?? 'STOMP connection error'));
     };
     stompClient.onWebSocketError = (event) => {
@@ -49,17 +74,31 @@ export function connectStomp(token: string): Promise<void> {
   });
 
   client = stompClient;
+  currentToken = token;
   stompClient.activate();
   return connectPromise;
 }
 
-export function disconnectStomp(): void {
-  client?.deactivate();
+function teardownConnection(): void {
+  const stale = client;
+  const pendingReject = rejectConnect;
+
   client = null;
   connectPromise = null;
-  dmInboxSubscription = null;
-  dmListeners.clear();
+  currentToken = null;
+  rejectConnect = null;
   errorSubscription = null;
+  dmInboxSubscription = null;
+  channelSubscriptions.clear();
+
+  void stale?.deactivate();
+  pendingReject?.(new Error('STOMP connection was reset before it was established.'));
+}
+
+export function disconnectStomp(): void {
+  teardownConnection();
+  channelListeners.clear();
+  dmListeners.clear();
   errorListeners.clear();
 }
 
@@ -106,10 +145,10 @@ let errorSubscription: StompSubscription | null = null;
 const errorListeners = new Set<ErrorListener>();
 
 function ensureErrorSubscription(): void {
-  if (errorSubscription) {
+  if (errorSubscription || !client?.connected) {
     return;
   }
-  errorSubscription = requireClient().subscribe(ERROR_DESTINATION, (message) => {
+  errorSubscription = client.subscribe(ERROR_DESTINATION, (message) => {
     const error = parseBody<MessengerError>(message);
     if (errorListeners.size === 0) {
       console.error('messenger 요청 거부됨:', error);
@@ -128,14 +167,65 @@ export function subscribeToErrors(listener: ErrorListener): () => void {
   };
 }
 
+type ChannelListener = {
+  onMessage: (message: ChannelOutboundMessage) => void;
+};
+
+const channelListeners = new Map<string, Set<ChannelListener>>();
+const channelSubscriptions = new Map<string, StompSubscription>();
+
+function ensureChannelSubscription(channelId: string): void {
+  if (channelSubscriptions.has(channelId) || !client?.connected) {
+    return;
+  }
+  const subscription = client.subscribe(`/topic/channel.${channelId}`, (message) => {
+    const outbound = parseBody<ChannelOutboundMessage>(message);
+    for (const listener of channelListeners.get(channelId) ?? []) {
+      listener.onMessage(outbound);
+    }
+  });
+  channelSubscriptions.set(channelId, subscription);
+}
+
+function unsubscribeChannel(channelId: string): void {
+  const subscription = channelSubscriptions.get(channelId);
+  if (!subscription) {
+    return;
+  }
+  channelSubscriptions.delete(channelId);
+  if (client?.connected) {
+    subscription.unsubscribe();
+  }
+}
+
+// /topic/channel.{channelId}
 export function subscribeToChannel(
   channelId: number | string,
   onMessage: (message: ChannelOutboundMessage) => void
 ): () => void {
-  const subscription = requireClient().subscribe(`/topic/channel.${channelId}`, (message) => {
-    onMessage(parseBody<ChannelOutboundMessage>(message));
-  });
-  return () => subscription.unsubscribe();
+  const key = String(channelId);
+  const listener: ChannelListener = { onMessage };
+
+  let listeners = channelListeners.get(key);
+  if (!listeners) {
+    listeners = new Set<ChannelListener>();
+    channelListeners.set(key, listeners);
+  }
+  listeners.add(listener);
+  ensureChannelSubscription(key);
+
+  return () => {
+    const current = channelListeners.get(key);
+    if (!current) {
+      return;
+    }
+    current.delete(listener);
+    if (current.size > 0) {
+      return;
+    }
+    channelListeners.delete(key);
+    unsubscribeChannel(key);
+  };
 }
 
 type DmListener = {
@@ -147,10 +237,10 @@ let dmInboxSubscription: StompSubscription | null = null;
 const dmListeners = new Set<DmListener>();
 
 function ensureDmInboxSubscription(): void {
-  if (dmInboxSubscription) {
+  if (dmInboxSubscription || !client?.connected) {
     return;
   }
-  dmInboxSubscription = requireClient().subscribe(DM_INBOX_DESTINATION, (message) => {
+  dmInboxSubscription = client.subscribe(DM_INBOX_DESTINATION, (message) => {
     const dm = parseBody<DmOutboundMessage>(message);
     for (const listener of dmListeners) {
       if (dm.sender === listener.peerId || dm.receiver === listener.peerId) {
@@ -171,9 +261,13 @@ export function subscribeToDm(
 
   return () => {
     dmListeners.delete(listener);
-    if (dmListeners.size === 0) {
-      dmInboxSubscription?.unsubscribe();
-      dmInboxSubscription = null;
+    if (dmListeners.size > 0) {
+      return;
+    }
+    const subscription = dmInboxSubscription;
+    dmInboxSubscription = null;
+    if (subscription && client?.connected) {
+      subscription.unsubscribe();
     }
   };
 }
