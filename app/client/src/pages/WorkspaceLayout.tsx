@@ -3,6 +3,7 @@ import {
   Settings, Calendar, LayoutGrid,
   Plus, Bell, User, Grid3x3, Search,
   Phone, MessageSquare, LogOut, Users, Home,
+  AlertCircle, X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { WorkspaceSidebar } from "../components/WorkspaceSidebar";
@@ -21,6 +22,11 @@ const TOOLS = [
   { path: "/workspace/calendar", icon: Calendar,      label: "캘린더" },
   { path: "/workspace/threads",  icon: MessageSquare, label: "스레드" },
 ];
+
+// 서버는 실패 시 { success:false, error:{ code, message } }를 내려줌 (한국어 메시지 포함).
+// openapi-fetch의 error는 타입이 넓어 any 경유가 불가피 — 메시지 추출을 한 곳으로 모음.
+const errorMessageOf = (error: unknown, fallback: string) =>
+  (error as any)?.error?.message ?? fallback;
 
 export function WorkspaceLayout() {
   const {currentWorkspace, channelsByWorkspace, setWorkspaceChannels, addChannel, updateChannel, removeChannel,
@@ -46,10 +52,14 @@ export function WorkspaceLayout() {
 
   const [lastChannelByWorkspace, setLastChannelByWorkspace] = useState<Record<number, number>>({});
 
+  // 채널 생성·삭제·이름변경 실패 사유 — 예전엔 console.error만 찍어 화면이 무반응이었음
+  const [channelError, setChannelError] = useState("");
+
   // 워크스페이스가 바뀔 때마다 채널 목록 조회
   useEffect(() => {
     if (!currentWorkspace) return;
     const wsId = currentWorkspace.id;
+    setChannelError("");
     (async () => {
       try {
         const { data, error } = await api.GET('/api/workspaces/{workspaceId}/channels', {
@@ -75,13 +85,15 @@ export function WorkspaceLayout() {
   const handleAddChannel = async (name: string, parentId?: number | null) => {
     if (!currentWorkspace) return;
     const wsId = currentWorkspace.id;
+    setChannelError("");
     try {
       const { data, error } = await api.POST('/api/workspaces/{workspaceId}/channels', {
         params: { path: { workspaceId: wsId } },
         body: { name, isPrivate: false, parentId: parentId ?? null },   // parentId 생략 = 최상위 채널
       });
       if (error || !data?.data?.id) {
-        console.error('채널 생성 실패:', error);
+        // CH_001 동일 이름 / CH_003 입력값 오류
+        setChannelError(errorMessageOf(error, '채널을 만들지 못했습니다'));
         return;
       }
       const created = data.data;
@@ -95,42 +107,48 @@ export function WorkspaceLayout() {
       navigate(`/workspace/channels/${created.id}`);
     } catch (e) {
       console.error('채널 생성 실패:', e);
+      setChannelError('서버에 연결할 수 없습니다');
     }
   };
 
   const handleDeleteChannel = async (channelId: number) => {
     if (!currentWorkspace) return;
     const wsId = currentWorkspace.id;
+    setChannelError("");
     try {
       const { error } = await api.DELETE('/api/workspaces/{workspaceId}/channels/{channelId}', {
         params: { path: { workspaceId: wsId, channelId } },
       });
       if (error) {
-        console.error('채널 삭제 실패:', error);
+        // CH_004 "하위 채널이 있어 삭제할 수 없습니다" — 사이드바에서 미리 막지만 서버 판단이 최종
+        setChannelError(errorMessageOf(error, '채널을 삭제하지 못했습니다'));
         return;
       }
       removeChannel(wsId, channelId);
       if (activeChannelId === channelId) navigate("/workspace");
     } catch (e) {
       console.error('채널 삭제 실패:', e);
+      setChannelError('서버에 연결할 수 없습니다');
     }
   };
 
   const handleRenameChannel = async (channelId: number, newName: string) => {
     if (!currentWorkspace) return;
     const wsId = currentWorkspace.id;
+    setChannelError("");
     try {
       const { error } = await api.PATCH('/api/workspaces/{workspaceId}/channels/{channelId}', {
         params: { path: { workspaceId: wsId, channelId } },
         body: { name: newName },
       });
       if (error) {
-        console.error('채널 이름 변경 실패:', error);
+        setChannelError(errorMessageOf(error, '채널 이름을 변경하지 못했습니다'));
         return;
       }
       updateChannel(wsId, channelId, newName);
     } catch (e) {
       console.error('채널 이름 변경 실패:', e);
+      setChannelError('서버에 연결할 수 없습니다');
     }
   };
 
@@ -240,6 +258,21 @@ export function WorkspaceLayout() {
             </Link>
           </Tooltip>
         </div>
+
+        {/* ── 채널 작업 실패 안내 ── */}
+        {channelError && (
+          <div className="app-chrome flex items-center gap-2 px-5 py-2 bg-red-50 border-b border-red-100 flex-shrink-0">
+            <AlertCircle size={15} className="text-red-500 flex-shrink-0" />
+            <p className="text-xs text-red-600 flex-1">{channelError}</p>
+            <button
+              onClick={() => setChannelError("")}
+              title="닫기"
+              className="p-1 hover:bg-red-100 rounded-md transition-all flex-shrink-0"
+            >
+              <X size={13} className="text-red-400" />
+            </button>
+          </div>
+        )}
 
         {/* ── 메인 콘텐츠 ── */}
         <div className="flex-1 overflow-hidden relative">

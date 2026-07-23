@@ -67,18 +67,14 @@ export function FriendSidebar() {
 
     const handleAddFriend = async (u: SearchedUser) => {
         try {
-            const { error } = await api.POST('/api/friends/{friendId}', {
-                params: { path: { friendId: u.uid } },
+            const { error } = await api.POST('/api/friends/requests/{receiverId}', {
+                params: { path: { receiverId: u.uid } },
             });
             if (error) {
                 console.error('친구 추가 실패:', error);
                 return;
             }
             setAddedIds((prev) => [...prev, u.uid]);
-            // 목록에 즉시 반영 (상태는 다음 조회 때 갱신됨)
-            setFriends([...friends, {
-                id: u.uid, name: u.nickname, status: 'OFFLINE', unreadCount: 0,
-            }]);
         } catch (e) {
             console.error('친구 추가 실패:', e);
         }
@@ -214,8 +210,8 @@ export function FriendSidebar() {
                 title="친구 추가"
             >
                 <UserSearchBox
-                    actionLabel="추가"
-                    doneLabel="추가됨"
+                    actionLabel="친구 요청"
+                    doneLabel="요청됨"
                     doneIds={[...friends.map((f) => f.id), ...addedIds]}
                     onSelect={handleAddFriend}
                 />

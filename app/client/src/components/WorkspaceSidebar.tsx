@@ -230,12 +230,6 @@ export function WorkspaceSidebar({
                 </button>
             )}
 
-            <button
-                onClick={() => setChannelMenuOpenId(channelMenuOpenId === ch.id ? null : ch.id)}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20"
-            >
-                <Settings size={12} className="text-white/70" />
-            </button>
           <button
               onClick={() => setChannelMenuOpenId(channelMenuOpenId === ch.id ? null : ch.id)}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20"
@@ -255,12 +249,16 @@ export function WorkspaceSidebar({
                 >
                   이름 변경
                 </button>
+                {/* 백엔드가 CH_004로 거부하는 케이스 — 누르기 전에 이유를 보여줌 */}
                 <button
+                    disabled={hasKids}
+                    title={hasKids ? "하위 채널을 먼저 삭제해야 합니다" : undefined}
                     onClick={() => {
                       onDeleteChannel(ch.id);
                       setChannelMenuOpenId(null);
                     }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-white/10"
+                    className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-white/10
+                      disabled:text-white/25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
                 >
                   삭제
                 </button>
