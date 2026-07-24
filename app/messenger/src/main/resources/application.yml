@@ -23,6 +23,9 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
   broker:
     relay-host: localhost
     relay-port: 8204
