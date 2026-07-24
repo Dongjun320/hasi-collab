@@ -4,6 +4,7 @@ import com.hasi.service.workspace.member.entity.ChannelMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ChannelMemberRepository extends JpaRepository<ChannelMember, Long> {
     List<ChannelMember> findByChannelId(Long channelId);
@@ -11,4 +12,6 @@ public interface ChannelMemberRepository extends JpaRepository<ChannelMember, Lo
     void deleteByChannelId(Long channelId);
 
     boolean existsByChannelIdAndUserId(Long channelId, Long userId);
+
+    Optional<ChannelMember> findByUserIdAndChannelId(Long uid, Long id);
 }
