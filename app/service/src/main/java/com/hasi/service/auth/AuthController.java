@@ -4,6 +4,7 @@ import com.hasi.collab.api.AuthApi;
 import com.hasi.collab.model.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController implements AuthApi {
 
     private final AuthService authService;
+    private final SocialAccountService socialAccountService;
 
     // 회원가입 (선 이메일 인증 필요)
     @PostMapping("/register")
@@ -80,6 +82,29 @@ public class AuthController implements AuthApi {
                 request.getEmail(),
                 request.getNewPassword()
         );
+        return ResponseEntity.ok().build();
+    }
+
+    @Override
+    @GetMapping("/social")
+    public ResponseEntity<GetSocialAccount200Response> getSocialAccount() {
+        GetSocialAccount200Response body = new GetSocialAccount200Response()
+                .success(true)
+                .data(socialAccountService.getSocialAccount());
+        return ResponseEntity.ok(body);
+    }
+
+    @Override
+    @DeleteMapping("/social")
+    public ResponseEntity<Void> unlinkSocialAccount() {
+        socialAccountService.unlinkSocialAccount();
+        return ResponseEntity.ok().build();
+    }
+
+    @Override
+    @PostMapping("/social/link")
+    public ResponseEntity<Void> linkSocialAccount(@RequestBody SocialLinkRequest request) {
+        socialAccountService.linkByCode(request.getCode());
         return ResponseEntity.ok().build();
     }
 }

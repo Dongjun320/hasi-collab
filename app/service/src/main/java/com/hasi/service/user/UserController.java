@@ -1,5 +1,6 @@
 package com.hasi.service.user;
 
+import com.hasi.collab.model.UserData;
 import com.hasi.collab.model.UserSearchResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,5 +17,10 @@ public class UserController {
     public ResponseEntity<UserSearchResponse> searchUser(
             @RequestParam String nickname) {
         return ResponseEntity.ok(userService.searchByNickname(nickname));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserData> getMyInfo() {
+        return ResponseEntity.ok(userService.getMyInfo());
     }
 }

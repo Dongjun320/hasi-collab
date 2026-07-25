@@ -50,3 +50,16 @@ components:
           type: string
           format: date-time
           description: "수정일시"
+
+    SocialAccountResponse:
+      type: object
+      description: "연동된 소셜 계정 정보 (계정당 1개, 미연동이면 data가 null)"
+      properties:
+        provider:
+          type: string
+          enum: [ google, line, amazon, twitter ]
+          description: "소셜 플랫폼"
+        linkedAt:
+          type: string
+          format: date-time
+          description: "연동 일시"

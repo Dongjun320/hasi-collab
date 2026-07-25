@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from '../store/authStore';
 import { api } from '../api/client';
@@ -15,13 +15,14 @@ import { useWorkspaceStore } from "../store/workspaceStore";
 import { NotificationSidebar } from "../components/NotificationSidebar";
 import { useNotificationStore } from "../store/notificationStore";
 import { Tooltip } from "../components/Tooltip";
+import Toast from "../components/Toast";
 
 
 export function WorkspaceHome() {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [calendarDate, setCalendarDate] = useState(new Date());
-  const { refreshToken, clear } = useAuthStore();
+  const { refreshToken, clear, user } = useAuthStore();
   const handleLogout = async () => {
     try {
       if (refreshToken) {
@@ -41,6 +42,64 @@ export function WorkspaceHome() {
   const { notifications } = useNotificationStore();
   const unreadNotifications = notifications.filter((n) => n.unread).length;
   const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0);
+
+  // 소셜 연동 (임시 UI — 정식 설정창은 박규태님)
+  const [socialProvider, setSocialProvider] = useState<string | null>(null);
+  const [socialBusy, setSocialBusy] = useState(false);
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' | 'warning' }>({
+    open: false, message: '', type: 'info',
+  });
+  const triggerToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') =>
+      setToast({ open: true, message, type });
+  const closeToast = useCallback(
+      () => setToast((prev) => ({ ...prev, open: false })), []);
+
+  const loadSocial = async () => {
+    const { data } = await api.GET('/api/auth/social');
+    setSocialProvider(data?.data?.provider ?? null);
+  };
+
+  useEffect(() => { loadSocial(); }, []);
+
+  const handleSocialLink = () => {
+    const w = 500, h = 650;
+    const left = window.screenX + (window.outerWidth - w) / 2;
+    const top  = window.screenY + (window.outerHeight - h) / 2;
+    window.open(
+        'http://localhost:8080/oauth2/authorization/google',
+        'social-link',
+        `width=${w},height=${h},left=${left},top=${top}`,
+    );
+  };
+
+  // 팝업이 보내온 연동 결과 수신
+  useEffect(() => {
+    const onMessage = async (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === 'social-link') {
+        setSocialBusy(true);
+        const { error } = await api.POST('/api/auth/social/link',
+            { body: { code: e.data.linkCode } });
+        setSocialBusy(false);
+        // 메시지 핸들러 안
+        if (error) triggerToast((error as any)?.error?.message ?? '연동에 실패했습니다', 'error');
+        else { await loadSocial(); triggerToast('소셜 연동이 완료되었습니다', 'success'); }
+      } else if (e.data?.type === 'social-link-error') {
+        triggerToast('이미 다른 계정에 연동된 소셜입니다', 'error');
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  const handleSocialUnlink = async () => {
+    setSocialBusy(true);
+    const { error } = await api.DELETE('/api/auth/social', {});
+    setSocialBusy(false);
+    if (error) triggerToast((error as any)?.error?.message ?? '해제에 실패했습니다', 'error');
+    else { setSocialProvider(null); triggerToast('연동을 해제했습니다', 'info'); }
+  };
+
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -103,7 +162,9 @@ export function WorkspaceHome() {
           {/* 헤더 */}
           <div className="px-6 pt-5 pb-3 flex items-center justify-between flex-shrink-0 border-b border-[#e8f8ed]">
             <div>
-              <h1 className="text-lg font-bold text-[#2C3E50]">안녕하세요, 김동준님 👋</h1>
+              <h1 className="text-lg font-bold text-[#2C3E50]">
+                안녕하세요, {user?.nickname ?? "게스트"}님 👋
+              </h1>
               <p className="text-xs text-gray-400">
                 {today.getFullYear()}년 {today.getMonth() + 1}월 {today.getDate()}일 {weekDayKo[today.getDay()]}요일
               </p>
@@ -332,6 +393,31 @@ export function WorkspaceHome() {
         {/* 구분선 */}
         <div className="h-8 w-[2px] bg-white/20 rounded-full mx-2 flex-shrink-0" />
 
+
+        {/* 소셜 연동 (임시 — 설정창으로 이관 예정) */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {socialProvider ? (
+              <>
+                <span className="text-xs text-white/70">{socialProvider} 연동됨</span>
+                <button
+                    onClick={handleSocialUnlink}
+                    disabled={socialBusy}
+                    className="px-2.5 py-1 text-xs rounded-lg bg-white/10 text-white/70 hover:bg-red-500/70 hover:text-white transition-all disabled:opacity-40"
+                >
+                  연동 해제
+                </button>
+              </>
+          ) : (
+              <button
+                  onClick={handleSocialLink}
+                  disabled={socialBusy}
+                  className="px-2.5 py-1 text-xs rounded-lg bg-white/10 text-white/70 hover:bg-[#5CC87A] hover:text-white transition-all disabled:opacity-40"
+              >
+                소셜 연동하기
+              </button>
+          )}
+        </div>
+
         {/* 스페이서 */}
         <div className="flex-1" />
 
@@ -401,6 +487,15 @@ export function WorkspaceHome() {
         </div>
 
       </div>
+
+      {toast.open && (
+        <Toast
+          isOpen={toast.open}
+          type={toast.type}
+          message={toast.message}
+          onClose={closeToast}
+        />
+      )}
     </div>
   );
 }

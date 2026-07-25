@@ -110,6 +110,17 @@ paths:
   /api/users/search:
     $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1search"
 
+  /api/users/me:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me"
+
+  /api/auth/social:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1social"
+
+  /api/auth/social/link:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1social~1link"
+
+
+
 components:
   securitySchemes:
     BearerAuth:

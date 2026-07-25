@@ -1,22 +1,18 @@
 package com.hasi.service.oauth;
 
+import com.hasi.service.auth.SocialAccountService;
 import com.hasi.service.auth.entity.SocialAccount;
 import com.hasi.service.auth.repository.SocialAccountRepository;
 import com.hasi.service.jwt.JwtProvider;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import java.util.Optional;
 
 @Component
@@ -25,7 +21,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     private final SocialAccountRepository socialAccountRepository;
     private final JwtProvider jwtProvider;
-
+    private final SocialAccountService socialAccountService;
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
@@ -51,9 +47,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
         } else {
-            // 처음 보는 계정 → 일반 가입 절차로 안내
-            String redirectUrl = "http://localhost:5173/?social=unlinked"
-                    + "&provider=" + provider;
+            // 미연동 → 연동 코드를 발급해 프론트로 전달
+            // 로그인 화면에서 온 것인지 설정창에서 온 것인지 서버는 알 수 없으므로,
+            // 프론트가 JWT 보유 여부로 판단해 처리 (있으면 연동, 없으면 안내)
+            String linkCode = socialAccountService.issueLinkCode(provider, providerId);
+            String redirectUrl = "http://localhost:5173/oauth2/redirect?social=unlinked"
+                    + "&provider=" + provider
+                    + "&linkCode=" + linkCode;
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
         }
 

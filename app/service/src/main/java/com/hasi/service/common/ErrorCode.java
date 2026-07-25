@@ -14,6 +14,10 @@ public enum ErrorCode {
     AUTH_005(HttpStatus.CONFLICT,      "AUTH_005", "이미 사용 중인 이메일입니다"),
     AUTH_006(HttpStatus.CONFLICT, "AUTH_006", "가입되지 않은 이메일입니다"),
     AUTH_007(HttpStatus.CONFLICT, "AUTH_007", "이미 연동된 소셜 계정입니다"),
+    AUTH_008(HttpStatus.CONFLICT, "AUTH_008", "이미 연동된 소셜 계정이 있습니다. 해제 후 다시 시도해주세요"),
+    AUTH_009(HttpStatus.NOT_FOUND, "AUTH_009", "연동된 소셜 계정이 없습니다"),
+    AUTH_010(HttpStatus.BAD_REQUEST, "AUTH_010", "연동 코드가 유효하지 않거나 만료되었습니다"),
+
 
     // VERIFY
     VERIFY_001(HttpStatus.BAD_REQUEST, "VERIFY_001", "코드가 틀렸거나 만료되었습니다"),

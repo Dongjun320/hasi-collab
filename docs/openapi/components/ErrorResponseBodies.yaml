@@ -98,6 +98,50 @@ components:
           code: "AUTH_006"
           message: "가입되지 않은 이메일입니다"
 
+    Auth007Error:
+      description: "AUTH_007 | 409 | 이미 다른 계정에 연동된 소셜 계정"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "AUTH_007"
+          message: "이미 연동된 소셜 계정입니다"
+
+    Auth008Error:
+      description: "AUTH_008 | 409 | 계정당 소셜 연동은 1개까지"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "AUTH_008"
+          message: "이미 연동된 소셜 계정이 있습니다. 해제 후 다시 시도해주세요"
+
+    Auth009Error:
+      description: "AUTH_009 | 404 | 연동된 소셜 계정 없음"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "AUTH_009"
+          message: "연동된 소셜 계정이 없습니다"
+
+    Auth010Error:
+      description: "AUTH_010 | 400 | 유효하지 않거나 만료된 연동 코드"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "AUTH_010"
+          message: "연동 코드가 유효하지 않거나 만료되었습니다"
+
     # ── VERIFY 에러 ──────────────────────────────────────────────────
 
     Verify001Error:

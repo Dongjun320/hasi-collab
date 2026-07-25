@@ -1,13 +1,6 @@
 package com.hasi.service.auth;
 
-import com.hasi.collab.model.RegisterRequest;
-import com.hasi.collab.model.EmailSendRequest;
-import com.hasi.collab.model.EmailVerifyRequest;
-import com.hasi.collab.model.LogOutRequest;
-import com.hasi.collab.model.LogInRequest;
-import com.hasi.collab.model.LogInResponse;
-import com.hasi.collab.model.RegisterResponse;
-import com.hasi.collab.model.UserData;
+import com.hasi.collab.model.*;
 import com.hasi.service.auth.entity.SocialAccount;
 import com.hasi.service.auth.entity.User;
 import com.hasi.service.auth.repository.UserRepository;
@@ -19,13 +12,19 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.ZoneOffset;
 
 import java.time.Duration;
 import java.util.Random;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -160,26 +159,6 @@ public class AuthService {
                 .set("BL:" + request.getRefreshToken(), "logout", Duration.ofDays(7));
     }
 
-    // 소셜 계정 연동 (로그인된 상태에서 설정에서 호출)
-    @Transactional
-    public void linkSocialAccount(Long uid, String provider, String providerId) {
-
-        // 이미 다른 유저가 연동한 소셜 계정인지 체크
-        if (socialAccountRepository.findByProviderAndProviderId(provider, providerId).isPresent()) {
-            throw new ApiException(ErrorCode.AUTH_007); // 이미 연동된 소셜 계정
-        }
-
-        User user = userRepository.findById(uid)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
-
-        socialAccountRepository.save(
-                SocialAccount.builder()
-                        .user(user)
-                        .provider(provider)
-                        .providerId(providerId)
-                        .build()
-        );
-    }
 
     // 비밀번호 재설정 코드 확인만 (비밀번호 변경 X)
     public void emailVerifyForPWReset(String email, String code) {

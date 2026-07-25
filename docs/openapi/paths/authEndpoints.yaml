@@ -148,3 +148,75 @@ paths:
             application/json:
               schema:
                 $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Verify001Error"
+  /api/auth/social:
+    get:
+      summary: "내 계정에 연동된 소셜 계정 조회 (계정당 최대 1개)"
+      tags:
+        - Auth
+      operationId: getSocialAccount
+      responses:
+        '200':
+          description: "조회 성공 (미연동이면 data가 null)"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    nullable: true
+                    allOf:
+                      - $ref: "../components/AuthResponseBodies.yaml#/components/schemas/SocialAccountResponse"
+                  error:
+                    nullable: true
+                    example: null
+        '401':
+          description: "토큰 만료 / 미인증"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+    delete:
+      summary: "소셜 계정 연동 해제 (해제 후 다시 연동 가능)"
+      tags:
+        - Auth
+      operationId: unlinkSocialAccount
+      responses:
+        '200':
+          description: "연동 해제 성공"
+        '404':
+          description: "연동된 소셜 계정 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth009Error"
+  /api/auth/social/link:
+    post:
+      summary: "소셜 연동 완료 — OAuth 리다이렉트로 받은 linkCode로 내 계정에 연동"
+      tags:
+        - Auth
+      operationId: linkSocialAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/SocialLinkRequest"
+      responses:
+        '200':
+          description: "연동 성공"
+        '400':
+          description: "코드가 만료되었거나 유효하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth010Error"
+        '409':
+          description: "이미 연동됨"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth008Error"
+
