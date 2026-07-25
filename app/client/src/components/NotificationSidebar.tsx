@@ -9,7 +9,7 @@ import { useWorkspaceStore } from "../store/workspaceStore";
 export function NotificationSidebar() {
     const { activeRightPanel, closeRightPanel } = useUiStore();
     const { notifications, markRead, markAllRead, addNotifications, removeNotification } = useNotificationStore();
-    const [busyId, setBusyId] = useState<number | null>(null);
+    const [busyId, setBusyId] = useState<string | null>(null);
     const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
 
     useEffect(() => {
@@ -21,7 +21,7 @@ export function NotificationSidebar() {
 
                 const pending = (data.data ?? []).filter((v) => v.status === 'PENDING');
                 addNotifications(pending.map((v) => ({
-                    id: v.invitationId ?? 0,   // 목데이터 id와 충돌 방지
+                    id: `invite-${v.invitationId}`,   // 소스별 네임스페이스 (친구요청과 id 충돌 방지)
                     type: 'invite' as const,
                     text: `${v.inviterNickname}님이 ${v.workspaceName}에 초대했습니다`,
                     time: v.createdAt ? new Date(v.createdAt).toLocaleDateString() : '',
@@ -30,6 +30,26 @@ export function NotificationSidebar() {
                 })));
             } catch (e) {
                 console.error('초대 조회 실패:', e);
+            }
+
+            // 받은 친구 요청도 알림으로 (통합 알림 API가 없어 직접 조회 — 임시)
+            try {
+                // 친구 엔드포인트는 초대와 달리 배열을 직접 반환 (success 봉투 없음)
+                const { data: fr, error: frErr } = await api.GET('/api/friends/requests/received');
+                if (!frErr && fr) {
+                    addNotifications(fr
+                        .filter((r) => r.id != null)
+                        .map((r) => ({
+                            id: `friend-${r.id}`,
+                            type: 'friend' as const,
+                            text: `${r.name}님이 친구 요청을 보냈습니다`,
+                            time: '',
+                            unread: true,
+                            requestId: r.id!,   // 요청(관계) id — 수락/거절에 사용
+                        })));
+                }
+            } catch (e) {
+                console.error('친구 요청 조회 실패:', e);
             }
         })();
     }, [activeRightPanel]);
@@ -48,6 +68,26 @@ export function NotificationSidebar() {
             if (action === 'ACCEPTED') await fetchWorkspaces();
         } catch (e) {
             console.error('초대 응답 실패:', e);
+        } finally {
+            setBusyId(null);
+        }
+    };
+
+    const respondFriend = async (n: Notification, accept: boolean) => {
+        if (!n.requestId) return;
+        setBusyId(n.id);
+        try {
+            const { error } = accept
+                ? await api.POST('/api/friends/requests/{requestId}/accept', {
+                    params: { path: { requestId: n.requestId } },
+                })
+                : await api.POST('/api/friends/requests/{requestId}/reject', {
+                    params: { path: { requestId: n.requestId } },
+                });
+            if (error) return;
+            removeNotification(n.id);
+        } catch (e) {
+            console.error('친구 요청 응답 실패:', e);
         } finally {
             setBusyId(null);
         }
@@ -95,18 +135,18 @@ export function NotificationSidebar() {
                             </div>
                         </button>
 
-                        {/* 초대 알림에만 수락/거절 */}
-                        {n.type === 'invite' && n.invitationId && (
+                        {/* 초대·친구요청 알림에 수락/거절 */}
+                        {((n.type === 'invite' && n.invitationId) || (n.type === 'friend' && n.requestId)) && (
                             <div className="flex gap-1.5 px-2 pb-2">
                                 <button
-                                    onClick={() => respondInvite(n, 'ACCEPTED')}
+                                    onClick={() => n.type === 'invite' ? respondInvite(n, 'ACCEPTED') : respondFriend(n, true)}
                                     disabled={busyId === n.id}
                                     className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[11px] font-semibold bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 text-white rounded-md transition-all"
                                 >
                                     <Check size={12} /> 수락
                                 </button>
                                 <button
-                                    onClick={() => respondInvite(n, 'DECLINED')}
+                                    onClick={() => n.type === 'invite' ? respondInvite(n, 'DECLINED') : respondFriend(n, false)}
                                     disabled={busyId === n.id}
                                     className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[11px] font-semibold bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-600 rounded-md transition-all"
                                 >
