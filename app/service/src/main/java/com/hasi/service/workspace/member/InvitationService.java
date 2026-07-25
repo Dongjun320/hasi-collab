@@ -43,6 +43,10 @@ public class InvitationService {
             throw new ApiException(ErrorCode.MBR_002);
         }
 
+        if (inviterId.equals(user.getUid())) {
+            throw new ApiException(ErrorCode.MBR_004);
+        }
+
         // 이미 보낸 초대가 PENDING일 경우 다시 보낼 수 없음
         if (invitationRepository.existsByWorkspaceIdAndInviteeIdAndStatus(workspaceId, user.getUid(), Invitation.Status.PENDING)) {
             throw new ApiException(ErrorCode.MBR_007);

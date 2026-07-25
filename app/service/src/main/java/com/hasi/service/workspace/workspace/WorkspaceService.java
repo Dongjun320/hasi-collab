@@ -3,7 +3,10 @@ package com.hasi.service.workspace.workspace;
 import com.hasi.collab.model.*;
 import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
+import com.hasi.service.workspace.channel.entity.Channel;
+import com.hasi.service.workspace.channel.repository.ChannelRepository;
 import com.hasi.service.workspace.member.entity.WorkspaceMember;
+import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
 import com.hasi.service.workspace.workspace.entity.Workspace;
 import com.hasi.service.workspace.workspace.repository.WorkspaceRepository;
@@ -24,6 +27,8 @@ public class WorkspaceService {
 
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final ChannelRepository channelRepository;
+    private final ChannelMemberRepository channelMemberRepository;
 
     @Transactional
     public WorkspaceData createWorkspace(WorkspaceCreateRequest request) {
@@ -174,10 +179,23 @@ public class WorkspaceService {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
+        // 워크스페이스가 있는지 확인
         Workspace workspace = workspaceRepository.findById(workspaceId)
-                        .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
 
+        // 워크스페이스 소속 채널들의 채널 멤버 먼저 삭제
+        List<Channel> channels = channelRepository.findByWorkspaceId(workspaceId);
+        for (Channel channel : channels) {
+            channelMemberRepository.deleteByChannelId(channel.getId());
+        }
+
+        // 채널 삭제
+        channelRepository.deleteAll(channels);
+
+        // 워크스페이스 멤버 삭제
         workspaceMemberRepository.deleteByWorkspaceId(workspaceId);
+
+        // 워크스페이스 삭제
         workspaceRepository.delete(workspace);
         
         WorkspaceDeleteResponseData data = new WorkspaceDeleteResponseData();
