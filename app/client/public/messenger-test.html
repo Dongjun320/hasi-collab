@@ -21,6 +21,9 @@
   .status-connected { color: #080; }
   .status-reconnecting { color: #b8860b; }
   pre.log { background: #111; color: #ccc; padding: 0.75rem; height: 220px; overflow-y: auto; border-radius: 4px; font-size: 0.8rem; white-space: pre-wrap; }
+  .hint { font-size: 0.85rem; color: #555; }
+  .badge { display: inline-block; min-width: 1.4rem; text-align: center; padding: 0.1rem 0.4rem; border-radius: 999px; background: #b00; color: #fff; font-size: 0.8rem; font-weight: bold; }
+  .badge-zero { background: #999; }
 </style>
 </head>
 <body>
@@ -28,6 +31,12 @@
 <h1>messenger (port 8081) STOMP test page</h1>
 <p>Served from the Vite dev server at <code>http://localhost:5173</code>, matching the origin
 <code>WebSocketConfig</code> already allows &mdash; no backend config changes needed.</p>
+<p class="hint">This page drives raw STOMP directly (it does not import <code>api/stomp.ts</code>), but it mirrors
+that module's model after the recent changes: a <strong>single</strong> <code>/user/queue/dm</code>
+subscription is opened once on connect and kept alive for the whole session, then fanned out to two
+kinds of listeners &mdash; an always-on <em>inbox</em> feed (drives unread badges, like
+<code>subscribeToDmInbox</code>) and a peer-filtered <em>conversation</em> feed (one open chat, like
+<code>subscribeToDm</code>).</p>
 
 <h2>1. Connect</h2>
 <section>
@@ -60,13 +69,18 @@
 </section>
 
 <h2>3. Direct messages</h2>
+<p class="hint">The DM inbox is subscribed <strong>automatically on connect</strong> and stays subscribed until you
+disconnect &mdash; you never have to (re)subscribe per conversation. The <em>Inbox feed</em> below logs
+<strong>every</strong> DM this user receives regardless of which chat is "open"; the <em>Conversation feed</em>
+logs only DMs to/from the open peer. Incoming DMs from anyone <em>other</em> than the open peer bump that
+peer's unread count &mdash; open their conversation to clear it.</p>
 <section>
   <div class="row">
     <div>
       <label for="peerId">Peer UID (numeric)</label>
       <input id="peerId" type="number" value="9" />
     </div>
-    <button id="subscribeDmBtn">Subscribe</button>
+    <button id="openConversationBtn">Open conversation</button>
   </div>
   <div class="row">
     <input id="dmContent" placeholder="message content" />
@@ -75,7 +89,12 @@
   <div class="row">
     <button id="historyDmBtn">Fetch history (REST)</button>
   </div>
+
+  <label>Conversation feed <span id="openPeerLabel" class="hint">(none open)</span></label>
   <pre class="log" id="dmLog"></pre>
+
+  <label>Inbox feed (all DMs) &mdash; unread by peer: <span id="unreadSummary" class="hint">none</span></label>
+  <pre class="log" id="dmInboxLog"></pre>
 </section>
 
 <h2>4. Server errors (/user/queue/errors)</h2>
@@ -99,6 +118,7 @@ because STOMP <code>publish</code> has no response and a denied SUBSCRIBE is dro
   const RECONNECT_GRACE_MS = 20000;
 
   // 서버가 convertAndSendToUser(uid, "/queue/dm", ...)로 보내는 개인 큐.
+  // 세션당 하나뿐이라 상대방과 무관하게 내 DM이 전부 들어옵니다. 연결되어 있는 동안 계속 유지합니다.
   const DM_INBOX_DESTINATION = '/user/queue/dm';
 
   // 거부된 send/subscribe를 서버가 알려주는 개인 큐. 연결 직후 바로 구독합니다.
@@ -110,6 +130,11 @@ because STOMP <code>publish</code> has no response and a denied SUBSCRIBE is dro
   let giveUpTimer = null;
   let dmSubscription = null;
   let errorSubscription = null;
+
+  // 현재 "열려 있는" 대화 상대. 이 상대의 메시지는 대화 피드에, 그 외는 안 읽음으로.
+  let openPeer = null;
+  // peerId(string) -> 안 읽은 개수
+  const unread = new Map();
 
   function log(elId, text) {
     const el = document.getElementById(elId);
@@ -134,6 +159,68 @@ because STOMP <code>publish</code> has no response and a denied SUBSCRIBE is dro
     el.className = `status-${kind}`;
   }
 
+  function renderUnread() {
+    const el = document.getElementById('unreadSummary');
+    const parts = [...unread.entries()].filter(([, n]) => n > 0);
+    if (parts.length === 0) {
+      el.textContent = 'none';
+      return;
+    }
+    el.innerHTML = parts
+      .map(([peer, n]) => `uid ${peer} <span class="badge">${n}</span>`)
+      .join(' &nbsp; ');
+  }
+
+  function bumpUnread(peer) {
+    unread.set(peer, (unread.get(peer) ?? 0) + 1);
+    renderUnread();
+  }
+
+  function clearUnread(peer) {
+    unread.set(peer, 0);
+    renderUnread();
+  }
+
+  // 단일 인박스 구독에서 받은 DM 하나를 두 피드로 분배합니다.
+  function routeDm(dm) {
+    const line = `#${dm.id} ${dm.createdAt} ${dm.sender}->${dm.receiver} ${dm.isDeleted ? '(deleted)' : dm.content}`;
+    // 인박스 피드: 상대 불문 전부.
+    log('dmInboxLog', line);
+
+    // 대화 상대(나 자신이 아닌 쪽)를 기준으로 판정.
+    const other = dm.sender === myUid ? dm.receiver : dm.sender;
+
+    if (openPeer !== null && (dm.sender === openPeer || dm.receiver === openPeer)) {
+      // 열려 있는 대화 → 대화 피드에 표시하고 안 읽음은 0 유지.
+      log('dmLog', `RECV ${line}`);
+      clearUnread(openPeer);
+    } else if (dm.sender !== myUid) {
+      // 다른 상대가 보낸, 지금 열려 있지 않은 DM → 안 읽음 증가.
+      bumpUnread(other);
+    }
+  }
+
+  // 연결 직후(재연결 포함) 인박스+에러 큐를 구독합니다. 세션 동안 유지됩니다.
+  function subscribeSessionQueues() {
+    if (!dmSubscription) {
+      dmSubscription = client.subscribe(DM_INBOX_DESTINATION, (msg) => {
+        try {
+          routeDm(JSON.parse(msg.body));
+        } catch {
+          log('dmInboxLog', `RECV (unparsed) ${msg.body}`);
+        }
+      });
+      log('dmInboxLog', `subscribed to ${DM_INBOX_DESTINATION} (persists until disconnect)`);
+    }
+    if (!errorSubscription) {
+      errorSubscription = client.subscribe(ERROR_DESTINATION, (msg) => {
+        const error = JSON.parse(msg.body);
+        log('errorLog', `${error.code} ${error.destination ?? '-'} :: ${error.message}`);
+      });
+      log('errorLog', `subscribed to ${ERROR_DESTINATION}`);
+    }
+  }
+
   document.getElementById('connectBtn').onclick = () => {
     const token = document.getElementById('token').value.trim();
     if (!token) return alert('paste a token first');
@@ -152,13 +239,8 @@ because STOMP <code>publish</code> has no response and a denied SUBSCRIBE is dro
     client.onConnect = () => {
       clearTimeout(giveUpTimer);
       setStatus(`Connected as uid ${myUid}`, 'connected');
-
       // 재연결 시에도 다시 걸어야 하므로 onConnect 안에서 구독합니다.
-      errorSubscription = client.subscribe(ERROR_DESTINATION, (msg) => {
-        const error = JSON.parse(msg.body);
-        log('errorLog', `${error.code} ${error.destination ?? '-'} :: ${error.message}`);
-      });
-      log('errorLog', `subscribed to ${ERROR_DESTINATION}`);
+      subscribeSessionQueues();
     };
     client.onStompError = (frame) => {
       clearTimeout(giveUpTimer);
@@ -216,27 +298,54 @@ because STOMP <code>publish</code> has no response and a denied SUBSCRIBE is dro
     log('channelLog', `SENT ${content}`);
   };
 
+  // 히스토리는 createdAt 오름차순(오래된→최신)으로 와야 합니다. 순서를 눈으로 확인할 수 있게
+  // 배열을 파싱해 한 줄씩, 그리고 시간이 단조 증가하지 않으면 경고를 찍습니다.
+  function logHistory(elId, status, rawText) {
+    log(elId, `HISTORY ${status}`);
+    let arr;
+    try {
+      arr = JSON.parse(rawText);
+    } catch {
+      log(elId, rawText);
+      return;
+    }
+    if (!Array.isArray(arr)) {
+      log(elId, rawText);
+      return;
+    }
+    if (arr.length === 0) {
+      log(elId, '(empty)');
+      return;
+    }
+    let prev = null;
+    let ordered = true;
+    for (const m of arr) {
+      const who = m.receiver !== undefined ? `${m.sender}->${m.receiver}` : `ch${m.channelId} ${m.sender}`;
+      log(elId, `  #${m.id} ${m.createdAt} ${who} ${m.isDeleted ? '(deleted)' : m.content}`);
+      if (prev !== null && m.createdAt < prev) ordered = false;
+      prev = m.createdAt;
+    }
+    log(elId, ordered
+      ? `(${arr.length} messages, ordered oldest→newest ✓)`
+      : `(${arr.length} messages — WARNING: not in ascending createdAt order ✗)`);
+  }
+
   document.getElementById('historyChannelBtn').onclick = async () => {
     const token = document.getElementById('token').value.trim();
     const channelId = document.getElementById('channelId').value;
     const res = await fetch(`${MESSENGER_ORIGIN}/messenger-api/channels/${channelId}/messages`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    log('channelLog', `HISTORY ${res.status} ${await res.text()}`);
+    logHistory('channelLog', res.status, await res.text());
   };
 
-  document.getElementById('subscribeDmBtn').onclick = () => {
-    if (!client?.connected) return alert('connect first');
-    // 개인 큐는 세션당 하나뿐이라 상대방과 무관하게 내 DM이 전부 들어옵니다.
-    // 같은 목적지를 중복 구독하면 브로커가 메시지를 나눠 보내므로 한 번만 구독합니다.
-    if (dmSubscription) {
-      log('dmLog', `already subscribed to ${DM_INBOX_DESTINATION}`);
-      return;
-    }
-    dmSubscription = client.subscribe(DM_INBOX_DESTINATION, (msg) => {
-      log('dmLog', `RECV ${msg.body}`);
-    });
-    log('dmLog', `subscribed to ${DM_INBOX_DESTINATION}`);
+  document.getElementById('openConversationBtn').onclick = () => {
+    const peerId = document.getElementById('peerId').value.trim();
+    if (!peerId) return alert('enter a peer UID first');
+    openPeer = peerId;
+    clearUnread(openPeer);
+    document.getElementById('openPeerLabel').textContent = `(open: uid ${openPeer})`;
+    log('dmLog', `--- opened conversation with uid ${openPeer} (only their DMs show here) ---`);
   };
 
   document.getElementById('sendDmBtn').onclick = () => {
@@ -247,7 +356,7 @@ because STOMP <code>publish</code> has no response and a denied SUBSCRIBE is dro
       destination: `/app/dm/send`,
       body: JSON.stringify({ receiverId: Number(peerId), content }),
     });
-    log('dmLog', `SENT ${content}`);
+    log('dmLog', `SENT -> uid ${peerId}: ${content}`);
   };
 
   document.getElementById('historyDmBtn').onclick = async () => {
@@ -256,7 +365,7 @@ because STOMP <code>publish</code> has no response and a denied SUBSCRIBE is dro
     const res = await fetch(`${MESSENGER_ORIGIN}/messenger-api/dm/${peerId}/messages`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    log('dmLog', `HISTORY ${res.status} ${await res.text()}`);
+    logHistory('dmLog', res.status, await res.text());
   };
 </script>
 

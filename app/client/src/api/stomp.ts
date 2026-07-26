@@ -51,7 +51,7 @@ export function connectStomp(token: string): Promise<void> {
       channelSubscriptions.clear();
 
       ensureErrorSubscription();
-      if (dmListeners.size > 0) {
+      if (dmListeners.size > 0 || dmInboxListeners.size > 0) {
         ensureDmInboxSubscription();
       }
       for (const channelId of channelListeners.keys()) {
@@ -99,6 +99,7 @@ export function disconnectStomp(): void {
   teardownConnection();
   channelListeners.clear();
   dmListeners.clear();
+  dmInboxListeners.clear();
   errorListeners.clear();
 }
 
@@ -233,8 +234,11 @@ type DmListener = {
   onMessage: (message: DmOutboundMessage) => void;
 };
 
+type DmInboxListener = (message: DmOutboundMessage) => void;
+
 let dmInboxSubscription: StompSubscription | null = null;
 const dmListeners = new Set<DmListener>();
+const dmInboxListeners = new Set<DmInboxListener>();
 
 function ensureDmInboxSubscription(): void {
   if (dmInboxSubscription || !client?.connected) {
@@ -247,7 +251,21 @@ function ensureDmInboxSubscription(): void {
         listener.onMessage(dm);
       }
     }
+    for (const listener of dmInboxListeners) {
+      listener(dm);
+    }
   });
+}
+
+function releaseDmInboxSubscription(): void {
+  if (dmListeners.size > 0 || dmInboxListeners.size > 0) {
+    return;
+  }
+  const subscription = dmInboxSubscription;
+  dmInboxSubscription = null;
+  if (subscription && client?.connected) {
+    subscription.unsubscribe();
+  }
 }
 
 // /user/queue/dm
@@ -261,14 +279,17 @@ export function subscribeToDm(
 
   return () => {
     dmListeners.delete(listener);
-    if (dmListeners.size > 0) {
-      return;
-    }
-    const subscription = dmInboxSubscription;
-    dmInboxSubscription = null;
-    if (subscription && client?.connected) {
-      subscription.unsubscribe();
-    }
+    releaseDmInboxSubscription();
+  };
+}
+
+export function subscribeToDmInbox(onMessage: DmInboxListener): () => void {
+  ensureDmInboxSubscription();
+  dmInboxListeners.add(onMessage);
+
+  return () => {
+    dmInboxListeners.delete(onMessage);
+    releaseDmInboxSubscription();
   };
 }
 
