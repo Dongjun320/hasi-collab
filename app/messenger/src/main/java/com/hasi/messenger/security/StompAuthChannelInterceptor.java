@@ -33,7 +33,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
     private static final Logger log = LoggerFactory.getLogger(StompAuthChannelInterceptor.class);
 
-    private static final Pattern CHANNEL_TOPIC = Pattern.compile("^/topic/channel\\.(\\d+)$");
+    private static final Pattern CHANNEL_TOPIC = Pattern.compile("^/topic/channel\\.(\\d+)(\\.read)?$");
 
     private static final Set<String> USER_DESTINATIONS = Set.of("/user/queue/dm", "/user/queue/errors");
 

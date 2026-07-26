@@ -50,12 +50,17 @@ export function connectStomp(token: string): Promise<void> {
       dmInboxSubscription = null;
       channelSubscriptions.clear();
 
+      channelReadSubscriptions.clear();
+
       ensureErrorSubscription();
       if (dmListeners.size > 0 || dmInboxListeners.size > 0) {
         ensureDmInboxSubscription();
       }
       for (const channelId of channelListeners.keys()) {
         ensureChannelSubscription(channelId);
+      }
+      for (const channelId of channelReadListeners.keys()) {
+        ensureChannelReadSubscription(channelId);
       }
       resolve();
     };
@@ -90,6 +95,7 @@ function teardownConnection(): void {
   errorSubscription = null;
   dmInboxSubscription = null;
   channelSubscriptions.clear();
+  channelReadSubscriptions.clear();
 
   void stale?.deactivate();
   pendingReject?.(new Error('STOMP connection was reset before it was established.'));
@@ -98,6 +104,7 @@ function teardownConnection(): void {
 export function disconnectStomp(): void {
   teardownConnection();
   channelListeners.clear();
+  channelReadListeners.clear();
   dmListeners.clear();
   dmInboxListeners.clear();
   errorListeners.clear();
@@ -121,6 +128,12 @@ export type ChannelOutboundMessage = {
   sender: string;
   createdAt: string;
   isDeleted: boolean;
+};
+
+export type ChannelReadState = {
+  userId: string;
+  lastReadMessageId: number;
+  updatedAt: string;
 };
 
 export type DmOutboundMessage = {
@@ -229,6 +242,61 @@ export function subscribeToChannel(
   };
 }
 
+type ChannelReadListener = (state: ChannelReadState) => void;
+
+const channelReadListeners = new Map<string, Set<ChannelReadListener>>();
+const channelReadSubscriptions = new Map<string, StompSubscription>();
+
+function ensureChannelReadSubscription(channelId: string): void {
+  if (channelReadSubscriptions.has(channelId) || !client?.connected) {
+    return;
+  }
+  const subscription = client.subscribe(`/topic/channel.${channelId}.read`, (message) => {
+    const state = parseBody<ChannelReadState>(message);
+    for (const listener of channelReadListeners.get(channelId) ?? []) {
+      listener(state);
+    }
+  });
+  channelReadSubscriptions.set(channelId, subscription);
+}
+
+// /topic/channel.{channelId}.read — 누가 어디까지 읽었는지
+export function subscribeToChannelRead(
+  channelId: number | string,
+  onRead: ChannelReadListener
+): () => void {
+  const key = String(channelId);
+
+  let listeners = channelReadListeners.get(key);
+  if (!listeners) {
+    listeners = new Set<ChannelReadListener>();
+    channelReadListeners.set(key, listeners);
+  }
+  listeners.add(onRead);
+  ensureChannelReadSubscription(key);
+
+  return () => {
+    const current = channelReadListeners.get(key);
+    if (!current) {
+      return;
+    }
+    current.delete(onRead);
+    if (current.size > 0) {
+      return;
+    }
+    channelReadListeners.delete(key);
+
+    const subscription = channelReadSubscriptions.get(key);
+    if (!subscription) {
+      return;
+    }
+    channelReadSubscriptions.delete(key);
+    if (client?.connected) {
+      subscription.unsubscribe();
+    }
+  };
+}
+
 type DmListener = {
   peerId: string;
   onMessage: (message: DmOutboundMessage) => void;
@@ -311,6 +379,16 @@ export function deleteChannelMessage(channelId: number | string, id: number): vo
   requireClient().publish({
     destination: `/app/channel/${channelId}/delete`,
     body: JSON.stringify(id),
+  });
+}
+
+export function sendChannelRead(channelId: number | string, lastReadMessageId: number): void {
+  if (!client?.connected) {
+    return;
+  }
+  client.publish({
+    destination: `/app/channel/${channelId}/read`,
+    body: JSON.stringify({ lastReadMessageId }),
   });
 }
 

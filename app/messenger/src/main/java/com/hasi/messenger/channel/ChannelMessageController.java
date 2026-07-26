@@ -22,4 +22,9 @@ public class ChannelMessageController {
     public List<ChannelDtos.OutboundMessage> history(@PathVariable Long channelId, Principal principal){
         return channelService.history(channelId, principal.getName());
     }
+
+    @GetMapping("/{channelId}/read-states")
+    public List<ChannelDtos.ReadState> readStates(@PathVariable Long channelId, Principal principal){
+        return channelService.readStates(channelId, principal.getName());
+    }
 }

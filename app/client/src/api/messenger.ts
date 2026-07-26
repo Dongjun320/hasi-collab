@@ -2,7 +2,7 @@
 // service(8080)용 openapi-fetch 클라이언트(client.ts)와는 별개 — messenger는 아직 OpenAPI 스펙이 없어 plain fetch 사용.
 // Vite 프록시는 이미 /api -> service로 매핑되어 있으므로, 충돌을 피하기 위해 messenger는 절대 URL로 직접 호출합니다.
 
-import type { ChannelOutboundMessage, DmOutboundMessage } from './stomp';
+import type { ChannelOutboundMessage, ChannelReadState, DmOutboundMessage } from './stomp';
 
 const MESSENGER_API_BASE = 'http://localhost:8081/messenger-api';
 
@@ -28,6 +28,13 @@ export function fetchChannelHistory(
   token: string
 ): Promise<ChannelOutboundMessage[]> {
   return getJson<ChannelOutboundMessage[]>(`/channels/${channelId}/messages`, token);
+}
+
+export function fetchChannelReadStates(
+  channelId: number | string,
+  token: string
+): Promise<ChannelReadState[]> {
+  return getJson<ChannelReadState[]>(`/channels/${channelId}/read-states`, token);
 }
 
 export function fetchDmHistory(

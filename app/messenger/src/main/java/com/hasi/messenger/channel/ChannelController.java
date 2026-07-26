@@ -34,4 +34,10 @@ public class ChannelController {
         String sender = principal.getName();
         this.channelService.updateMessage(channelId, sender, updateMessage.id(), updateMessage.content());
     }
+
+    @MessageMapping("/read")
+    public void read(@DestinationVariable Long channelId, @Payload ChannelDtos.ReadReceipt receipt, Principal principal){
+        String reader = principal.getName();
+        this.channelService.markRead(channelId, reader, receipt.lastReadMessageId());
+    }
 }

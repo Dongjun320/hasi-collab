@@ -15,5 +15,11 @@ public final class ChannelDtos {
 
     public record UpdateMessage(String content, Long id) {
     }
+
+    public record ReadReceipt(Long lastReadMessageId) {
+    }
+
+    public record ReadState(String userId, Long lastReadMessageId, LocalDateTime updatedAt) {
+    }
 }
 
