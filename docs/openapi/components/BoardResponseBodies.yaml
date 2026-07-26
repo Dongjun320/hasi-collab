@@ -53,7 +53,7 @@ components:
             format: int64
           priority:
             type: string
-            enum: [high, medium, low]
+            enum: [HIGH, MEDIUM, LOW]
           createdAt:
             type: string
             format: date-time
@@ -80,7 +80,7 @@ components:
           format: int64
         priority:
           type: string
-          enum: [high, medium, low]
+          enum: [HIGH, MEDIUM, LOW]
         createdAt:
           type: string
           format: date-time
@@ -101,7 +101,7 @@ components:
           format: int64
         priority:
           type: string
-          enum: [high, medium, low]
+          enum: [HIGH, MEDIUM, LOW]
         updatedAt:
           type: string
           format: date-time

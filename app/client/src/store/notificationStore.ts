@@ -1,39 +1,48 @@
 import { create } from "zustand";
 
-export type NotificationType = 'message' | 'mention' | 'invite' | 'system';
+export type NotificationType = 'message' | 'mention' | 'invite' | 'friend' | 'system';
 
 export interface Notification {
 
-    id: number;
+    // 소스별로 네임스페이스한 문자열 id (예: "invite-1", "friend-1")
+    // 초대·친구요청 id가 각자 1부터라 number면 충돌 → string으로 구분
+    id: string;
     type: NotificationType;
     text: string;
     time: string;
     unread: boolean;
+    invitationId?: number;
+    requestId?: number;      // 친구 요청 수락/거절용 (관계 id)
 }
 
 export const NOTIFICATION_TYPE = {
     message: { dot: 'bg-[#5CC87A]', label: '메시지' },
     mention: { dot: 'bg-amber-400', label: '멘션'   },
     invite:  { dot: 'bg-blue-400',  label: '초대'   },
+    friend:  { dot: 'bg-pink-400',  label: '친구'   },
     system:  { dot: 'bg-gray-400',  label: '시스템' },
 } as const;
 
 interface NotificationState {
     notifications: Notification[];
     setNotifications: (list: Notification[]) => void;
-    markRead: (id :number) => void;
+    addNotifications: (list: Notification[]) => void;
+    removeNotification: (id: string) => void;
+    markRead: (id: string) => void;
     markAllRead: () => void;
     clear: () => void;
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
-    notifications: [
-        { id: 1, type: 'message', text: '개발팀에 새 메시지가 5개 있습니다',    time: '5분 전',   unread: true  },
-        { id: 2, type: 'system',  text: '디자인 리뷰 미팅이 30분 후 시작됩니다', time: '방금',     unread: true  },
-        { id: 3, type: 'message', text: '마케팅팀 파일이 업로드됐습니다',        time: '1시간 전', unread: true  },
-        { id: 4, type: 'invite',  text: '김민준님이 기획팀에 초대했습니다',       time: '2시간 전', unread: false },
-    ],
+    notifications: [],
     setNotifications: (list) => set({ notifications: list }),
+    addNotifications: (list) => set((s) => {
+        const ids = new Set(list.map((n) => n.id));
+        return { notifications: [...list, ...s.notifications.filter((n) => !ids.has(n.id))] };
+    }),
+    removeNotification: (id) => set((s) => ({
+        notifications: s.notifications.filter((n) => n.id !== id),
+    })),
     markRead: (id) => set((s) => ({
         notifications: s.notifications.map((n) => (n.id === id ? { ...n, unread: false } : n)),
     })),
@@ -41,4 +50,5 @@ export const useNotificationStore = create<NotificationState>((set) => ({
         notifications: s.notifications.map((n) => ({ ...n, unread: false })),
     })),
     clear: () => set({ notifications: [] }),
-}));
+    })
+)

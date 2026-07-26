@@ -12,7 +12,10 @@ import java.time.LocalDateTime;
  * @author Jinwoo Jeong
  */
 @Entity
-@Table(name = "channel_messages")
+@Table(name = "channel_messages",
+        // countUnread(channel_id + id 범위)용. history는 channel_id 필터까지만 타고
+        // created_at 정렬은 따로 합니다.
+        indexes = @Index(name = "idx_by_channel_id_and_id", columnList = "channel_id, id"))
 @Getter
 @Setter
 @ToString

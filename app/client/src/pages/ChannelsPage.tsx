@@ -2,121 +2,94 @@ import { useParams } from "react-router";
 import { useState, useEffect, useRef } from "react";
 import { Hash, Users, X } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
+import { useChannelMessage } from "../hooks/useChannelMessage";
+import { useAuthStore } from "../store/authStore";
+import { useWorkspaceStore } from "../store/workspaceStore";
+import { api } from "../api/client"
+import { useMemberStore, type WorkspaceMember } from "../store/memberStore";
 
+// uid로 색을 고정 배정 (서버에 색 개념이 없어 화면용으로만 사용)
+const AVATAR_COLORS = [
+  "bg-green-400", "bg-purple-400", "bg-yellow-400", "bg-pink-400",
+  "bg-indigo-400", "bg-orange-400", "bg-red-400", "bg-teal-400", "bg-cyan-400",
+];
 
-interface Member {
-  id: string;
-  name: string;
-  department: string;
-  status: "online" | "offline";
-  color: string;
-}
+const colorOf = (uid: number) => AVATAR_COLORS[uid % AVATAR_COLORS.length];
 
 export function ChannelsPage() {
-  const { channelId = "general" } = useParams();
-  const [message, setMessage] = useState("");
+  const { channelId: channelIdParam } = useParams();
+  const channelId = Number(channelIdParam);
   const [isMemberListOpen, setIsMemberListOpen] = useState(false);
-  const [memberSortType, setMemberSortType] = useState<"all" | "department" | "online">("all");
-  const { channels } = useOutletContext<{ channels: { id: string; name: string }[] }>() ?? { channels: [] };
-  const channelName = channels.find((c) => c.id === channelId)?.name ?? channelId;
+  const [message, setMessage] = useState("");
+  const [memberSortType, setMemberSortType] = useState<"all" | "role" | "online">("all");
+  const { channels } = useOutletContext<{ channels: { id: number; name: string }[] }>() ?? { channels: [] };
+  const channelName = channels.find((c) => c.id === channelId)?.name ?? "";
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const myUid = useAuthStore((s) => s.user?.uid);
+  const { currentWorkspace } = useWorkspaceStore();
+  const { members, setMembers } = useMemberStore();
 
-  const allMembers: Member[] = [
-    { id: "1", name: "김동준", department: "개발팀", status: "online", color: "bg-green-400" },
-    { id: "3", name: "김지환", department: "개발팀", status: "online", color: "bg-purple-400" },
-    { id: "4", name: "박규태", department: "총무팀", status: "offline", color: "bg-yellow-400" },
-    { id: "5", name: "박종서", department: "총무팀", status: "online", color: "bg-pink-400" },
-    { id: "6", name: "장윤찬", department: "총무팀", status: "online", color: "bg-indigo-400" },
-    { id: "7", name: "정진우", department: "디자인팀", status: "online", color: "bg-orange-400" },
-    { id: "8", name: "大谷翔平", department: "개발팀", status: "offline", color: "bg-red-400" },
-    { id: "9", name: "山本由伸", department: "디자인팀", status: "online", color: "bg-teal-400" },
-    { id: "10", name: "佐々木朗希", department: "디자인팀", status: "offline", color: "bg-cyan-400" },
-  ];
+  // 실시간 메시지 (히스토리 + STOMP)
+  const { messages, sendMessage } = useChannelMessage(channelId);
+
+
+  useEffect(() => {
+    if (!currentWorkspace) return;
+    (async () => {
+      try {
+        const { data, error } = await api.GET('/api/workspaces/{workspaceId}/members', {
+          params: { path: { workspaceId: currentWorkspace.id } },
+        });
+        if (error || !data?.success) return;
+        setMembers((data.data ?? []).map((m) => ({
+          userId: m.userId!,
+          nickname: m.nickname ?? '',
+          role: m.role ?? 'MEMBER',
+          statusCode: m.statusCode ?? 'OFFLINE',   // ← store 타입은 status가 아니라 statusCode
+        })));
+      } catch (e) {
+        console.error('멤버 조회 실패:', e);
+      }
+    })();
+  }, [currentWorkspace?.id]);
+
+  const nicknameOf = (uid: number) =>
+      members.find((m) => m.userId === uid)?.nickname ?? `사용자 ${uid}`;
+
 
   const getSortedMembers = () => {
-    let filtered = [...allMembers];
+    let filtered = [...members];
 
     if (memberSortType === "online") {
-      filtered = filtered.filter(m => m.status === "online");
+      filtered = filtered.filter((m) => m.statusCode === "ONLINE");
     }
-
-    if (memberSortType === "department") {
-      filtered.sort((a, b) => {
-        if (a.department !== b.department) {
-          return a.department.localeCompare(b.department, 'ko');
-        }
-        return a.name.localeCompare(b.name, 'ko');
-      });
-    } else {
-      filtered.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-    }
-
-    return filtered;
+    return filtered.sort((a, b) => a.nickname.localeCompare(b.nickname));
   };
 
-  const groupedMembers = memberSortType === "department"
-    ? getSortedMembers().reduce((acc, member) => {
-        if (!acc[member.department]) {
-          acc[member.department] = [];
-        }
-        acc[member.department].push(member);
+  // 역할별 보기용 그룹 (owner → admin → member 순)
+  const ROLE_LABEL: Record<string, string> = {
+    OWNER: "소유자", ADMIN: "관리자", MEMBER: "멤버",
+  };
+  const ROLE_ORDER = ["OWNER", "ADMIN", "MEMBER"];
+
+  const groupedMembers = memberSortType === "role"
+      ? ROLE_ORDER.reduce((acc, role) => {
+        const list = getSortedMembers().filter((m) => m.role === role);
+        if (list.length) acc[role] = list;
         return acc;
-      }, {} as Record<string, Member[]>)
-    : null;
+      }, {} as Record<string, WorkspaceMember[]>)
+      : null;
 
-  const onlineCount = allMembers.filter(m => m.status === "online").length;
-  const totalCount = allMembers.length;
-
-  const [messagesByChannel, setMessagesByChannel] = useState<Record<string, {
-    id: number; user: string; time: string; content: string; avatar: string; color: string;
-  }[]>>({
-    general: [{
-      id: 1,
-      user: "김동준",
-      time: "오후 2:30",
-      content: "컬러 팔레트 확인해봤어요",
-      avatar: "김",
-      color: "bg-green-400",
-    },
-      {
-        id: 2,
-        user: "박규태",
-        time: "오후 2:31",
-        content: "초록 계열 느낌 좋네요!",
-        avatar: "박",
-        color: "bg-yellow-400",
-      },
-      {
-        id: 3,
-        user: "정진우",
-        time: "오후 2:33",
-        content: "디스코드랑 다른 느낌이라서 좋습니다",
-        avatar: "정",
-        color: "bg-orange-400",
-      },
-    ],
-  });
-
-  const messages = messagesByChannel[channelId] ?? [];
+  const onlineCount = members.filter(m => m.statusCode === "ONLINE").length;
+  const totalCount = members.length;
 
   const handleSend = () => {
     const content = message.trim();
     if (!content) return;
-    const newMessage = {
-      id: Date.now(),
-      user: "김동준", // TODO: 실제 로그인 유저로 교체
-      time: new Date().toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }),
-      content,
-      avatar: "김",
-      color: "bg-green-400",
-    };
-    setMessagesByChannel((prev) => ({
-      ...prev,
-      [channelId]: [...(prev[channelId] ?? []), newMessage],
-    }));
+    sendMessage(content);   // STOMP 전송 — 서버 브로드캐스트로 돌아옴
     setMessage("");
   };
 
@@ -135,7 +108,7 @@ export function ChannelsPage() {
   useEffect(() => {
     if (messages.length === 0) return;
     const last = messages[messages.length - 1];
-    const isMine = last.user === "김동준"; // 기존 isMine 판별과 동일한 기준
+    const isMine = Number(last.sender) === myUid; // 기존 isMine 판별과 동일한 기준
 
     if (isMine || isAtBottom) {
       scrollToBottom();
@@ -167,20 +140,27 @@ export function ChannelsPage() {
       {/* 메시지 영역 */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4 relative" ref={messagesContainerRef} onScroll={handleScroll}>
         {messages.map((msg) => {
-          const isMine = msg.user === "김동준"; // TODO: 실제 로그인 유저와 비교하도록 교체
+          const senderUid = Number(msg.sender);
+          const isMine = senderUid === myUid;
+          const name = nicknameOf(senderUid);
+          const time = new Date(msg.createdAt).toLocaleTimeString("ko-KR", {
+            hour: "numeric", minute: "2-digit",
+          });
           return (
-            <div key={msg.id} className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`}>
-              <div className={`w-10 h-10 rounded-full ${msg.color} flex items-center justify-center text-white font-bold flex-shrink-0`}>
-                {msg.avatar}
-              </div>
-              <div className={`flex-1 flex flex-col ${isMine ? "items-end" : "items-start"}`}>
-                <div className={`flex items-baseline gap-2 mb-1 ${isMine ? "flex-row-reverse" : ""}`}>
-                  <span className="font-bold text-[#2C3E50]">{msg.user}</span>
-                  <span className="text-xs text-gray-400">{msg.time}</span>
+              <div key={msg.id} className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`}>
+                <div className={`w-10 h-10 rounded-full ${colorOf(senderUid)} flex items-center justify-center text-white font-bold flex-shrink-0`}>
+                  {name.charAt(0)}
                 </div>
-                <p className="text-[#2C3E50]">{msg.content}</p>
+                <div className={`flex-1 flex flex-col ${isMine ? "items-end" : "items-start"}`}>
+                  <div className={`flex items-baseline gap-2 mb-1 ${isMine ? "flex-row-reverse" : ""}`}>
+                    <span className="font-bold text-[#2C3E50]">{name}</span>
+                    <span className="text-xs text-gray-400">{time}</span>
+                  </div>
+                  {msg.isDeleted
+                      ? <p className="text-gray-400 italic text-sm">삭제된 메시지입니다</p>
+                      : <p className="text-[#2C3E50]">{msg.content}</p>}
+                </div>
               </div>
-            </div>
           );
         })}
         <div ref={messagesEndRef} />
@@ -256,14 +236,14 @@ export function ChannelsPage() {
                   전체
                 </button>
                 <button
-                  onClick={() => setMemberSortType("department")}
+                  onClick={() => setMemberSortType("role")}
                   className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    memberSortType === "department"
+                    memberSortType === "role"
                       ? "bg-[#5CC87A] text-white"
                       : "bg-[#f0f9f4] text-[#5CC87A] hover:bg-[#d4f4dd]"
                   }`}
                 >
-                  부서별
+                  역할별
                 </button>
                 <button
                   onClick={() => setMemberSortType("online")}
@@ -280,53 +260,63 @@ export function ChannelsPage() {
 
             {/* 멤버 리스트 */}
             <div className="flex-1 overflow-y-auto p-4">
-              {memberSortType === "department" ? (
-                // 부서별 보기
-                <div className="space-y-4">
-                  {Object.entries(groupedMembers!).map(([dept, members]) => (
-                    <div key={dept}>
-                      <h4 className="text-xs font-semibold text-[#5CC87A] mb-2">{dept}</h4>
-                      <div className="space-y-2">
-                        {members.map((member) => (
-                          <div key={member.id} className="flex items-center gap-3 p-2 hover:bg-[#f0f9f4] rounded-lg transition-all cursor-pointer">
-                            <div className="relative">
-                              <div className={`w-10 h-10 rounded-full ${member.color} flex items-center justify-center text-white font-bold text-sm`}>
-                                {member.name.charAt(0)}
-                              </div>
-                              <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                                member.status === "online" ? "bg-green-500" : "bg-gray-400"
-                              }`} />
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-[#2C3E50]">{member.name}</p>
-                              <p className="text-xs text-gray-500">{member.status === "online" ? "온라인" : "오프라인"}</p>
-                            </div>
+              {members.length === 0 && (
+                  <p className="text-xs text-gray-400 text-center mt-6">멤버가 없습니다</p>
+              )}
+
+              {memberSortType === "role" && groupedMembers ? (
+                  /* 역할별 보기 */
+                  <div className="space-y-4">
+                    {Object.entries(groupedMembers).map(([role, members]) => (
+                        <div key={role}>
+                          <h4 className="text-xs font-semibold text-[#5CC87A] mb-2">
+                            {ROLE_LABEL[role] ?? role}
+                          </h4>
+                          <div className="space-y-2">
+                            {members.map((member) => (
+                                <div key={member.userId} className="flex items-center gap-3 p-2 hover:bg-[#f0f9f4] rounded-lg transition-all cursor-pointer">
+                                  <div className="relative">
+                                    <div className={`w-10 h-10 rounded-full ${colorOf(member.userId)} flex items-center justify-center text-white font-bold text-sm`}>
+                                      {member.nickname.charAt(0)}
+                                    </div>
+                                    <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
+                                        member.statusCode === "ONLINE" ? "bg-green-500" : "bg-gray-400"
+                                    }`} />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-[#2C3E50]">{member.nickname}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {member.statusCode === "ONLINE" ? "온라인" : "오프라인"}
+                                    </p>
+                                  </div>
+                                </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                // 전체/온라인 보기
-                <div className="space-y-2">
-                  {getSortedMembers().map((member) => (
-                    <div key={member.id} className="flex items-center gap-3 p-2 hover:bg-[#f0f9f4] rounded-lg transition-all cursor-pointer">
-                      <div className="relative">
-                        <div className={`w-10 h-10 rounded-full ${member.color} flex items-center justify-center text-white font-bold text-sm`}>
-                          {member.name.charAt(0)}
                         </div>
-                        <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                          member.status === "online" ? "bg-green-500" : "bg-gray-400"
-                        }`} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-[#2C3E50]">{member.name}</p>
-                        <p className="text-xs text-gray-500">{member.department} • {member.status === "online" ? "온라인" : "오프라인"}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+              ) : (
+                  /* 전체 / 온라인 보기 */
+                  <div className="space-y-2">
+                    {getSortedMembers().map((member) => (
+                        <div key={member.userId} className="flex items-center gap-3 p-2 hover:bg-[#f0f9f4] rounded-lg transition-all cursor-pointer">
+                          <div className="relative">
+                            <div className={`w-10 h-10 rounded-full ${colorOf(member.userId)} flex items-center justify-center text-white font-bold text-sm`}>
+                              {member.nickname.charAt(0)}
+                            </div>
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
+                                member.statusCode === "ONLINE" ? "bg-green-500" : "bg-gray-400"
+                            }`} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-[#2C3E50]">{member.nickname}</p>
+                            <p className="text-xs text-gray-500">
+                              {ROLE_LABEL[member.role] ?? member.role} • {member.statusCode === "ONLINE" ? "온라인" : "오프라인"}
+                            </p>
+                          </div>
+                        </div>
+                    ))}
+                  </div>
               )}
             </div>
           </div>

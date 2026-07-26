@@ -1,0 +1,14 @@
+components:
+  schemas:
+    UserSearchResponse:
+      type: object
+      description: "닉네임 검색 결과"
+      properties:
+        uid:
+          type: integer
+          format: int64
+          description: "유저 ID"
+        nickname:
+          type: string
+          maxLength: 50
+          description: "유저 닉네임"

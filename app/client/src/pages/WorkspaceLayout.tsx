@@ -2,9 +2,10 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Settings, Calendar, LayoutGrid,
   Plus, Bell, User, Grid3x3, Search,
-  Phone, Mail, MessageSquare, LogOut, Users
+  Phone, MessageSquare, LogOut, Users, Home,
+  AlertCircle, X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WorkspaceSidebar } from "../components/WorkspaceSidebar";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { useFriendStore } from "../store/friendStore";
@@ -12,7 +13,8 @@ import { useUiStore } from "../store/uiStore";
 import { FriendSidebar } from "../components/FriendSidebar";
 import { NotificationSidebar } from "../components/NotificationSidebar";
 import { useNotificationStore } from "../store/notificationStore";
-
+import { Tooltip } from "../components/Tooltip";
+import { api } from "../api/client";
 
 
 const TOOLS = [
@@ -21,25 +23,21 @@ const TOOLS = [
   { path: "/workspace/threads",  icon: MessageSquare, label: "스레드" },
 ];
 
+// 서버는 실패 시 { success:false, error:{ code, message } }를 내려줌 (한국어 메시지 포함).
+// openapi-fetch의 error는 타입이 넓어 any 경유가 불가피 — 메시지 추출을 한 곳으로 모음.
+const errorMessageOf = (error: unknown, fallback: string) =>
+  (error as any)?.error?.message ?? fallback;
+
 export function WorkspaceLayout() {
-  const { currentWorkspace, deleteWorkspace } = useWorkspaceStore();
+  const {currentWorkspace, channelsByWorkspace, setWorkspaceChannels, addChannel, updateChannel, removeChannel,
+      deleteWorkspace,
+  } = useWorkspaceStore();
   const location = useLocation();
   const navigate = useNavigate();
   const { friends } = useFriendStore();
   const { activeRightPanel, toggleRightPanel } = useUiStore();
-
-  const [channelsByWorkspace, setChannelsByWorkspace] = useState<Record<number, { id: string; name: string }[]>>({
-    1: [{ id: "design-general", name: "일반" }],
-    2: [{ id: "general", name: "일반" }, { id: "dev", name: "개발" }, { id: "design", name: "디자인" }],
-    3: [{ id: "marketing-general", name: "일반" }],
-    4: [{ id: "sales-general", name: "일반" }],
-    5: [{ id: "plan-general", name: "일반" }],
-  });
-  const channels = currentWorkspace ? channelsByWorkspace[currentWorkspace.id] ?? [
-    {id: "general", name: "일반"}
-  ] : [];
+  const channels = currentWorkspace ? channelsByWorkspace[currentWorkspace.id] ?? [] : [];
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
-
 
   const isActive = (path: string) =>
     path !== "/workspace"
@@ -47,57 +45,142 @@ export function WorkspaceLayout() {
       : location.pathname === "/workspace";
 
   const isInChannel = location.pathname.startsWith("/workspace/channels");
+
   const activeChannelId = isInChannel
-    ? location.pathname.split("/workspace/channels/")[1]
-    : null;
+      ? Number(location.pathname.split("/workspace/channels/")[1]) || null
+      : null;
 
-  const [lastChannelByWorkspace, setLastChannelByWorkspace] = useState<Record<number, string>>({});
+  const [lastChannelByWorkspace, setLastChannelByWorkspace] = useState<Record<number, number>>({});
 
-  const handleAddChannel = (name: string) => {
+  // 채널 생성·삭제·이름변경 실패 사유 — 예전엔 console.error만 찍어 화면이 무반응이었음
+  const [channelError, setChannelError] = useState("");
+
+  // 워크스페이스가 바뀔 때마다 채널 목록 조회
+  useEffect(() => {
     if (!currentWorkspace) return;
-    const id = name.toLowerCase().replace(/\s+/g, "-");
-    setChannelsByWorkspace((prev) => ({
-      ...prev,
-      [currentWorkspace.id]: [...(prev[currentWorkspace.id] ?? []), { id, name }],
-    }));
-    navigate(`/workspace/channels/${id}`);
-  };
+    const wsId = currentWorkspace.id;
+    setChannelError("");
+    (async () => {
+      try {
+        const { data, error } = await api.GET('/api/workspaces/{workspaceId}/channels', {
+          params: { path: { workspaceId: wsId } },
+        });
+        if (error || !data?.success) {
+          console.error('채널 목록 조회 실패:', error);
+          return;
+        }
+        setWorkspaceChannels(wsId, (data.data ?? []).map((c) => ({
+          id: c.id!,
+          name: c.name ?? '',
+          parentId: c.parentId ?? null,
+          workspaceId: c.workspaceId,
+          isPrivate: c.isPrivate,
+        })));
+      } catch (e) {
+        console.error('채널 목록 조회 실패:', e);
+      }
+    })();
+  }, [currentWorkspace?.id]);
 
-  const handleDeleteChannel = (channelId: string) => {
+  const handleAddChannel = async (name: string, parentId?: number | null) => {
     if (!currentWorkspace) return;
-    setChannelsByWorkspace((prev) => ({
-      ...prev,
-      [currentWorkspace.id]: prev[currentWorkspace.id].filter((c) => c.id !== channelId),
-    }));
-    if (activeChannelId === channelId) navigate("/workspace");
-  };
-
-  const handleRenameChannel = (channelId: string, newName: string) => {
-    if (!currentWorkspace) return;
-    setChannelsByWorkspace((prev) => ({
-      ...prev,
-      [currentWorkspace.id]: prev[currentWorkspace.id].map((c) =>
-        c.id === channelId ? { ...c, name: newName } : c
-      ),
-    }));
-  };
-
-  const handleDeleteWorkspace = (workspaceId: number) => {
-    deleteWorkspace(workspaceId);
-    setChannelsByWorkspace((prev) => {
-      const next = { ...prev };
-      delete next[workspaceId];
-      return next;
-    });
-
-    const newCurrent = useWorkspaceStore.getState().currentWorkspace;
-    if (newCurrent) {
-      navigate(`/workspace/channels/${getDefaultChannelId(newCurrent.id)}`);
+    const wsId = currentWorkspace.id;
+    setChannelError("");
+    try {
+      const { data, error } = await api.POST('/api/workspaces/{workspaceId}/channels', {
+        params: { path: { workspaceId: wsId } },
+        body: { name, isPrivate: false, parentId: parentId ?? null },   // parentId 생략 = 최상위 채널
+      });
+      if (error || !data?.data?.id) {
+        // CH_001 동일 이름 / CH_003 입력값 오류
+        setChannelError(errorMessageOf(error, '채널을 만들지 못했습니다'));
+        return;
+      }
+      const created = data.data;
+      addChannel(wsId, {
+        id: created.id!,
+        name: created.name ?? name,
+        parentId: created.parentId ?? null,
+        workspaceId: created.workspaceId,
+        isPrivate: created.isPrivate,
+      });
+      navigate(`/workspace/channels/${created.id}`);
+    } catch (e) {
+      console.error('채널 생성 실패:', e);
+      setChannelError('서버에 연결할 수 없습니다');
     }
   };
 
-  const getDefaultChannelId = (workspaceId: number) =>
-      lastChannelByWorkspace[workspaceId] ?? channelsByWorkspace[workspaceId]?.[0]?.id ?? "general";
+  const handleDeleteChannel = async (channelId: number) => {
+    if (!currentWorkspace) return;
+    const wsId = currentWorkspace.id;
+    setChannelError("");
+    try {
+      const { error } = await api.DELETE('/api/workspaces/{workspaceId}/channels/{channelId}', {
+        params: { path: { workspaceId: wsId, channelId } },
+      });
+      if (error) {
+        // CH_004 "하위 채널이 있어 삭제할 수 없습니다" — 사이드바에서 미리 막지만 서버 판단이 최종
+        setChannelError(errorMessageOf(error, '채널을 삭제하지 못했습니다'));
+        return;
+      }
+      removeChannel(wsId, channelId);
+      if (activeChannelId === channelId) navigate("/workspace");
+    } catch (e) {
+      console.error('채널 삭제 실패:', e);
+      setChannelError('서버에 연결할 수 없습니다');
+    }
+  };
+
+  const handleRenameChannel = async (channelId: number, newName: string) => {
+    if (!currentWorkspace) return;
+    const wsId = currentWorkspace.id;
+    setChannelError("");
+    try {
+      const { error } = await api.PATCH('/api/workspaces/{workspaceId}/channels/{channelId}', {
+        params: { path: { workspaceId: wsId, channelId } },
+        body: { name: newName },
+      });
+      if (error) {
+        setChannelError(errorMessageOf(error, '채널 이름을 변경하지 못했습니다'));
+        return;
+      }
+      updateChannel(wsId, channelId, newName);
+    } catch (e) {
+      console.error('채널 이름 변경 실패:', e);
+      setChannelError('서버에 연결할 수 없습니다');
+    }
+  };
+
+  const handleDeleteWorkspace = async (workspaceId: number) => {
+      try {
+          const {error} = await api.DELETE('/api/workspaces/{workspaceId}', {
+              params: {path: {workspaceId}},
+          });
+          if (error) {
+              console.error('워크스페이스 삭제 실패:', error);
+              return;
+          }
+      } catch (e) {
+          console.error('워크스페이스 삭제 실패:', e);
+          return;
+      }
+      // store의 deleteWorkspace가 채널 캐시(channelsByWorkspace)까지 함께 정리함
+      deleteWorkspace(workspaceId);
+
+      const newCurrent = useWorkspaceStore.getState().currentWorkspace;
+      if (newCurrent) {
+          const ch = getDefaultChannelId(newCurrent.id);
+          navigate(ch ? `/workspace/channels/${ch}` : "/workspace");
+      } else {
+          navigate("/workspace");
+      }
+  }
+
+
+      const getDefaultChannelId = (workspaceId: number): number | null =>
+      lastChannelByWorkspace[workspaceId] ?? channelsByWorkspace[workspaceId]?.[0]?.id ?? null;
+
 
   const QUICK_ITEMS = [
     {
@@ -108,7 +191,6 @@ export function WorkspaceLayout() {
     { icon: Calendar, label: "달력",   to: "/workspace/calendar" },
     { icon: User,     label: "내정보", to: "/workspace/profile" },
     { icon: Phone,    label: "전화",   to: "#" },
-    { icon: Mail,     label: "메일",   to: "/workspace/mail" },
     { icon: LogOut,   label: "로그아웃", to: "/" },
   ];
 
@@ -142,48 +224,73 @@ export function WorkspaceLayout() {
       <div className="flex-1 flex flex-col overflow-hidden relative">
 
         {/* ── 상단 헤더 ── */}
-        <div className="h-14 bg-white border-b border-[#e8f8ed] flex items-center px-5 gap-3 flex-shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm"
-              style={{
-                background: currentWorkspace
-                ? `linear-gradient(to bottom right, ${currentWorkspace.colors[0]},
-                ${currentWorkspace.colors[1]})`
-                    : undefined,
-            }}
-            >
-              {currentWorkspace?.avatar}
-            </div>
-            <h1 className="font-bold text-[#2C3E50] text-base">{currentWorkspace?.name}</h1>
-          </div>
+        <div className="app-chrome h-14 bg-white border-b border-[#e8f8ed] flex items-center px-5 gap-3 flex-shrink-0">
+          {currentWorkspace && (
+              <div className="flex items-center gap-2.5">
+                <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm"
+                    style={{
+                      background: `linear-gradient(to bottom right, ${currentWorkspace.colors[0]}, ${currentWorkspace.colors[1]})`,
+                    }}
+                >
+                  {currentWorkspace.avatar}
+                </div>
+                <h1 className="font-bold text-[#2C3E50] text-base">{currentWorkspace.name}</h1>
+              </div>
+          )}
           <div className="flex-1" />
-          <button className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all" title="검색">
-            <Search size={18} className="text-[#5CC87A]" />
-          </button>
-          <button
-              onClick={() => toggleRightPanel('notification')}
-              className={`relative p-2 rounded-xl transition-all
-              ${activeRightPanel === 'notification' ? "bg-[#d4f4dd]" : "hover:bg-[#f0f9f4]"}`}
-              title="알림"
-          >
-            <Bell size={18} className="text-[#5CC87A]" />
-            {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
-                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
-            )}
-          </button>
-          <Link to="/workspace/settings" className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all" title="설정">
-            <Settings size={18} className="text-[#5CC87A]" />
-          </Link>
-          <Link to="/workspace/profile">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-1 transition-all">
-              나
-            </div>
-          </Link>
+          <Tooltip label="검색" side="bottom">
+            <button className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all">
+              <Search size={18} className="text-[#5CC87A]" />
+            </button>
+          </Tooltip>
+
+          <Tooltip label="설정" side="bottom">
+            <Link to="/workspace/settings" className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all">
+              <Settings size={18} className="text-[#5CC87A]" />
+            </Link>
+          </Tooltip>
+          <Tooltip label="내 프로필" side="bottom" align="end">
+            <Link to="/workspace/profile">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-1 transition-all">
+                나
+              </div>
+            </Link>
+          </Tooltip>
         </div>
+
+        {/* ── 채널 작업 실패 안내 ── */}
+        {channelError && (
+          <div className="app-chrome flex items-center gap-2 px-5 py-2 bg-red-50 border-b border-red-100 flex-shrink-0">
+            <AlertCircle size={15} className="text-red-500 flex-shrink-0" />
+            <p className="text-xs text-red-600 flex-1">{channelError}</p>
+            <button
+              onClick={() => setChannelError("")}
+              title="닫기"
+              className="p-1 hover:bg-red-100 rounded-md transition-all flex-shrink-0"
+            >
+              <X size={13} className="text-red-400" />
+            </button>
+          </div>
+        )}
 
         {/* ── 메인 콘텐츠 ── */}
         <div className="flex-1 overflow-hidden relative">
-          <Outlet context={{ channels }} />
+          {currentWorkspace ? (
+              <Outlet context={{ channels }} />
+          ) : (
+              <div className="h-full flex flex-col items-center justify-center gap-3 text-center px-6">
+                <div className="w-16 h-16 rounded-2xl bg-[#f0f9f4] flex items-center justify-center">
+                  <LayoutGrid size={28} className="text-[#5CC87A]" />
+                </div>
+                <p className="text-sm font-semibold text-[#2C3E50]">
+                  참여 중인 워크스페이스가 없습니다
+                </p>
+                <p className="text-xs text-gray-400">
+                  왼쪽의 <span className="font-semibold text-[#5CC87A]">+</span> 버튼으로 워크스페이스를 만들어보세요
+                </p>
+              </div>
+          )}
         </div>
 
         {/* 퀵 메뉴 팝업 */}
@@ -222,7 +329,20 @@ export function WorkspaceLayout() {
       </div>
 
       {/* ── 하단 작업표시줄 (윈도우 작업표시줄처럼 전체폭 고정) ── */}
-      <div className="h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0 z-30">
+      <div className="app-chrome h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0 z-30">
+
+        {/* 홈버튼 */}
+        <Tooltip label="홈" side="top" align="start">
+          <button
+              onClick={() => navigate("/WorkspaceHome")}
+              className="w-11 h-11 rounded-xl flex items-center justify-center transition-all flex-shrink-0
+              text-white/60 hover:bg-white/10 hover:text-white"
+          >
+            <Home size={19} />
+          </button>
+        </Tooltip>
+
+        <div className="h-8 w-[2px] bg-white/20 rounded-full mx-2 flex-shrink-0" />
 
           {/* 도구들 */}
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -254,37 +374,51 @@ export function WorkspaceLayout() {
 
           {/* 개인 메뉴 */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            <button
-              onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)}
-              className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all
-                ${isQuickMenuOpen ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
-              title="빠른 메뉴"
-            >
-              <Grid3x3 size={19} className="text-white" />
-            </button>
-
-            <Link
-              to="/workspace/profile"
-              className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all ml-1"
-              title="내 프로필"
-            >
-              나
-            </Link>
-            <button
+            <Tooltip label="빠른 메뉴" side="top">
+              <button
+                onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)}
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all
+                  ${isQuickMenuOpen ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+              >
+                <Grid3x3 size={19} className="text-white" />
+              </button>
+            </Tooltip>
+            <Tooltip label="알림" side="top">
+              <button
+                  onClick={() => toggleRightPanel('notification')}
+                  className={`relative p-2 rounded-xl transition-all
+                ${activeRightPanel === 'notification' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+              >
+                <Bell size={18} className="text-white" />
+                {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
+                    <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                )}
+              </button>
+            </Tooltip>
+            <Tooltip label="친구 목록" side="top">
+              <button
                 onClick={() => toggleRightPanel('friend')}
                 className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
                   ${activeRightPanel === 'friend' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
-                title="친구 목록"
-            >
-              <Users size={19} className="text-white" />
-              {activeRightPanel !== 'friend' && totalUnread > 0 && (
+              >
+                <Users size={19} className="text-white" />
+                {activeRightPanel !== 'friend' && totalUnread > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-               {totalUnread}
-                 </span>
-              )}
-            </button>
-          </div>
+                    {totalUnread}
+                  </span>
+                )}
+              </button>
+            </Tooltip>
 
+            <Tooltip label="내 프로필" side="top" align="end">
+              <Link
+                to="/workspace/profile"
+                className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all ml-1"
+              >
+                나
+              </Link>
+            </Tooltip>
+          </div>
 
         </div>
     </div>

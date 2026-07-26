@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from '../store/authStore';
 import { api } from '../api/client';
@@ -8,22 +8,26 @@ import {
     LayoutGrid,
 } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
-import { useFriendStore, FRIEND_STATUS } from "../store/friendStore";
+import { useFriendStore, friendStatusOf } from "../store/friendStore";
 import { FriendSidebar } from "../components/FriendSidebar";
 import hasiClean from "./HasiClean.png"
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { NotificationSidebar } from "../components/NotificationSidebar";
 import { useNotificationStore } from "../store/notificationStore";
+import { Tooltip } from "../components/Tooltip";
+import Toast from "../components/Toast";
 
 
 export function WorkspaceHome() {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [calendarDate, setCalendarDate] = useState(new Date());
-  const { refreshToken, clear } = useAuthStore();
+  const { refreshToken, clear, user } = useAuthStore();
   const handleLogout = async () => {
     try {
-      await api.POST('/api/auth/logout', { body: { refreshToken } });
+      if (refreshToken) {
+        await api.POST('/api/auth/logout', {body: {refreshToken}})
+      }
     } catch (error) {
       console.error("로그아웃 실패:", error);
     } finally {
@@ -32,21 +36,84 @@ export function WorkspaceHome() {
     }
   };
 
-  const logout = () => {navigate("/")};
   const { activeRightPanel, toggleRightPanel } = useUiStore();
   const { friends } = useFriendStore();
-  const { workspaces, setWorkspace } = useWorkspaceStore();
+  const { workspaces, setWorkspace, fetchWorkspaces, wsLoading } = useWorkspaceStore();
   const { notifications } = useNotificationStore();
   const unreadNotifications = notifications.filter((n) => n.unread).length;
   const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0);
+
+  // 소셜 연동 (임시 UI — 정식 설정창은 박규태님)
+  const [socialProvider, setSocialProvider] = useState<string | null>(null);
+  const [socialBusy, setSocialBusy] = useState(false);
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' | 'warning' }>({
+    open: false, message: '', type: 'info',
+  });
+  const triggerToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') =>
+      setToast({ open: true, message, type });
+  const closeToast = useCallback(
+      () => setToast((prev) => ({ ...prev, open: false })), []);
+
+  const loadSocial = async () => {
+    const { data } = await api.GET('/api/auth/social');
+    setSocialProvider(data?.data?.provider ?? null);
+  };
+
+  useEffect(() => { loadSocial(); }, []);
+
+  const handleSocialLink = () => {
+    const w = 500, h = 650;
+    const left = window.screenX + (window.outerWidth - w) / 2;
+    const top  = window.screenY + (window.outerHeight - h) / 2;
+    window.open(
+        'http://localhost:8080/oauth2/authorization/google',
+        'social-link',
+        `width=${w},height=${h},left=${left},top=${top}`,
+    );
+  };
+
+  // 팝업이 보내온 연동 결과 수신
+  useEffect(() => {
+    const onMessage = async (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === 'social-link') {
+        setSocialBusy(true);
+        const { error } = await api.POST('/api/auth/social/link',
+            { body: { code: e.data.linkCode } });
+        setSocialBusy(false);
+        // 메시지 핸들러 안
+        if (error) triggerToast((error as any)?.error?.message ?? '연동에 실패했습니다', 'error');
+        else { await loadSocial(); triggerToast('소셜 연동이 완료되었습니다', 'success'); }
+      } else if (e.data?.type === 'social-link-error') {
+        triggerToast('이미 다른 계정에 연동된 소셜입니다', 'error');
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  const handleSocialUnlink = async () => {
+    setSocialBusy(true);
+    const { error } = await api.DELETE('/api/auth/social', {});
+    setSocialBusy(false);
+    if (error) triggerToast((error as any)?.error?.message ?? '해제에 실패했습니다', 'error');
+    else { setSocialProvider(null); triggerToast('연동을 해제했습니다', 'info'); }
+  };
+
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  // HOME 진입 시에도 워크스페이스 조회
+  // (기존에는 WorkspaceSidebar에서만 호출해서, /workspace를 한 번 다녀와야 목록이 채워졌음)
+  useEffect(() => {
+    fetchWorkspaces();
+  }, []);
+
   // friendStore에서 가져옴 (오프라인 제외 = 온라인 친구)
-  const onlineFriends = friends.filter((f) => f.status !== "offline");
+  const onlineFriends = friends.filter((f) => f.status !== "OFFLINE");
 
   const recentActivities = [
     { ws: "개", name: "개발팀",   text: "새 메시지 5개",   time: "5분 전",  color: "from-[#5CC87A] to-[#2E8B4F]" },
@@ -95,7 +162,9 @@ export function WorkspaceHome() {
           {/* 헤더 */}
           <div className="px-6 pt-5 pb-3 flex items-center justify-between flex-shrink-0 border-b border-[#e8f8ed]">
             <div>
-              <h1 className="text-lg font-bold text-[#2C3E50]">안녕하세요, 김동준님 👋</h1>
+              <h1 className="text-lg font-bold text-[#2C3E50]">
+                안녕하세요, {user?.nickname ?? "게스트"}님 👋
+              </h1>
               <p className="text-xs text-gray-400">
                 {today.getFullYear()}년 {today.getMonth() + 1}월 {today.getDate()}일 {weekDayKo[today.getDay()]}요일
               </p>
@@ -105,10 +174,20 @@ export function WorkspaceHome() {
           {/* 스크롤 영역 */}
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
-            <div className="bg-white rounded-2x1 p-4 shadow-sm border border-[#e8f8ed]">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#e8f8ed]">
               <div className="flex items-center gap-2 mb-3">
                 <LayoutGrid size={15} className="text-[#5CC87A]"/>
-                <h2 className="text-sm font-bold text-[#2C3E50]">워크스페이스 · {workspaces.length}개</h2>
+                <h2 className="text-sm font-bold text-[#2C3E50]">
+                  워크스페이스 · {wsLoading ? "불러오는 중" : `${workspaces.length}개`}
+                </h2>
+                {!wsLoading && workspaces.length === 0 && (
+                    <button
+                        onClick={() => navigate("/workspace")}
+                        className="ml-auto px-3 py-1 text-xs font-medium bg-[#5CC87A] hover:bg-[#2E8B4F] text-white rounded-lg transition-all"
+                    >
+                      워크스페이스 시작하기
+                    </button>
+                )}
               </div>
               <div className="flex flex-wrap gap-3">
                 {workspaces.map((ws) => (
@@ -165,11 +244,11 @@ export function WorkspaceHome() {
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-xs font-bold">
                         {f.avatar ?? f.name.charAt(0)}
                       </div>
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${FRIEND_STATUS[f.status].dot}`} />
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${friendStatusOf(f.status).dot}`} />
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-[#2C3E50]">{f.name}</p>
-                      <p className="text-[10px] text-gray-400">{f.statusMessage ?? FRIEND_STATUS[f.status].label}</p>
+                      <p className="text-[10px] text-gray-400">{f.statusMessage ?? friendStatusOf(f.status).label}</p>
                     </div>
                   </div>
                 ))}
@@ -304,15 +383,40 @@ export function WorkspaceHome() {
       </div>
 
       {/* 하단 내비게이션 바 (Windows 작업표시줄 스타일) */}
-      <div className="h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0">
+      <div className="app-chrome h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0">
 
         {/* 홈 버튼 */}
         <div>
-          <img src={hasiClean} alt="HASI" className="w-11 h-11 rounded-2x1 object-contain"/>
+          <img src={hasiClean} alt="HASI" className="no-drag w-11 h-11 rounded-2xl object-contain"/>
         </div>
 
         {/* 구분선 */}
         <div className="h-8 w-[2px] bg-white/20 rounded-full mx-2 flex-shrink-0" />
+
+
+        {/* 소셜 연동 (임시 — 설정창으로 이관 예정) */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {socialProvider ? (
+              <>
+                <span className="text-xs text-white/70">{socialProvider} 연동됨</span>
+                <button
+                    onClick={handleSocialUnlink}
+                    disabled={socialBusy}
+                    className="px-2.5 py-1 text-xs rounded-lg bg-white/10 text-white/70 hover:bg-red-500/70 hover:text-white transition-all disabled:opacity-40"
+                >
+                  연동 해제
+                </button>
+              </>
+          ) : (
+              <button
+                  onClick={handleSocialLink}
+                  disabled={socialBusy}
+                  className="px-2.5 py-1 text-xs rounded-lg bg-white/10 text-white/70 hover:bg-[#5CC87A] hover:text-white transition-all disabled:opacity-40"
+              >
+                소셜 연동하기
+              </button>
+          )}
+        </div>
 
         {/* 스페이서 */}
         <div className="flex-1" />
@@ -322,52 +426,76 @@ export function WorkspaceHome() {
 
         {/* 개인 메뉴 */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            onClick={() => toggleRightPanel('calendar')}
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all
-              ${activeRightPanel === 'calendar' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
-            title="달력"
-          >
-            <Calendar size={19} className="text-white/60" />
-          </button>
-          <button
-            onClick={() => toggleRightPanel('friend')}
-            className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
-              ${activeRightPanel === 'friend' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
-            title="친구 목록"
-          >
-            <Users size={19} className="text-white/60" />
-            {activeRightPanel !== 'friend' && totalUnread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                {totalUnread}
-              </span>
-            )}
-          </button>
-          <button
+          <Tooltip label="달력" side="top">
+            <button
+              onClick={() => toggleRightPanel('calendar')}
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all
+                ${activeRightPanel === 'calendar' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+            >
+              <Calendar size={19} className="text-white/60" />
+            </button>
+          </Tooltip>
+
+          <Tooltip label="친구 목록" side="top">
+            <button
+              onClick={() => toggleRightPanel('friend')}
+              className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
+                ${activeRightPanel === 'friend' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+            >
+              <Users size={19} className="text-white/60" />
+              {activeRightPanel !== 'friend' && totalUnread > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {totalUnread}
+                </span>
+              )}
+            </button>
+          </Tooltip>
+
+          <Tooltip label="알림" side="top">
+            <button
               onClick={() => toggleRightPanel('notification')}
               className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
-              ${activeRightPanel === 'notification' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
-              title="알림"
-          >
-            <Bell size={19} className="text-white/60" />
-            {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
+                ${activeRightPanel === 'notification' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
+            >
+              <Bell size={19} className="text-white/60" />
+              {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
                 <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
-            )}
-          </button>
-          <button className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all" title="설정">
-            <Settings size={19} className="text-white/60" />
-          </button>
-          <button
-                onClick={handleLogout}
-                className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all" title="로그아웃">
-            <LogOut size={19} className="text-white/60 group-hover:text-red-400 transition-colors" />
-          </button>
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold cursor-pointer ml-1 hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all">
-            나
-          </div>
+              )}
+            </button>
+          </Tooltip>
+
+          <Tooltip label="설정" side="top">
+            <button className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all">
+              <Settings size={19} className="text-white/60" />
+            </button>
+          </Tooltip>
+
+          <Tooltip label="로그아웃" side="top">
+            <button
+              onClick={handleLogout}
+              className="group w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all"
+            >
+              <LogOut size={19} className="text-white/60 group-hover:text-red-400 transition-colors" />
+            </button>
+          </Tooltip>
+
+          <Tooltip label="내 프로필" side="top" align="end">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold cursor-pointer ml-1 hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all">
+              나
+            </div>
+          </Tooltip>
         </div>
 
       </div>
+
+      {toast.open && (
+        <Toast
+          isOpen={toast.open}
+          type={toast.type}
+          message={toast.message}
+          onClose={closeToast}
+        />
+      )}
     </div>
   );
 }

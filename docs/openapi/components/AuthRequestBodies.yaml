@@ -54,7 +54,7 @@ components:
           #여기 추가 했습니다.
         purpose:
           type: string
-          enum: [register, reset]
+          enum: [REGISTER, RESET]
           description: "발송 목적입니다, 생략시 register로 간주(register=회원가입, reset=비밀번호 재설정)"
 
     EmailVerifyRequest:
@@ -70,7 +70,7 @@ components:
         code:
           type: string
           description: "발송된 인증코드"
-    # 지환님 확인 부탁드려요 확인하고 주석 지우고 올려주시면 될거같아요
+
     PasswordResetRequest:
       type: object
       required:
@@ -88,3 +88,25 @@ components:
           type: string
           description: "새로운 비밀번호"
 
+    SocialAccountResponse:
+      type: object
+      description: "연동된 소셜 계정 정보 (계정당 1개, 미연동이면 data = null)"
+      properties:
+        provider:
+          type: string
+          enum: [google, line, amazon, twitter]
+          description: "소셜 플랫폼"
+        linkedAt:
+          type: string
+          format: date-time
+          description: "연동 일시"
+
+    SocialLinkRequest:
+      type: object
+      required:
+        - code
+      description: "소셜 연동 완료 요청 — OAuth 성공 후 받은 임시 코드"
+      properties:
+        code:
+          type: string
+          description: "linkCode (5분 유효, 1회용)"

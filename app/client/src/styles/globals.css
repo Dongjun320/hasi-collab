@@ -1,5 +1,8 @@
 * {
-    font-family: "Pretendard JP", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Hiragino Sans", "Apple SD Gothic Neo", Meiryo, "Noto Sans JP", "Noto Sans KR", "Malgun Gothic", Osaka, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+    font-family: "Pretendard JP", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Hiragino Sans",
+    "Apple SD Gothic Neo", Meiryo, "Noto Sans JP", "Noto Sans KR", "Malgun Gothic",
+    Osaka, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -8,4 +11,32 @@
 .no-scrollbar {
     scrollbar-width: none;
     -ms-overflow-style: none;
+}
+
+/* ── 데스크톱 앱 느낌: UI 크롬 영역의 텍스트 선택 방지 ──
+   .app-chrome 를 붙인 요소와 그 자식은 드래그해도 파란 블록이 생기지 않음
+   채팅 메시지·입력값 등 복사해야 하는 곳에는 붙이지 말 것 */
+.app-chrome,
+.app-chrome * {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* 크롬 영역 안이라도 입력 요소는 선택 가능해야 함 */
+.app-chrome input,
+.app-chrome textarea,
+.app-chrome [contenteditable="true"] {
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+/* 마우스 클릭 시 포커스 링 제거 (키보드 Tab 이동 시에는 유지 — 접근성) */
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* 드래그 스크롤 영역에서 이미지가 끌려나오는 것 방지 */
+.no-drag {
+    -webkit-user-drag: none;
+    user-drag: none;
 }

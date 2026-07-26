@@ -10,10 +10,10 @@ components:
           type: string
         role:
           type: string
-          enum: [owner, admin, member]
+          enum: [OWNER, ADMIN, MEMBER]
         statusCode:
           type: string
-          enum: [online, away, busy, offline, outside, remote]
+          enum: [ONLINE, AWAY, BUSY, OFFLINE, OUTSIDE, REMOTE]
 
     ChannelMemberData:
       type: object
@@ -25,7 +25,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, member]
+          enum: [OWNER, ADMIN, MEMBER]
 
     InviteMemberData:
       type: object
@@ -77,7 +77,7 @@ components:
               format: int64
             role:
               type: string
-              enum: [owner, admin, member]
+              enum: [OWNER, ADMIN, MEMBER]
         error:
           nullable: true
           example: null

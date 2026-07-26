@@ -2,13 +2,16 @@ package com.hasi.service.auth.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(
         name = "social_accounts",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"provider", "provider_id"})  // (provider, providerId) 유니크
+                @UniqueConstraint(columnNames = "user_id"), // 계정당 1개
+                @UniqueConstraint(columnNames = {"provider", "provider_id"})  // (provider, providerId) 유니크, 같은 소셜 중복 연동 방지
         }
 )
 @Getter
@@ -43,5 +46,9 @@ public class SocialAccount {
 
     @Column(length = 255)
     private String scope;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
 }

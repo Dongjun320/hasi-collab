@@ -1,0 +1,47 @@
+paths:
+  /api/users/search:
+    get:
+      summary: "닉네임으로 유저 검색 (친구 추가용)"
+      operationId: searchUser
+      tags:
+        - User
+      parameters:
+        - name: nickname
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "검색할 닉네임"
+      responses:
+        '200':
+          description: "검색 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/UserResponseBodies.yaml#/components/schemas/UserSearchResponse"
+        '404':
+          description: "해당 닉네임의 유저가 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+
+  /api/users/me:
+    get:
+      summary: "내 정보 조회 (소셜 로그인 후 사용자 정보 채우기 등)"
+      tags:
+        - User
+      operationId: getMyInfo
+      responses:
+        '200':
+          description: "조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/AuthResponseBodies.yaml#/components/schemas/UserData"
+        '401':
+          description: "토큰 만료 / 미인증"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"

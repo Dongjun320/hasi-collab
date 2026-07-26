@@ -86,6 +86,41 @@ paths:
   /api/invitations/{invitationId}:
     $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1invitations~1{invitationId}"
 
+  /api/friends:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends"
+
+  /api/friends/{friendId}:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1{friendId}"
+
+  /api/friends/requests/{receiverId}:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1requests~1{receiverId}"
+
+  /api/friends/requests/received:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1requests~1received"
+
+  /api/friends/requests/sent:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1requests~1sent"
+
+  /api/friends/requests/{requestId}/accept:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1requests~1{requestId}~1accept"
+
+  /api/friends/requests/{requestId}/reject:
+    $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends~1requests~1{requestId}~1reject"
+
+  /api/users/search:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1search"
+
+  /api/users/me:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me"
+
+  /api/auth/social:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1social"
+
+  /api/auth/social/link:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1social~1link"
+
+
+
 components:
   securitySchemes:
     BearerAuth:

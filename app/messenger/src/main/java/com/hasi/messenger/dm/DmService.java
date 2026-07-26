@@ -75,7 +75,7 @@ public class DmService {
         Long a = Long.valueOf(userA);
         Long b = Long.valueOf(userB);
         return messageRepository
-                .findById(a, b, b, a)
+                .findConversation(a, b)
                 .stream()
                 .map(this::toOutbound)
                 .toList();
