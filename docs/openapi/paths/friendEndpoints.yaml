@@ -27,10 +27,8 @@ paths:
       tags:
         - Friend
       operationId: removeFriend
-      security:
-        - BearerAuth: [ ]
       parameters:
-        - name: friendId
+        - name: relationId
           in: path
           required: true
           schema:
@@ -52,8 +50,6 @@ paths:
       tags:
         - Friend
       operationId: sendFriendRequest
-      security:
-        - BearerAuth: [ ]
       parameters:
         - name: receiverId
           in: path
@@ -83,8 +79,6 @@ paths:
       tags:
         - Friend
       operationId: getReceivedFriendRequests
-      security:
-        - BearerAuth: [ ]
       responses:
         '200':
           description: "조회 성공"
@@ -101,8 +95,6 @@ paths:
       tags:
         - Friend
       operationId: getSentFriendRequests
-      security:
-        - BearerAuth: [ ]
       responses:
         '200':
           description: "조회 성공"
@@ -119,8 +111,6 @@ paths:
       tags:
         - Friend
       operationId: acceptFriendRequest
-      security:
-        - BearerAuth: [ ]
       parameters:
         - name: requestId
           in: path
@@ -150,8 +140,6 @@ paths:
       tags:
         - Friend
       operationId: rejectFriendRequest
-      security:
-        - BearerAuth: [ ]
       parameters:
         - name: requestId
           in: path

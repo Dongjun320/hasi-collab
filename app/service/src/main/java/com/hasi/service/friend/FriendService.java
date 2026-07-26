@@ -36,7 +36,7 @@ public class FriendService {
 
         Optional<Friend> existing = friendRepository
                 .findBySenderIdAndReceiverIdOrReceiverIdAndSenderId(
-                        senderId, receiverId, receiverId, senderId);
+                        senderId, receiverId, senderId, receiverId);
 
         // 이미 친구신청 혹은 친구관계인지 확인
         if (existing.isPresent()) {
@@ -89,10 +89,15 @@ public class FriendService {
 
     // 친구 삭제
     @Transactional
-    public void removeFriend(Long userId, Long friendId) {
+    public void removeFriend(Long userId, Long relationId) {
         Friend friend = friendRepository
-                .findBySenderIdAndReceiverIdOrReceiverIdAndSenderId(userId, friendId, userId, friendId)
+                .findById(relationId)
                 .orElseThrow(() -> new ApiException(ErrorCode.FRIEND_003));
+
+        // 참여자 검증 - 본인이 sender나 receiver로 포함된 관계인지 확인
+        if (!friend.getSenderId().equals(userId) && !friend.getReceiverId().equals(userId)) {
+            throw new ApiException(ErrorCode.FRIEND_004);
+        }
 
         friendRepository.deleteById(friend.getId());
     }
