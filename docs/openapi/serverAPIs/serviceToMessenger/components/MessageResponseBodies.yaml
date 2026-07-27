@@ -17,6 +17,63 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/message"
+    # 주의: 여기서는 `nullable: true`를 쓰지 않습니다.
+    # nullable 프로퍼티는 JsonNullable로 생성되는데, jackson-databind-nullable은 Jackson 2용이고
+    # Spring Boot 4는 Jackson 3(tools.jackson)을 쓰기 때문에 모듈 등록이 안 되고
+    # `{"present":false}` 같은 이상한 JSON이 나갑니다. 그래서 타입 없는 프로퍼티로 둡니다.
+    ChannelMessagesDeleteResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: "#/components/schemas/ChannelMessagesDeleteData"
+        error:
+          description: "성공 시 null"
+          example: null
+
+    # /components/ErrorResponseBodies.yaml의 ErrorResponse와 같은 모양이지만,
+    # 그 쪽은 data가 `nullable: true`라 위에 적은 JsonNullable 문제가 생겨 여기서 따로 둡니다.
+    InternalErrorResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          description: "실패 시 null"
+          example: null
+        error:
+          $ref: "#/components/schemas/InternalErrorDetail"
+
+    InternalErrorDetail:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: "VALID_001"
+        message:
+          type: string
+          example: "channelIds가 올바르지 않습니다"
+
+    ChannelMessagesDeleteData:
+      type: object
+      properties:
+        deletedMessages:
+          description: "삭제된 channel_messages row 수"
+          type: integer
+          format: int64
+          example: 142
+        deletedReadStates:
+          description: "삭제된 channel_read_states row 수"
+          type: integer
+          format: int64
+          example: 31
+
     message:
       type: object
       properties:

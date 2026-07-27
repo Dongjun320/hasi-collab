@@ -11,25 +11,6 @@ JavaDoc와 TSDoc는 주석을 따라 자동으로 문서를 만들어 주는 라
 `/**`로 시작해 `*/`로 끝납니다.
 
 ```java
-/**
- * JavaDoc 설명용 함수입니다.
- * 
- * @author Jinwoo Jeong
- */
-@Service
-public class ExampleService{
-  
-  /**
-   * 더미 메서드
-   * @param a 랜덤 숫자
-   * @throws RuntimeException a가 0이면 에러
-   * @return 1 더한 값
-   */
-   public int myPlus(int a){
-      if(a==0) throw new RuntimeException("랜덤 에러");
-      return a+1;
-   }
-}
 ```
 
 ## 문서 만들기

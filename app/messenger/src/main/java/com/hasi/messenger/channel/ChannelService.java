@@ -124,6 +124,17 @@ public class ChannelService {
         return messageRepository.countUnread(channelId, uid, lastRead);
     }
 
+    // 채널/워크스페이스가 삭제될 때 남는 메시지·읽음상태 정리.
+    @Transactional
+    public ChannelDtos.DeletedCounts deleteChannelMessages(List<Long> channelIds){
+        if (channelIds == null || channelIds.isEmpty()) {
+            return new ChannelDtos.DeletedCounts(0, 0);
+        }
+        long readStates = readStateRepository.deleteByChannelIdIn(channelIds);
+        long messages = messageRepository.deleteByChannelIdIn(channelIds);
+        return new ChannelDtos.DeletedCounts(messages, readStates);
+    }
+
     // channel_member로 채널 멤버쉽 확인
     private void requireMembership(Long channelId, String userId){
         if (!serviceDirectory.isChannelMember(channelId, Long.valueOf(userId))) {

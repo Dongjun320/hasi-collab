@@ -26,6 +26,10 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
+  # 서버 간(Service -> Messenger) 호출용 공유 시크릿. service 쪽과 값이 같아야 합니다.
+  internal:
+    token: ${INTERNAL_TOKEN:hasi-internal-dev-token}
+
   broker:
     relay-host: localhost
     relay-port: 8204
