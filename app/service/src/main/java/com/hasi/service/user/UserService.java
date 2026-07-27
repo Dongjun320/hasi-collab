@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.ZoneOffset;
 
@@ -19,6 +20,7 @@ import java.time.ZoneOffset;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final FileStorageService fileStorageService;
 
     public UserSearchResponse searchByNickname(String nickname) {
         User user = userRepository.findByNickname(nickname)
@@ -71,5 +73,17 @@ public class UserService {
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
 
         user.updateStatusMessage(statusMessage);
+    }
+
+    @Transactional
+    public String updateAvatar(MultipartFile file) {
+        Long uid = getCurrentUserId();
+        User user = userRepository.findById(uid)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        String avatarUrl = fileStorageService.uploadAvatar(uid, file);
+        user.updateAvatarUrl(avatarUrl);
+
+        return avatarUrl;
     }
 }
