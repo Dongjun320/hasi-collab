@@ -26,14 +26,10 @@ export function WorkspaceHome() {
   const { refreshToken, clear, user } = useAuthStore();
   const handleLogout = async () => {
     try {
-      await api.PATCH('/api/users/me/status', { body: { statusCode: 'OFFLINE' } });
-    } catch (e) { console.error("상태 변경 실패:", e); }
-
-    try {
       if (refreshToken) await api.POST('/api/auth/logout', {body: {refreshToken}})
     } catch (error) { console.error("로그아웃 실패:", error); }
     finally {
-      disconnectStomp();   // ← 이게 곧 offline (STOMP 세션 끊김)
+      disconnectStomp();   // ← STOMP 끊김 = offline (새 presence 방식)
       clear();
       navigate("/");
     }
