@@ -59,11 +59,13 @@ public class SecurityConfig {
                         auth.requestMatchers(
                                         "/api/v1/mail/**",
                                         "/ws/",
-                                        "/api/auth/**",
                                         "/swagger-ui/**",
                                         "/swagger-ui.html",
                                         "/api-docs/**",
                                         "/api/auth/login",
+                                        "/api/auth/register",
+                                        "/api/auth/email/**",
+                                        "/api/auth/password/**",
                                         "/login/oauth2/**",
                                         "/v3/api-docs/**",
                                         "/oauth2/**"

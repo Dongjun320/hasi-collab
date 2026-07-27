@@ -45,11 +45,11 @@ public class AuthService {
 
         // 이메일 인증 없이 가입 시도
         if (!isVerified) {
-            throw new ApiException(ErrorCode.VERIFY_002); // 이메일 인증 안 하고 가입 시도
+            throw new ApiException(ErrorCode.VERIFY_002);
         }
         // 이메일 중복 체크
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ApiException(ErrorCode.AUTH_005);  // 나중에 커스텀 예외로 교체
+            throw new ApiException(ErrorCode.AUTH_005);
         }
 
         // 유저 저장 (isEmailVerified = false)
@@ -60,7 +60,6 @@ public class AuthService {
                 .isEmailVerified(true)
                 .isActive(true)
                 .isAdmin(false)
-                .statusCode(User.StatusCode.ONLINE)
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -115,13 +114,32 @@ public class AuthService {
         UserData userData = new UserData()
                 .uid(user.getUid())
                 .nickname(user.getNickname())
-                .createdAt(user.getCreatedAt().atOffset(ZoneOffset.UTC))   // ← 변환
-                .updatedAt(user.getUpdatedAt().atOffset(ZoneOffset.UTC));  // ← 변환
+                .createdAt(user.getCreatedAt().atOffset(ZoneOffset.UTC))
+                .updatedAt(user.getUpdatedAt().atOffset(ZoneOffset.UTC));
         return new LogInResponse()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .user(userData);
     }
+
+    public LogInResponse extendSession(Long userId) {
+        // 이메일로 유저 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        String newAccessToken = jwtProvider.generateToken(String.valueOf(user.getUid()));
+
+        UserData userData = new UserData()
+                .uid(user.getUid())
+                .nickname(user.getNickname())
+                .createdAt(user.getCreatedAt().atOffset(ZoneOffset.UTC))
+                .updatedAt(user.getUpdatedAt().atOffset(ZoneOffset.UTC));
+        return new LogInResponse()
+                .accessToken(newAccessToken)
+                .refreshToken(null)
+                .user(userData);
+    }
+
 
     // 6자리 랜덤 코드 생성
     private String generateCode() {

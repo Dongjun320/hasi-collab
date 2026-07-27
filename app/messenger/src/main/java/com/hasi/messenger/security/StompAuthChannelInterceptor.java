@@ -35,7 +35,10 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
     private static final Pattern CHANNEL_TOPIC = Pattern.compile("^/topic/channel\\.(\\d+)(\\.read)?$");
 
-    private static final Set<String> USER_DESTINATIONS = Set.of("/user/queue/dm", "/user/queue/errors");
+    private static final Pattern WORKSPACE_PRESENCE_TOPIC = Pattern.compile("^/topic/workspace\\.(\\d+)\\.presence$");
+
+    private static final Set<String> USER_DESTINATIONS =
+            Set.of("/user/queue/dm", "/user/queue/errors", "/user/queue/presence");
 
     private final JwtProvider jwtProvider;
     private final ServiceDirectory serviceDirectory;
@@ -86,6 +89,12 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
         Matcher matcher = CHANNEL_TOPIC.matcher(destination);
         if (matcher.matches() && serviceDirectory.isChannelMember(parseUserId(matcher.group(1)), parseUserId(user.getName()))) {
+            return true;
+        }
+
+        Matcher presenceMatcher = WORKSPACE_PRESENCE_TOPIC.matcher(destination);
+        if (presenceMatcher.matches()
+                && serviceDirectory.isWorkspaceMember(parseUserId(presenceMatcher.group(1)), parseUserId(user.getName()))) {
             return true;
         }
 

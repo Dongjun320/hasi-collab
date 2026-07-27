@@ -128,6 +128,12 @@ paths:
   /api/auth/social/link:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1social~1link"
 
+  /api/users/me/nickname:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me~1nickname"
+
+  /api/users/me/status-message:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me~1status-message"
+
 
 
 components:

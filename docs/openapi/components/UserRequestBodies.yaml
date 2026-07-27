@@ -1,0 +1,24 @@
+components:
+  schemas:
+    NicknameUpdateRequest:
+      type: object
+      required:
+        - nickname
+      description: "닉네임 변경 요청"
+      properties:
+        nickname:
+          type: string
+          maxLength: 50
+          description: "새 닉네임"
+
+    StatusMessageUpdateRequest:
+      type: object
+      required:
+        - statusMessage
+      description: "상태 메시지 변경 요청"
+      properties:
+        statusMessage:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: "새 상태 메시지"

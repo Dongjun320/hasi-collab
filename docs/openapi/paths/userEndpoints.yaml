@@ -45,3 +45,41 @@ paths:
             application/json:
               schema:
                 $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+
+  /api/users/me/nickname:
+    patch:
+      summary: "닉네임 변경"
+      tags:
+        - User
+      operationId: updateNickname
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../components/UserRequestBodies.yaml#/components/schemas/NicknameUpdateRequest"
+      responses:
+        '200':
+          description: "변경 성공"
+        '409':
+          description: "이미 사용 중인 닉네임"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+
+  /api/users/me/status-message:
+    patch:
+      summary: "상태 메시지 변경"
+      tags:
+        - User
+      operationId: updateStatusMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../components/UserRequestBodies.yaml#/components/schemas/StatusMessageUpdateRequest"
+      responses:
+        '200':
+          description: "변경 성공"

@@ -1,5 +1,6 @@
 package com.hasi.service.auth.entity;
 
+import com.hasi.service.friend.entity.Friend;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -32,19 +33,8 @@ public class User {
     @Column(name = "avatar_url", length = 512)
     private String avatarUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status_code", nullable = false)
-    @Builder.Default
-    private StatusCode statusCode = StatusCode.ONLINE;
-
     @Column(name = "status_message", length = 100)
     private String statusMessage;
-
-    @Column(name = "dnd_start_time")
-    private LocalTime dndStartTime;
-
-    @Column(name = "dnd_end_time")
-    private LocalTime dndEndTime;
 
     @Column(name = "dept_id")
     private Long deptId;           // FK to Departments
@@ -69,16 +59,16 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public void verifyEmail(){
-        this.isEmailVerified = true;
-    }
-
     public void updatePassword(String encodedPassword) {
         this.passwordHash = encodedPassword;
     }
 
-    // status_code ENUM 정의
-    public enum StatusCode {
-        ONLINE, AWAY, BUSY, OFFLINE, OUTSIDE, REMOTE
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
     }
+
+    public void updateStatusMessage(String statusMessage) {
+        this.statusMessage = statusMessage;
+    }
+
 }
