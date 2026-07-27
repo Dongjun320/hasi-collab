@@ -14,8 +14,8 @@ components:
           description: "친구 닉네임"
         status:
           type: string
-          enum: [ ONLINE, AWAY, BUSY, OFFLINE ]
-          description: "상태 코드"
+          enum: [ ONLINE, AWAY, OFFLINE ]
+          description: "상태 코드 (presence 3단계)"
         statusMessage:
           type: string
           nullable: true
