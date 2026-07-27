@@ -9,9 +9,9 @@ import java.util.Optional;
 public interface ChannelMemberRepository extends JpaRepository<ChannelMember, Long> {
     List<ChannelMember> findByChannelId(Long channelId);
 
-    void deleteByChannelId(Long channelId);
+    Optional<ChannelMember> findByChannelIdAndUserId(Long channelId, Long userId);
 
     boolean existsByChannelIdAndUserId(Long channelId, Long userId);
 
-    Optional<ChannelMember> findByUserIdAndChannelId(Long uid, Long id);
+    void deleteByChannelId(Long channelId);
 }

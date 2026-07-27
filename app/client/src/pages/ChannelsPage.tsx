@@ -104,22 +104,15 @@ export function ChannelsPage() {
     if (atBottom) setUnreadCount(0);
   };
 
-  const scrollToBottom = (smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
-  };
+  const scrollToBottom = (smooth = true) =>        // ← 기본값 smooth
+      messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
 
   useEffect(() => {
     if (messages.length === 0) return;
     const last = messages[messages.length - 1];
     const isMine = Number(last.sender) === myUid; // 기존 isMine 판별과 동일한 기준
 
-    if (isMine || isAtBottom) {
-      scrollToBottom();
-      setUnreadCount(0);
-    } else {
-      setUnreadCount((prev) => prev + 1);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (isMine || isAtBottom) scrollToBottom();     // isAtBottom 기본 true → smooth 스크롤
   }, [messages]);
 
   return (

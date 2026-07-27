@@ -71,4 +71,8 @@ public class User {
         this.statusMessage = statusMessage;
     }
 
+    public void updateAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
 }

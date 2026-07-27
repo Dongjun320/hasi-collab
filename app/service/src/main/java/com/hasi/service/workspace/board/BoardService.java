@@ -74,7 +74,7 @@ public class BoardService {
         Long ownerId = request.getOwnerId() != null ? request.getOwnerId() : uid;
 
         // 부서장은 해당 워크스페이스의 OWNER 또는 ADMIN이어야 함
-        WorkspaceMember owner = workspaceMemberRepository.findByUserIdAndWorkspaceId(ownerId, workspaceId)
+        WorkspaceMember owner = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, ownerId)
                 .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
 
         if (owner.getRole() == WorkspaceMember.Role.MEMBER) {
@@ -114,7 +114,7 @@ public class BoardService {
                 throw new ApiException(ErrorCode.AUTH_004);
             }
 
-            WorkspaceMember newOwner = workspaceMemberRepository.findByUserIdAndWorkspaceId(newOwnerId, workspaceId)
+            WorkspaceMember newOwner = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, newOwnerId)
                     .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
 
             if (newOwner.getRole() == WorkspaceMember.Role.MEMBER) {
@@ -175,7 +175,7 @@ public class BoardService {
                     .orElseThrow(() -> new ApiException(ErrorCode.MBR_001));
 
             // 워크스페이스 역할을 함께 내려줌 (프론트에서 수정 권한 판단용)
-            WorkspaceMember wm = workspaceMemberRepository.findByUserIdAndWorkspaceId(member.getUserId(), workspaceId)
+            WorkspaceMember wm = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, member.getUserId())
                     .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
 
             BoardMemberData item = new BoardMemberData();
@@ -375,7 +375,7 @@ public class BoardService {
 
     // 워크스페이스 소속이 아니면 접근 불가
     private WorkspaceMember requireWorkspaceMember(Long workspaceId, Long uid) {
-        return workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
+        return workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, uid)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
     }
 
