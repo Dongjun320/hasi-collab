@@ -83,25 +83,3 @@ paths:
       responses:
         '200':
           description: "변경 성공"
-
-  /api/users/me/status:
-    patch:
-      summary: "상태 코드 변경"
-      tags:
-        - User
-      operationId: updateStatus
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "../components/UserRequestBodies.yaml#/components/schemas/StatusUpdateRequest"
-      responses:
-        '200':
-          description: "변경 성공"
-        '400':
-          description: "잘못된 상태 코드"
-          content:
-            application/json:
-              schema:
-                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"

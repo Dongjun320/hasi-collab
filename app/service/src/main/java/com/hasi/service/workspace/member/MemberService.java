@@ -41,8 +41,6 @@ public class MemberService {
             item.setUserId(user.getUid());
             item.setNickname(user.getNickname());
             item.setRole(WorkspaceMemberData.RoleEnum.fromValue(member.getRole().name()));
-            item.setStatusCode(WorkspaceMemberData.StatusCodeEnum.fromValue(user.getStatusCode().name()));
-
             data.add(item);
         }
 

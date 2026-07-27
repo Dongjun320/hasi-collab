@@ -125,9 +125,6 @@ paths:
   /api/users/me/status-message:
     $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me~1status-message"
 
-  /api/users/me/status:
-    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me~1status"
-
 
 
 components:

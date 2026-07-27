@@ -137,7 +137,6 @@ public class FriendService {
         return new FriendResponse()
                 .id(relationId)               // 관계(요청) id
                 .name(user.getNickname())
-                .status(FriendResponse.StatusEnum.fromValue(user.getStatusCode().name()))
                 .statusMessage(user.getStatusMessage());
     }
 }

@@ -4,7 +4,6 @@ import com.hasi.collab.model.UserData;
 import com.hasi.collab.model.UserSearchResponse;
 import com.hasi.collab.model.NicknameUpdateRequest;
 import com.hasi.collab.model.StatusMessageUpdateRequest;
-import com.hasi.collab.model.StatusUpdateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -39,13 +38,6 @@ public class UserController {
     public ResponseEntity<Void> updateStatusMessage(
             @Valid @RequestBody StatusMessageUpdateRequest request) {
         userService.updateStatusMessage(request.getStatusMessage().orElse(null));
-        return ResponseEntity.ok().build();
-    }
-
-    @PatchMapping("/me/status")
-    public ResponseEntity<Void> updateStatus(
-            @Valid @RequestBody StatusUpdateRequest request) {
-        userService.updateStatus(request.getStatusCode().getValue());
         return ResponseEntity.ok().build();
     }
 }
