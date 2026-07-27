@@ -7,7 +7,7 @@ import hasiImg from './Hasi.png'
 import LoadingPopup from '../components/LoadingPopup'
 import { api } from '../api/client'
 import { useAuthStore } from '../store/authStore'
-import { toast } from '../store/toastStore' // 전역 toast 임포트
+import { toast } from '../store/toastStore'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -49,7 +49,7 @@ const LoginPage = () => {
   const handleLogin = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      toast.error("有効なE-mail形式で入力してください。")
+      toast.error("有効なE-mail形式で入力してください。", { position: 'top-right' })
       return
     }
 
@@ -59,15 +59,15 @@ const LoginPage = () => {
       setLoadingOpen(false)
       const errorCode = (error as any)?.error?.code
       if (errorCode === 'AUTH_001') {
-        toast.error("アカウント情報が一致しません。")
+        toast.error("アカウント情報が一致しません。", { position: 'top-right' })
       } else {
-        toast.error("ログインに失敗しました。メールとパスワードをご確認ください。")
+        toast.error("ログインに失敗しました。メールとパスワードをご確認ください。", { position: 'top-right' })
       }
       return
     }
     if (data && data.accessToken) {
       setAuth(data.user as any, data.accessToken, data.refreshToken)
-      toast.success("ログインが完了しました。")
+      toast.success("ログインが完了しました。", { position: 'top-right' })
       setTimeout(() => navigate('/WorkspaceHome'), 1200)
     }
   }
@@ -75,45 +75,45 @@ const LoginPage = () => {
   // 회원가입 이메일 발송
   const handleSendEmail = async () => {
     if (!signUpEmail.trim()) {
-      toast.warning("E-mailを入力してください。")
+      toast.warning("E-mailを入力してください。", { position: 'top-right' })
       return
     }
     const { error } = await api.POST('/api/auth/email/send', { body: { email: signUpEmail } })
     if (error) {
-      toast.error("メール送信に失敗しました。")
+      toast.error("メール送信に失敗しました。", { position: 'top-right' })
       return
     }
     setIsCodeSent(true)
-    toast.success("メールの送信が完了しました。")
+    toast.success("メールの送信が完了しました。", { position: 'top-right' })
   }
 
   // 회원가입 인증코드 확인
   const handleVerifyCode = async () => {
     if (!signUpCode.trim()) {
-      toast.warning("認証コードを入力してください。")
+      toast.warning("認証コードを入力してください。", { position: 'top-right' })
       return
     }
     const { error } = await api.POST('/api/auth/email/verify', { body: { email: signUpEmail, code: signUpCode } })
     if (error) {
-      toast.error("認証に失敗しました。コードをご確認ください。")
+      toast.error("認証に失敗しました。コードをご確認ください。", { position: 'top-right' })
       return
     }
     setIsVerified(true)
-    toast.success("認証が完了しました。")
+    toast.success("認証が完了しました。", { position: 'top-right' })
   }
 
   // 회원가입 제출 (완료 시 모달 닫기 및 메인 폼에 정보 채우기)
   const handleSignUpSubmit = async () => {
     if (!signUpEmail.trim() || !signUpPw.trim() || !signUpPwConfirm.trim()) {
-      toast.warning("すべての情報を入力してください。")
+      toast.warning("すべての情報を入力してください。", { position: 'top-right' })
       return
     }
     if (!isVerified) {
-      toast.warning("E-mail認証を完了してください。")
+      toast.warning("E-mail認証を完了してください。", { position: 'top-right' })
       return
     }
     if (signUpPw !== signUpPwConfirm) {
-      toast.error("パスワードが一致しません。")
+      toast.error("パスワードが一致しません。", { position: 'top-right' })
       return
     }
 
@@ -122,11 +122,11 @@ const LoginPage = () => {
     })
 
     if (error) {
-      toast.error("会員登録に失敗しました。")
+      toast.error("会員登録に失敗しました。", { position: 'top-right' })
       return
     }
 
-    toast.success("会員登録が完了しました。ログインしてください。")
+    toast.success("会員登録が完了しました。ログインしてください。", { position: 'top-right' })
 
     // 사용자가 바로 로그인할 수 있도록 메인 폼에 이메일/비밀번호 자동 입력
     setEmail(signUpEmail)
@@ -143,47 +143,47 @@ const LoginPage = () => {
   // 비밀번호 재설정 이메일 발송
   const handleFindSendEmail = async () => {
     if (!findEmail.trim()) {
-      toast.warning("E-mailを入力してください。")
+      toast.warning("E-mailを入力してください。", { position: 'top-right' })
       return
     }
     const { error } = await api.POST('/api/auth/password/send', {
       body: { email: findEmail } as any
     })
     if (error) {
-      toast.error("メール送信に失敗しました。")
+      toast.error("メール送信に失敗しました。", { position: 'top-right' })
       return
     }
     setIsFindCodeSent(true)
-    toast.success("メールの送信が完了しました。")
+    toast.success("メールの送信が完了しました。", { position: 'top-right' })
   }
 
   // 비밀번호 재설정 코드 확인
   const handleFindVerifyCode = async () => {
     if (!findCode.trim()) {
-      toast.warning("認証コードを入力してください。")
+      toast.warning("認証コードを入力してください。", { position: 'top-right' })
       return
     }
     const { error } = await api.POST('/api/auth/password/verify', { body: { email: findEmail, code: findCode } })
     if (error) {
-      toast.error("認証に失敗しました。コードをご確認ください。")
+      toast.error("認証に失敗しました。コードをご確認ください。", { position: 'top-right' })
       return
     }
     setIsFindVerified(true)
-    toast.success("認証が完了しました。")
+    toast.success("認証が完了しました。", { position: 'top-right' })
   }
 
   // 비밀번호 재설정 제출 (완료 시 모달 닫기 및 메인 폼에 정보 채우기)
   const handleResetPasswordSubmit = async () => {
     if (!findEmail.trim() || !newPw.trim() || !newPwConfirm.trim()) {
-      toast.warning("すべての情報を入力してください。")
+      toast.warning("すべての情報を入力してください。", { position: 'top-right' })
       return
     }
     if (!isFindVerified) {
-      toast.warning("E-mail認証を完了してください。")
+      toast.warning("E-mail認証を完了してください。", { position: 'top-right' })
       return
     }
     if (newPw !== newPwConfirm) {
-      toast.error("パスワードが一致しません。")
+      toast.error("パスワードが一致しません。", { position: 'top-right' })
       return
     }
 
@@ -192,11 +192,11 @@ const LoginPage = () => {
     })
 
     if (error) {
-      toast.error("パスワードの変更に失敗しました。")
+      toast.error("パスワードの変更に失敗しました。", { position: 'top-right' })
       return
     }
 
-    toast.success("パスワードが変更されました。新しいパスワードでログインしてください。")
+    toast.success("パスワードが変更されました。新しいパスワードでログインしてください。", { position: 'top-right' })
 
     // 사용자가 바로 로그인할 수 있도록 메인 폼에 이메일/비밀번호 자동 입력
     setEmail(findEmail)
