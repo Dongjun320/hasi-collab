@@ -153,7 +153,11 @@ Spring의 경우 모듈별 pom.xml에 코드 생성 및 `src`에서의 인식을
 - `/service`: `/docs/openapi/openapi.yaml` 기반으로, `/service/target/generated-sources/openapi/src/`에 생성함. 해당 디렉터리 내:
   - `main/java/com.hasi.collab/api/`: 자동 생성된 Spring Controller 인터페이스 저장(Routing 레이어)
   - `main/java/com.hasi.collab/model/`: 자동 생성된 Data Transfer Objects(DTO) 저장(HTTP Request/Response 페이로드)
-- `/messenger`: `/docs/openapi/asyncapi.yaml` 기반으로, `/messenger/target/generated-sources/asyncapi/src` 예정
+- `/messenger`: `/docs/openapi/serverAPIs/serviceToMessenger/openapi.yaml`(Service → Messenger 서버 간 REST) 기반으로,
+  `/messenger/target/generated-sources/openapi/src/`에 생성함. 해당 디렉터리 내:
+  - `main/java/com.hasi.messenger/api/`: 태그별 Controller 인터페이스 (`InternalMessageApi` 등)
+  - `main/java/com.hasi.messenger/model/`: 자동 생성된 DTO
+  - WebSocket/STOMP 쪽 asyncapi 생성(`/messenger/target/generated-sources/asyncapi/src`)은 아직 예정입니다.
 
 자동생성된 코드는 `/src`에서 인식 되도록 했습니다. 사용하실 때는 사용할 Java 파일에서 `import` 하시면 됩니다.
 

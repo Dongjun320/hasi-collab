@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,4 +37,13 @@ public interface ChannelReadStateRepository extends JpaRepository<ChannelReadSta
     List<ChannelReadState> findByChannelId(Long channelId);
 
     Optional<ChannelReadState> findByChannelIdAndUserId(Long channelId, Long userId);
+
+    /**
+     * 채널이 삭제될 때 해당 채널의 읽음 커서를 지웁니다.
+     *
+     * @return 삭제된 record 수
+     */
+    @Modifying
+    @Query("DELETE FROM ChannelReadState s WHERE s.channelId IN :channelIds")
+    long deleteByChannelIdIn(@Param("channelIds") Collection<Long> channelIds);
 }

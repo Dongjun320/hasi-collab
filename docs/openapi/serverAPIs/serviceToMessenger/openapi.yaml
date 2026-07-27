@@ -4,7 +4,13 @@ info:
   description: Service에서 Messenger로의 Request입니다.
   version: 1.0.0
 paths:
-  /api/messages/{id}:
-    $ref: "./paths/MessageEndpoints.yaml#/paths/~1api~1messages~1{id}"
-  /api/messages/channels/{channelId}:
-    $ref: "./paths/MessageEndpoints.yaml#/paths/~1api~1messages~1channels~1{channelId}"
+  /messenger-api/internal/channel-messages:
+    $ref: "./paths/InternalMessageEndpoints.yaml#/paths/~1messenger-api~1internal~1channel-messages"
+
+components:
+  securitySchemes:
+    # 서버 간 호출용 공유 시크릿. Service와 Messenger의 app.internal.token이 같아야 합니다.
+    InternalToken:
+      type: apiKey
+      in: header
+      name: Internal-Token

@@ -1,0 +1,47 @@
+paths:
+  # 서버 간(Service -> Messenger) 호출 전용. 사용자 JWT가 아니라 X-Internal-Token으로 인증합니다.
+  /messenger-api/internal/channel-messages:
+    delete:
+      summary: "채널/워크스페이스 삭제 시 해당 채널들의 메시지·읽음상태 일괄 삭제"
+      description: >
+        Service가 채널 또는 워크스페이스를 삭제할 때 호출합니다.
+        Messenger는 workspaceId를 저장하지 않으므로, 워크스페이스 삭제 시에는
+        Service가 해당 워크스페이스의 채널 ID를 모두 넘겨줍니다.
+        이미 삭제된 채널을 다시 요청해도 0을 반환합니다(idempotent).
+      operationId: deleteChannelMessages
+      tags:
+        - InternalMessage
+      security:
+        - InternalToken: []
+      parameters:
+        # `?channelIds=12,13,14` 형태
+        - name: channelIds
+          in: query
+          required: true
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            items:
+              type: integer
+              format: int64
+      responses:
+        '200':
+          description: "삭제 완료. 삭제된 row 수 반환"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MessageResponseBodies.yaml#/components/schemas/ChannelMessagesDeleteResponse"
+        '400':
+          description: "channelIds가 비었거나 형식이 잘못됨"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MessageResponseBodies.yaml#/components/schemas/InternalErrorResponse"
+        '401':
+          description: "X-Internal-Token 누락 또는 불일치"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MessageResponseBodies.yaml#/components/schemas/InternalErrorResponse"

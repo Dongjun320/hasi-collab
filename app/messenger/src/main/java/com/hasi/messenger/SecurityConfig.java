@@ -1,5 +1,6 @@
 package com.hasi.messenger;
 
+import com.hasi.messenger.security.InternalTokenFilter;
 import com.hasi.messenger.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+    private final InternalTokenFilter internalTokenFilter;
 
     @Value("${app.cors.allowed-origins}")
     private List<String> allowedOrigins;
@@ -39,14 +41,15 @@ public class SecurityConfig {
     }
 
     // WebSocket handshake(/ws)는 STOMP CONNECT 프레임 단계(StompAuthChannelInterceptor)에서 인증하므로 permitAll.
-    // REST 히스토리 조회(/messenger-api/**)는 JwtFilter로 보호.
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/messenger-api/internal/**").hasRole("INTERNAL")
                         .requestMatchers("/messenger-api/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(internalTokenFilter, JwtFilter.class)
                 .csrf(AbstractHttpConfigurer::disable);
         return http.build();
     }
