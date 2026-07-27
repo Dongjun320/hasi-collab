@@ -272,17 +272,26 @@ public class BoardService {
         WorkspaceMember workspaceMember = requireWorkspaceMember(workspaceId, uid);
         Board board = requireBoard(workspaceId, boardId);
 
-        requireBoardManager(board, workspaceMember, uid);
+        // 생성 자체는 부서원이면 누구나 가능. 단, 관리자가 아니면 본인 담당으로만 만들 수 있음
+        requireBoardAccess(board, workspaceMember, uid);
 
-        // 담당자를 지정했다면 해당 보드의 부서원이어야 함
         Long assigneeId = request.getAssigneeId();
-        if (assigneeId != null && !boardMemberRepository.existsByBoardIdAndUserId(boardId, assigneeId)) {
+        if (!isBoardManager(board, workspaceMember, uid)) {
+            if (assigneeId != null && !assigneeId.equals(uid)) {
+                throw new ApiException(ErrorCode.AUTH_004);
+            }
+            assigneeId = uid;   // 부서원은 항상 본인 담당으로 생성
+        } else if (assigneeId != null && !boardMemberRepository.existsByBoardIdAndUserId(boardId, assigneeId)) {
+            // 관리자가 담당자를 지정했다면 해당 보드의 부서원이어야 함
             throw new ApiException(ErrorCode.BRD_002);
         }
 
         Task task = Task.builder()
                 .boardId(boardId)
                 .title(request.getTitle())
+                .content(request.getContent())
+                .startDate(request.getStartDate())
+                .dueDate(request.getDueDate())
                 .status(Task.Status.valueOf(request.getStatus().getValue()))
                 .assigneeId(assigneeId)
                 .priority(request.getPriority() != null
@@ -311,6 +320,9 @@ public class BoardService {
         if (!isBoardManager(board, workspaceMember, uid)) {
             boolean isAssignee = uid.equals(task.getAssigneeId());
             boolean statusOnly = request.getTitle() == null
+                    && request.getContent() == null
+                    && request.getStartDate() == null
+                    && request.getDueDate() == null
                     && request.getAssigneeId() == null
                     && request.getPriority() == null;
 
@@ -327,6 +339,9 @@ public class BoardService {
 
         task.update(
                 request.getTitle(),
+                request.getContent(),
+                request.getStartDate(),
+                request.getDueDate(),
                 request.getStatus() != null ? Task.Status.valueOf(request.getStatus().getValue()) : null,
                 assigneeId,
                 request.getPriority() != null ? Task.Priority.valueOf(request.getPriority().getValue()) : null
@@ -410,6 +425,9 @@ public class BoardService {
         data.setId(task.getId());
         data.setBoardId(task.getBoardId());
         data.setTitle(task.getTitle());
+        data.setContent(task.getContent());
+        data.setStartDate(task.getStartDate());
+        data.setDueDate(task.getDueDate());
         data.setStatus(TaskData.StatusEnum.fromValue(task.getStatus().name()));
         data.setAssigneeId(task.getAssigneeId());
         data.setPriority(task.getPriority() != null

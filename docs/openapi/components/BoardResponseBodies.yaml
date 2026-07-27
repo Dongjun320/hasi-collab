@@ -44,6 +44,14 @@ components:
           format: int64
         title:
           type: string
+        content:
+          type: string
+        startDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
         status:
           type: string
           enum: [TODO, IN_PROGRESS, REVIEW, DONE]
