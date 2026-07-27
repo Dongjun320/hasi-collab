@@ -71,6 +71,15 @@ paths:
   /api/workspaces/{workspaceId}/boards:
     $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards"
 
+  /api/workspaces/{workspaceId}/boards/{boardId}:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}"
+
+  /api/workspaces/{workspaceId}/boards/{boardId}/members:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1members"
+
+  /api/workspaces/{workspaceId}/boards/{boardId}/members/{userId}:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1members~1{userId}"
+
   /api/workspaces/{workspaceId}/boards/{boardId}/tasks:
     $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1tasks"
 

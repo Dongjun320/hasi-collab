@@ -7,7 +7,33 @@ components:
       properties:
         name:
           type: string
+          description: "보드 이름 (부서명 등)"
+        ownerId:
+          type: integer
+          format: int64
+          description: "부서장으로 지정할 멤버의 userId (role=ADMIN 이어야 함). 생략 시 생성자 본인"
+
+    BoardUpdateRequest:
+      type: object
+      description: "null이 아닌 필드만 갱신"
+      properties:
+        name:
+          type: string
           description: "보드 이름"
+        ownerId:
+          type: integer
+          format: int64
+          description: "부서장 교체 (워크스페이스 OWNER만 가능)"
+
+    BoardMemberAddRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: "보드에 추가할 워크스페이스 멤버의 userId"
 
     TaskCreateRequest:
       type: object
@@ -33,6 +59,9 @@ components:
 
     TaskUpdateRequest:
       type: object
+      description: |
+        null이 아닌 필드만 갱신.
+        담당자 본인은 status만 변경 가능(칸반 이동), 그 외 필드는 OWNER/부서장만 가능
       properties:
         title:
           type: string
