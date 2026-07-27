@@ -33,11 +33,6 @@ public class User {
     @Column(name = "avatar_url", length = 512)
     private String avatarUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status_code", nullable = false)
-    @Builder.Default
-    private StatusCode statusCode = StatusCode.ONLINE;
-
     @Column(name = "status_message", length = 100)
     private String statusMessage;
 
@@ -76,12 +71,4 @@ public class User {
         this.statusMessage = statusMessage;
     }
 
-    public void updateStatus(StatusCode statusCode) {
-        this.statusCode = statusCode;
-    }
-
-    // status_code ENUM 정의
-    public enum StatusCode {
-        ONLINE, AWAY, OFFLINE
-    }
 }

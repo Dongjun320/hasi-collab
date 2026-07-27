@@ -12,6 +12,12 @@ spring:
     password: hasi1234
     driver-class-name: org.postgresql.Driver
 
+  # ── Redis (presence 저장. service와 같은 인스턴스 공유) ────
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:8201}
+
   # ── JPA / Hibernate ───────────────────────────────────────
   jpa:
     hibernate:
@@ -29,6 +35,10 @@ app:
   # 서버 간(Service -> Messenger) 호출용 공유 시크릿. service 쪽과 값이 같아야 합니다.
   internal:
     token: ${INTERNAL_TOKEN:hasi-internal-dev-token}
+
+  presence:
+    ttl-seconds: ${PRESENCE_TTL_SECONDS:60}
+    refresh-interval-ms: ${PRESENCE_REFRESH_INTERVAL_MS:20000}
 
   broker:
     relay-host: localhost

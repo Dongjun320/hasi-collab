@@ -60,7 +60,6 @@ public class AuthService {
                 .isEmailVerified(true)
                 .isActive(true)
                 .isAdmin(false)
-                .statusCode(User.StatusCode.ONLINE)
                 .build();
 
         User savedUser = userRepository.save(user);

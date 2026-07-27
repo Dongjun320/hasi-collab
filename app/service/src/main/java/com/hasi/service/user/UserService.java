@@ -72,17 +72,4 @@ public class UserService {
 
         user.updateStatusMessage(statusMessage);
     }
-
-    @Transactional
-    public void updateStatus(String statusCode) {
-        Long uid = getCurrentUserId();
-        User user = userRepository.findById(uid)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
-
-        try {
-            user.updateStatus(User.StatusCode.valueOf(statusCode));
-        } catch (IllegalArgumentException e) {
-            throw new ApiException(ErrorCode.VALID_001);
-        }
-    }
 }
