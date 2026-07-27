@@ -9,7 +9,7 @@ export interface WorkspaceMember {
   userId: number
   nickname: string
   role: 'OWNER' | 'ADMIN' | 'MEMBER'
-  statusCode: 'ONLINE' | 'AWAY' | 'OFFLINE'   // presence 3단계 (팀 합의)
+  // 온라인 여부는 이 store가 아니라 presenceStore(usePresenceStore.isOnline)로 관리
 }
 
 interface MemberState {
