@@ -180,9 +180,6 @@ export function WorkspaceLayout() {
     { icon: Calendar, label: "달력",   to: "/workspace/calendar" },
     { icon: User,     label: "내정보", to: "/workspace/profile" },
     { icon: Phone,    label: "전화",   to: "#" },
-    { icon: LayoutGrid, label: "칸반", to: "/workspace/kanban"},
-    { icon: Calendar, label: "캘린더", to: "/workspace/calendar"},
-    { icon: MessageSquare, label: "스레드", to: "/workspace/threads"},
   ];
 
   const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0)
