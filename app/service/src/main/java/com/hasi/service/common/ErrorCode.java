@@ -50,6 +50,13 @@ public enum ErrorCode {
     MBR_006(HttpStatus.NOT_FOUND, "MBR_006", "초대를 찾을 수 없습니다"),
     MBR_007(HttpStatus.CONFLICT, "MBR_007", "초대 대기 중인 사용자입니다"),
 
+    // BOARD
+    BRD_001(HttpStatus.NOT_FOUND, "BRD_001", "보드를 찾을 수 없습니다"),
+    BRD_002(HttpStatus.BAD_REQUEST, "BRD_002", "보드 입력값이 유효하지 않습니다"),
+    BRD_003(HttpStatus.CONFLICT, "BRD_003", "이미 보드에 속한 멤버입니다"),
+    BRD_004(HttpStatus.NOT_FOUND, "BRD_004", "태스크를 찾을 수 없습니다"),
+    BRD_005(HttpStatus.NOT_FOUND, "BRD_005", "보드 멤버를 찾을 수 없습니다"),
+
     // FRIEND
     FRIEND_001(HttpStatus.BAD_REQUEST, "FRIEND_001", "자기 자신에게 친구 요청을 보낼 수 없습니다"),
     FRIEND_002(HttpStatus.CONFLICT,    "FRIEND_002", "이미 요청했거나 친구인 사용자입니다"),

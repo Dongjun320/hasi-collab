@@ -10,5 +10,6 @@ docker exec -i hasi-postgres psql -U hasi -d collaboration_db < seed_test_data.s
   && echo "✅ 테스트 데이터 주입 완료" \
   && echo "   계정: 1@1.com ~ 3@3.com" \
   && echo "   비번: 12345678 (전부 동일)" \
-  && echo "   u1 = test_workspace 소유자 / u2,3 = 멤버" \
+  && echo "   u1 = OWNER / u2 = ADMIN(부서장) / u3 = MEMBER" \
+  && echo "   보드: design_board(부서장 u2, 부서원 u2·u3) / backend_board(부서장 u1)" \
   || echo "❌ 실패 — docker 가 켜져 있는지(docker compose up -d) 확인하세요"
