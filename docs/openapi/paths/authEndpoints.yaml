@@ -128,6 +128,27 @@ paths:
           application/json:
             schema:
               $ref: "../components/AuthRequestBodies.yaml#/components/schemas/LogOutRequest"
+  /api/auth/password/change:
+    patch:
+      summary: "로그인 상태에서 비밀번호 변경"
+      tags:
+        - Auth
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../components/AuthRequestBodies.yaml#/components/schemas/PasswordChangeRequest"
+      responses:
+        '200':
+          description: "변경 성공"
+        '401':
+          description: "현재 비밀번호 불일치"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
   /api/auth/password/reset:
     post:
       summary: "비밀번호 재설정 — 이메일 인증(email/verify) 완료 후 새 비밀번호로 교체"

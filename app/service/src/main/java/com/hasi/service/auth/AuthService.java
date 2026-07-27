@@ -146,7 +146,7 @@ public class AuthService {
         return String.format("%06d", new Random().nextInt(999999));
     }
 
-    // emailSend() - 인증코드 재발송
+    // emailSend() - 인증코드 발송
     public void emailSend(EmailSendRequest request) {
         String code = generateCode();
 
@@ -159,7 +159,20 @@ public class AuthService {
         javaMailSender.send(message);
     }
 
-    // 비밀번호 재설정용 인증코드 발송
+    // 비밀번호 변경
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new ApiException(ErrorCode.AUTH_001);
+        }
+
+        user.updatePassword(passwordEncoder.encode(newPassword));
+    }
+
+    // 비밀번호 찾기용 인증코드 발송
     public void emailSendForPasswordReset(EmailSendRequest request) {
         String code = generateCode();
         redisTemplate.opsForValue()
