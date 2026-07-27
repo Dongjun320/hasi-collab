@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Hash, Plus, X,
   PanelLeftClose, PanelLeftOpen, Settings, UserPlus,
-  ChevronRight, ChevronDown,
+  ChevronRight, ChevronDown, LayoutGrid, Calendar,
 } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
@@ -516,6 +516,26 @@ export function WorkspaceSidebar({
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">
+              {/* ── 기능 (고정: 삭제 불가, 이름변경은 추후) ── */}
+              <div className="px-1 mb-1.5">
+                  <span className="text-white/40 text-xs font-semibold uppercase tracking-wide">기능</span>
+              </div>
+              <div className="space-y-0.5 mb-3">
+                  <button
+                      onClick={() => navigate('/workspace/kanban')}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-white/70 hover:bg-white/10 hover:text-white transition-all text-sm"
+                  >
+                      <LayoutGrid size={14} className="text-[#5CC87A] flex-shrink-0" />
+                      <span className="truncate">칸반</span>
+                  </button>
+                  <button
+                      onClick={() => navigate('/workspace/calendar')}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-white/70 hover:bg-white/10 hover:text-white transition-all text-sm"
+                  >
+                      <Calendar size={14} className="text-[#5CC87A] flex-shrink-0" />
+                      <span className="truncate">캘린더</span>
+                  </button>
+              </div>
             <div className="flex items-center justify-between px-1 mb-1.5">
               <span className="text-white/40 text-xs font-semibold uppercase tracking-wide">채널</span>
               <Tooltip label="새 채널" side="bottom" align="end">

@@ -13,7 +13,7 @@ export function NotificationSidebar() {
     const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
 
     useEffect(() => {
-        if (activeRightPanel !== 'notification') return;
+        // 마운트 시에도 로드 → 패널 안 열어도 종 뱃지에 반영
         (async () => {
             try {
                 const { data, error } = await api.GET('/api/invitations/received');
