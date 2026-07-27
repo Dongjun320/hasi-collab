@@ -37,6 +37,17 @@ export function fetchChannelReadStates(
   return getJson<ChannelReadState[]>(`/channels/${channelId}/read-states`, token);
 }
 
+// 현재 온라인 상태 가져옴
+export function fetchOnlineUsers(
+  userIds: (number | string)[],
+  token: string
+): Promise<{ onlineUserIds: string[] }> {
+  if (userIds.length === 0) {
+    return Promise.resolve({ onlineUserIds: [] });
+  }
+  return getJson<{ onlineUserIds: string[] }>(`/presence?userIds=${userIds.join(',')}`, token);
+}
+
 export function fetchDmHistory(
   peerId: number | string,
   token: string
