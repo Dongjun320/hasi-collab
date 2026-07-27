@@ -25,6 +25,15 @@ components:
           enum: [ADMIN, MEMBER]
           description: "변경할 멤버 역할"
 
+    ChannelMemberPatchRequest:
+      type: object
+      description: "채널 멤버 부분 수정 시 요청"
+      properties:
+        role:
+          type: string
+          enum: [ADMIN, MEMBER]
+          description: "변경할 멤버 역할"
+
     MemberInvitePatchRequest:
       type: object
       description: "초대 수락/거절/취소 시 요청"

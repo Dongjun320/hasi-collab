@@ -11,9 +11,6 @@ components:
         role:
           type: string
           enum: [OWNER, ADMIN, MEMBER]
-        statusCode:
-          type: string
-          enum: [ONLINE, AWAY, OFFLINE]   # presence 3단계 (팀 합의)
 
     ChannelMemberData:
       type: object
@@ -121,6 +118,19 @@ components:
         data:
           allOf:
             - $ref: "#/components/schemas/WorkspaceMemberData"
+        error:
+          nullable: true
+          example: null
+
+    ChannelMemberPatchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: "#/components/schemas/ChannelMemberData"
         error:
           nullable: true
           example: null

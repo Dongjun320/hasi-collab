@@ -169,7 +169,7 @@ paths:
               $ref: "../components/MemberRequestBodies.yaml#/components/schemas/WorkspaceMemberPatchRequest"
       responses:
         '200':
-          description: "멤버 일부 수정 성공"
+          description: "워크스페이스 멤버 일부 수정 성공"
           content:
             application/json:
               schema:
@@ -382,6 +382,72 @@ paths:
                 $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
 
   /api/workspaces/{workspaceId}/channels/{channelId}/members/{userId}:
+    patch:
+      summary: "채널 멤버 일부 수정"
+      tags:
+        - WorkspaceMember
+      operationId: patchChannelMember
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/MemberRequestBodies.yaml#/components/schemas/ChannelMemberPatchRequest"
+      responses:
+        '200':
+          description: "채널 멤버 일부 수정 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/ChannelMemberPatchResponse"
+        '400':
+          description: "Bad Request, 유효하지 않은 값"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR004Error"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 수정 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 멤버가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
     delete:
       summary: "채널 멤버 추방"
       tags:

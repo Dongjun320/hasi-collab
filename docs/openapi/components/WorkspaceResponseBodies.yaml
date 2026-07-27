@@ -25,6 +25,11 @@ components:
           type: string
           nullable: true
           description: "워크스페이스 설명"
+        defaultChannelId:
+          type: integer
+          format: int64
+          nullable: true
+          description: "워크스페이스 대표(기본) 채널"
         createdAt:
           type: string
           format: date-time
