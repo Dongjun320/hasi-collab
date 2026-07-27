@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useAuthStore } from "../store/authStore";
+import { connectStomp } from "../api/stomp";
 
 const OAuth2RedirectPage = () => {
     const navigate = useNavigate();
@@ -52,6 +53,7 @@ const OAuth2RedirectPage = () => {
                     return;
                 }
                 setAuth(data as any, token, refreshToken);
+                connectStomp(token);   // 소셜 로그인 즉시 STOMP 연결 = online
                 navigate("/WorkspaceHome", { replace: true });
             } catch (e) {
                 console.error("소셜 로그인 처리 실패:", e);

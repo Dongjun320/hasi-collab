@@ -8,6 +8,7 @@ import LoadingPopup from '../components/LoadingPopup'
 import { api } from '../api/client'
 import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
+import { connectStomp } from '../api/stomp'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -67,6 +68,7 @@ const LoginPage = () => {
     }
     if (data && data.accessToken) {
       setAuth(data.user as any, data.accessToken, data.refreshToken)
+      connectStomp(data.accessToken)   // 로그인 즉시 STOMP 연결 = online
       toast.success("ログインが完了しました。")
       setTimeout(() => navigate('/WorkspaceHome'), 1200)
     }
