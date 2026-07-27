@@ -7,7 +7,7 @@ import hasiImg from './Hasi.png'
 import LoadingPopup from '../components/LoadingPopup'
 import { api } from '../api/client'
 import { useAuthStore } from '../store/authStore'
-import { toast } from '../store/toastStore' // 전역 toast 임포트
+import { toast } from '../store/toastStore'
 
 const LoginPage = () => {
   const navigate = useNavigate()
