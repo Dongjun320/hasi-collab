@@ -2,7 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Settings, Calendar, LayoutGrid,
   Plus, Bell, User, Grid3x3, Search,
-  Phone, MessageSquare, LogOut, Users, Home,
+  Phone, MessageSquare,  Users, Home,
   AlertCircle, X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -180,7 +180,6 @@ export function WorkspaceLayout() {
     { icon: Calendar, label: "달력",   to: "/workspace/calendar" },
     { icon: User,     label: "내정보", to: "/workspace/profile" },
     { icon: Phone,    label: "전화",   to: "#" },
-    { icon: LogOut,   label: "로그아웃", to: "/" },
     { icon: LayoutGrid, label: "칸반", to: "/workspace/kanban"},
     { icon: Calendar, label: "캘린더", to: "/workspace/calendar"},
     { icon: MessageSquare, label: "스레드", to: "/workspace/threads"},

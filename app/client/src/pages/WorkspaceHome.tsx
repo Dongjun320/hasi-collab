@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from '../store/authStore';
 import { api } from '../api/client';
+import { disconnectStomp } from '../api/stomp';
 import {
   Users, Bell, Settings, Globe,
   ChevronLeft, ChevronRight, MessageCircle, LogOut, Calendar,
@@ -24,6 +25,12 @@ export function WorkspaceHome() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const { refreshToken, clear, user } = useAuthStore();
   const handleLogout = async () => {
+    // 로그아웃 시 상태를 OFFLINE로 (status는 STOMP 자동감지가 아니라 수동 API)
+    try {
+      await api.PATCH('/api/users/me/status', { body: { statusCode: 'OFFLINE' } });
+    } catch (e) {
+      console.error("상태 변경 실패:", e);
+    }
     try {
       if (refreshToken) {
         await api.POST('/api/auth/logout', {body: {refreshToken}})
@@ -31,6 +38,7 @@ export function WorkspaceHome() {
     } catch (error) {
       console.error("로그아웃 실패:", error);
     } finally {
+      disconnectStomp();   // STOMP 연결 종료
       clear();
       navigate("/");
     }
