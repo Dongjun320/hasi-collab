@@ -6,9 +6,11 @@ import Modal from "./Modal";
 import { Tooltip } from "./Tooltip";
 import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
 import { api } from "../api/client";
+import { useNavigate } from "react-router-dom";
 
 export function FriendSidebar() {
     const { activeRightPanel, closeRightPanel } = useUiStore();
+    const navigate = useNavigate();
     const { friends, setFriends, removeFriend, setMemo } = useFriendStore();
 
     // 지금 ⋯ 메뉴가 열려있는 친구 id
@@ -49,7 +51,7 @@ export function FriendSidebar() {
         })();
     }, [activeRightPanel]);
 
-    if (activeRightPanel !== 'friend') return null;
+    const open = activeRightPanel === 'friend';
 
     const onlineCount = friends.filter((f) => f.status !== "OFFLINE").length;
     const memoFriend = friends.find((f) => f.id === memoTarget);
@@ -104,7 +106,8 @@ export function FriendSidebar() {
     };
 
     return (
-        <div className="app-chrome w-64 h-full bg-white border-l border-[#e8f8ed] flex flex-col flex-shrink-0">
+        <div className={`h-full overflow-hidden transition-all duration-200 ease-out flex-shrink-0 ${open ? "w-64" : "w-0"}`}>
+        <div className="app-chrome w-64 h-full bg-white border-l border-[#e8f8ed] flex flex-col">
             {/* 헤더 */}
             <div className="h-14 px-4 flex items-center justify-between border-b border-[#e8f8ed] flex-shrink-0">
                 <h2 className="font-bold text-[#2C3E50] text-sm">
@@ -152,7 +155,10 @@ export function FriendSidebar() {
                         </div>
 
                         {/* 이름 + 상태 (여기가 DM 열기 영역) */}
-                        <button className="flex-1 min-w-0 text-left">
+                        <button
+                            onClick={() => { navigate(`/workspace/dm/${f.id}`); closeRightPanel(); }}
+                            className="flex-1 min-w-0 text-left"
+                        >
                             <p className="text-sm font-semibold text-[#2C3E50] truncate">{f.name}</p>
                             <p className="text-[11px] text-gray-400 truncate">
                                 {f.memo ?? f.statusMessage ?? friendStatusOf(f.status).label}
@@ -276,6 +282,7 @@ export function FriendSidebar() {
                     </button>
                 </div>
             </Modal>
+        </div>
         </div>
     );
 }

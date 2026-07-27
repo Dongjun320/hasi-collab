@@ -17,12 +17,6 @@ import { Tooltip } from "../components/Tooltip";
 import { api } from "../api/client";
 
 
-const TOOLS = [
-  { path: "/workspace/kanban",   icon: LayoutGrid,    label: "칸반" },
-  { path: "/workspace/calendar", icon: Calendar,      label: "캘린더" },
-  { path: "/workspace/threads",  icon: MessageSquare, label: "스레드" },
-];
-
 // 서버는 실패 시 { success:false, error:{ code, message } }를 내려줌 (한국어 메시지 포함).
 // openapi-fetch의 error는 타입이 넓어 any 경유가 불가피 — 메시지 추출을 한 곳으로 모음.
 const errorMessageOf = (error: unknown, fallback: string) =>
@@ -38,11 +32,6 @@ export function WorkspaceLayout() {
   const { activeRightPanel, toggleRightPanel } = useUiStore();
   const channels = currentWorkspace ? channelsByWorkspace[currentWorkspace.id] ?? [] : [];
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
-
-  const isActive = (path: string) =>
-    path !== "/workspace"
-      ? location.pathname.startsWith(path)
-      : location.pathname === "/workspace";
 
   const isInChannel = location.pathname.startsWith("/workspace/channels");
 
@@ -192,6 +181,9 @@ export function WorkspaceLayout() {
     { icon: User,     label: "내정보", to: "/workspace/profile" },
     { icon: Phone,    label: "전화",   to: "#" },
     { icon: LogOut,   label: "로그아웃", to: "/" },
+    { icon: LayoutGrid, label: "칸반", to: "/workspace/kanban"},
+    { icon: Calendar, label: "캘린더", to: "/workspace/calendar"},
+    { icon: MessageSquare, label: "스레드", to: "/workspace/threads"},
   ];
 
   const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0)
@@ -293,7 +285,7 @@ export function WorkspaceLayout() {
           )}
         </div>
 
-        {/* 퀵 메뉴 팝업 */}
+        {/* 빠른 메뉴 팝업 */}
         {isQuickMenuOpen && (
           <>
             <div className="fixed bottom-20 right-4 z-50 bg-white rounded-2xl shadow-2xl border border-[#d4f4dd] p-4">
@@ -343,29 +335,6 @@ export function WorkspaceLayout() {
         </Tooltip>
 
         <div className="h-8 w-[2px] bg-white/20 rounded-full mx-2 flex-shrink-0" />
-
-          {/* 도구들 */}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {TOOLS.map((tool) => {
-              const Icon = tool.icon;
-              const active = isActive(tool.path);
-              return (
-                <Link
-                  key={tool.path}
-                  to={tool.path}
-                  title={tool.label}
-                  className={`flex items-center gap-1.5 px-3 h-10 rounded-xl text-sm font-medium transition-all flex-shrink-0
-                    ${active
-                      ? "bg-[#5CC87A] text-white shadow-md"
-                      : "text-white/60 hover:bg-white/10 hover:text-white"
-                    }`}
-                >
-                  <Icon size={15} />
-                  <span>{tool.label}</span>
-                </Link>
-              );
-            })}
-          </div>
 
           {/* 스페이서 */}
           <div className="flex-1" />

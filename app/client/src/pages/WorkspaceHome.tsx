@@ -288,7 +288,7 @@ export function WorkspaceHome() {
         </div>
 
         {/* ── 오른쪽 rail 슬롯: activeRightPanel에 따라 표시 (null이면 아무것도 안 뜸) ── */}
-        {activeRightPanel === 'friend' && <FriendSidebar />}
+        <FriendSidebar />
         <NotificationSidebar />
         {activeRightPanel === 'calendar' && (
         <div className="w-64 bg-white border-l border-[#e8f8ed] p-4 overflow-y-auto flex-shrink-0">

@@ -93,12 +93,13 @@ export function NotificationSidebar() {
         }
     };
 
-    if (activeRightPanel !== 'notification') return null;
+    const open = activeRightPanel === 'notification';
 
     const unreadCount = notifications.filter((n) => n.unread).length;
 
     return (
-        <div className="app-chrome w-64 h-full bg-white border-l border-[#e8f8ed] flex flex-col flex-shrink-0">
+        <div className={`h-full overflow-hidden transition-all duration-200 ease-out flex-shrink-0 ${open ? "w-64" : "w-0"}`}>
+        <div className="app-chrome w-64 h-full bg-white border-l border-[#e8f8ed] flex flex-col">
             {/* 헤더 */}
             <div className="h-14 px-4 flex items-center justify-between border-b border-[#e8f8ed] flex-shrink-0">
                 <h2 className="font-bold text-[#2C3E50] text-sm">
@@ -169,6 +170,7 @@ export function NotificationSidebar() {
                     </button>
                 </div>
             )}
+        </div>
         </div>
     );
 }
