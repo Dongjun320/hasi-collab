@@ -64,7 +64,7 @@ spring:
           twitter:
             client-id: ${TWITTER_CLIENT_ID}
             client-secret: ${TWITTER_CLIENT_SECRET}
-            client-authentication-method: none
+            client-authentication-method: client_secret_basic
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/twitter"
             scope: tweet.read, users.read
