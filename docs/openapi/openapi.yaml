@@ -23,6 +23,9 @@ paths:
   /api/auth/password/verify:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1password~1verify"
 
+  /api/auth/password/change:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1password~1change"
+
   /api/auth/login:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1login"
 
@@ -122,17 +125,18 @@ paths:
   /api/users/me:
     $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me"
 
+  /api/users/me/nickname:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me~1nickname"
+
+  /api/users/me/status-message:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me~1status-message"
+
   /api/auth/social:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1social"
 
   /api/auth/social/link:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1social~1link"
 
-  /api/users/me/nickname:
-    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me~1nickname"
-
-  /api/users/me/status-message:
-    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me~1status-message"
 
 
 

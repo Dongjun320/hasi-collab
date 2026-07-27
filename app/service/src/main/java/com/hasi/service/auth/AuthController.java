@@ -83,6 +83,15 @@ public class AuthController implements AuthApi {
         return ResponseEntity.ok(authService.extendSession(userId));
     }
 
+    @PatchMapping("/password/change")
+    public ResponseEntity<Void> changePassword(
+            Authentication authentication,
+            @Valid @RequestBody PasswordChangeRequest request) {
+        Long userId = Long.valueOf((String) authentication.getPrincipal());
+        authService.changePassword(userId, request.getCurrentPassword(), request.getNewPassword());
+        return ResponseEntity.ok().build();
+    }
+
     // 비밀번호 찾기 이메일 인증코드 확인 및 패스워드 변경
     @PostMapping("/password/reset")
     public ResponseEntity<Void> resetPassword(
