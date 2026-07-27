@@ -6,8 +6,10 @@ import com.hasi.collab.model.NicknameUpdateRequest;
 import com.hasi.collab.model.StatusMessageUpdateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/users")
@@ -39,5 +41,10 @@ public class UserController {
             @Valid @RequestBody StatusMessageUpdateRequest request) {
         userService.updateStatusMessage(request.getStatusMessage().orElse(null));
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> updateAvatar(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(userService.updateAvatar(file));
     }
 }
