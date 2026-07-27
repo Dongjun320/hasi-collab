@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZoneOffset;
 
@@ -47,5 +48,41 @@ public class UserService {
                 .nickname(user.getNickname())
                 .createdAt(user.getCreatedAt().atOffset(ZoneOffset.UTC))
                 .updatedAt(user.getUpdatedAt().atOffset(ZoneOffset.UTC));
+    }
+
+    @Transactional
+    public void updateNickname(String nickname){
+        Long uid = getCurrentUserId();
+        User user = userRepository.findById(uid)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        if (!user.getNickname().equals(nickname)
+                && userRepository.findByNickname(nickname).isPresent()) {
+            throw new ApiException(ErrorCode.USER_002);
+        }
+
+        user.updateNickname(nickname);
+    }
+
+    @Transactional
+    public void updateStatusMessage(String statusMessage) {
+        Long uid = getCurrentUserId();
+        User user = userRepository.findById(uid)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        user.updateStatusMessage(statusMessage);
+    }
+
+    @Transactional
+    public void updateStatus(String statusCode) {
+        Long uid = getCurrentUserId();
+        User user = userRepository.findById(uid)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        try {
+            user.updateStatus(User.StatusCode.valueOf(statusCode));
+        } catch (IllegalArgumentException e) {
+            throw new ApiException(ErrorCode.VALID_001);
+        }
     }
 }

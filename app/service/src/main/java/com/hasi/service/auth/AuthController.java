@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -72,6 +73,14 @@ public class AuthController implements AuthApi {
             @Valid @RequestBody LogOutRequest request) {
         authService.logout(request);
         return ResponseEntity.ok().build();
+    }
+
+    // 로그인
+    @PostMapping("/extend")
+    public ResponseEntity<LogInResponse> extendSession(
+            Authentication authentication) {
+        Long userId = Long.valueOf((String) authentication.getPrincipal());
+        return ResponseEntity.ok(authService.extendSession(userId));
     }
 
     // 비밀번호 찾기 이메일 인증코드 확인 및 패스워드 변경
