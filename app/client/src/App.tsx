@@ -1,14 +1,22 @@
 import { RouterProvider } from 'react-router-dom'
 import { router } from "./routes"
-import { Toaster } from "./components/Toaster"
+import Toast from "./components/Toast"
+import { useToastStore } from "./store/toastStore"
 import './styles/index.css'
 
 
 function App() {
+  const { current, hide } = useToastStore()
+
   return (
     <>
       <RouterProvider router={router} />
-      <Toaster />
+      <Toast
+        isOpen={!!current}
+        message={current?.message ?? ''}
+        type={current?.type}
+        onClose={hide}
+      />
     </>
   )
 }
