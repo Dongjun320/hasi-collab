@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import Button from '../components/Button'
 import Input from '../components/Input'
 import Modal from '../components/Modal'
-import Toast from '../components/Toast'
 import hasiImg from './Hasi.png'
 import LoadingPopup from '../components/LoadingPopup'
 import { api } from '../api/client'
 import { useAuthStore } from '../store/authStore'
+import { toast } from '../store/toastStore' // 전역 toast 임포트
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -37,16 +37,7 @@ const LoginPage = () => {
   const [newPw, setNewPw] = useState('')
   const [newPwConfirm, setNewPwConfirm] = useState('')
 
-  const [toast, setToast] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' | 'warning' }>({
-    open: false,
-    message: '',
-    type: 'info',
-  })
-
   // ── 2. 헬퍼 함수 (Logic) ──
-  const triggerToast = (message: string, type: 'success' | 'error' | 'info' | 'warning') => {
-    setToast({ open: true, message, type })
-  }
   // 엔터키 감지 핸들러 추가
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter') {
@@ -58,7 +49,7 @@ const LoginPage = () => {
   const handleLogin = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      triggerToast("有効なE-mail形式で入力してください。", "error")
+      toast.error("有効なE-mail形式で入力してください。")
       return
     }
 
@@ -68,15 +59,15 @@ const LoginPage = () => {
       setLoadingOpen(false)
       const errorCode = (error as any)?.error?.code
       if (errorCode === 'AUTH_001') {
-        triggerToast("アカウント情報が一致しません。", "error")
+        toast.error("アカウント情報が一致しません。")
       } else {
-        triggerToast("ログインに失敗しました。メールとパスワードをご確認ください。", "error")
+        toast.error("ログインに失敗しました。メールとパスワードをご確認ください。")
       }
       return
     }
     if (data && data.accessToken) {
       setAuth(data.user as any, data.accessToken, data.refreshToken)
-      triggerToast("ログインが完了しました。", "success")
+      toast.success("ログインが完了しました。")
       setTimeout(() => navigate('/WorkspaceHome'), 1200)
     }
   }
@@ -84,45 +75,45 @@ const LoginPage = () => {
   // 회원가입 이메일 발송
   const handleSendEmail = async () => {
     if (!signUpEmail.trim()) {
-      triggerToast("E-mailを入力してください。", "warning")
+      toast.warning("E-mailを入力してください。")
       return
     }
     const { error } = await api.POST('/api/auth/email/send', { body: { email: signUpEmail } })
     if (error) {
-      triggerToast("メール送信に失敗しました。", "error")
+      toast.error("メール送信に失敗しました。")
       return
     }
     setIsCodeSent(true)
-    triggerToast("メールの送信が完了しました。", "success")
+    toast.success("メールの送信が完了しました。")
   }
 
   // 회원가입 인증코드 확인
   const handleVerifyCode = async () => {
     if (!signUpCode.trim()) {
-      triggerToast("認証コードを入力してください。", "warning")
+      toast.warning("認証コードを入力してください。")
       return
     }
     const { error } = await api.POST('/api/auth/email/verify', { body: { email: signUpEmail, code: signUpCode } })
     if (error) {
-      triggerToast("認証に失敗しました。コードをご確認ください。", "error")
+      toast.error("認証に失敗しました。コードをご確認ください。")
       return
     }
     setIsVerified(true)
-    triggerToast("認証が完了しました。", "success")
+    toast.success("認証が完了しました。")
   }
 
   // 회원가입 제출 (완료 시 모달 닫기 및 메인 폼에 정보 채우기)
   const handleSignUpSubmit = async () => {
     if (!signUpEmail.trim() || !signUpPw.trim() || !signUpPwConfirm.trim()) {
-      triggerToast("すべての情報を入力してください。", "warning")
+      toast.warning("すべての情報を入力してください。")
       return
     }
     if (!isVerified) {
-      triggerToast("E-mail認証を完了してください。", "warning")
+      toast.warning("E-mail認証を完了してください。")
       return
     }
     if (signUpPw !== signUpPwConfirm) {
-      triggerToast("パスワードが一致しません。", "error")
+      toast.error("パスワードが一致しません。")
       return
     }
 
@@ -131,11 +122,11 @@ const LoginPage = () => {
     })
 
     if (error) {
-      triggerToast("会員登録に失敗しました。", "error")
+      toast.error("会員登録に失敗しました。")
       return
     }
 
-    triggerToast("会員登録が完了しました。ログインしてください。", "success")
+    toast.success("会員登録が完了しました。ログインしてください。")
 
     // 사용자가 바로 로그인할 수 있도록 메인 폼에 이메일/비밀번호 자동 입력
     setEmail(signUpEmail)
@@ -152,47 +143,47 @@ const LoginPage = () => {
   // 비밀번호 재설정 이메일 발송
   const handleFindSendEmail = async () => {
     if (!findEmail.trim()) {
-      triggerToast("E-mailを入力してください。", "warning")
+      toast.warning("E-mailを入力してください。")
       return
     }
     const { error } = await api.POST('/api/auth/password/send', {
       body: { email: findEmail } as any
     })
     if (error) {
-      triggerToast("メール送信に失敗しました。", "error")
+      toast.error("メール送信に失敗しました。")
       return
     }
     setIsFindCodeSent(true)
-    triggerToast("メールの送信が完了しました。", "success")
+    toast.success("メールの送信が完了しました。")
   }
 
   // 비밀번호 재설정 코드 확인
   const handleFindVerifyCode = async () => {
     if (!findCode.trim()) {
-      triggerToast("認証コードを入力してください。", "warning")
+      toast.warning("認証コードを入力してください。")
       return
     }
     const { error } = await api.POST('/api/auth/password/verify', { body: { email: findEmail, code: findCode } })
     if (error) {
-      triggerToast("認証に失敗しました。コードをご確認ください。", "error")
+      toast.error("認証に失敗しました。コードをご確認ください。")
       return
     }
     setIsFindVerified(true)
-    triggerToast("認証が完了しました。", "success")
+    toast.success("認証が完了しました。")
   }
 
   // 비밀번호 재설정 제출 (완료 시 모달 닫기 및 메인 폼에 정보 채우기)
   const handleResetPasswordSubmit = async () => {
     if (!findEmail.trim() || !newPw.trim() || !newPwConfirm.trim()) {
-      triggerToast("すべての情報を入力してください。", "warning")
+      toast.warning("すべての情報を入力してください。")
       return
     }
     if (!isFindVerified) {
-      triggerToast("E-mail認証を完了してください。", "warning")
+      toast.warning("E-mail認証を完了してください。")
       return
     }
     if (newPw !== newPwConfirm) {
-      triggerToast("パスワードが一致しません。", "error")
+      toast.error("パスワードが一致しません。")
       return
     }
 
@@ -201,11 +192,11 @@ const LoginPage = () => {
     })
 
     if (error) {
-      triggerToast("パスワードの変更に失敗しました。", "error")
+      toast.error("パスワードの変更に失敗しました。")
       return
     }
 
-    triggerToast("パスワードが変更されました。新しいパスワードでログインしてください。", "success")
+    toast.success("パスワードが変更されました。新しいパスワードでログインしてください。")
 
     // 사용자가 바로 로그인할 수 있도록 메인 폼에 이메일/비밀번호 자동 입력
     setEmail(findEmail)
@@ -461,14 +452,6 @@ const LoginPage = () => {
 
         {/* ── 4. 글로벌 알림 영역 ── */}
         {loadingOpen && <LoadingPopup onFinish={() => navigate('/WorkspaceHome')} />}
-        {toast.open && (
-            <Toast
-                isOpen={toast.open}
-                type={toast.type}
-                message={toast.message}
-                onClose={() => setToast((prev) => ({ ...prev, open: false }))}
-            />
-        )}
       </div>
   )
 }
