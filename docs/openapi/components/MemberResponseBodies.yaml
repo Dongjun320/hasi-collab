@@ -13,7 +13,7 @@ components:
           enum: [OWNER, ADMIN, MEMBER]
         statusCode:
           type: string
-          enum: [ONLINE, AWAY, BUSY, OFFLINE, OUTSIDE, REMOTE]
+          enum: [ONLINE, AWAY, OFFLINE]   # presence 3단계 (팀 합의)
 
     ChannelMemberData:
       type: object

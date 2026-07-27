@@ -9,7 +9,7 @@ export interface WorkspaceMember {
   userId: number
   nickname: string
   role: 'OWNER' | 'ADMIN' | 'MEMBER'
-  statusCode: 'ONLINE' | 'AWAY' | 'BUSY' | 'OFFLINE' | 'OUTSIDE' | 'REMOTE'
+  statusCode: 'ONLINE' | 'AWAY' | 'OFFLINE'   // presence 3단계 (팀 합의)
 }
 
 interface MemberState {
