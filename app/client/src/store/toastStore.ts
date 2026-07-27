@@ -1,35 +1,25 @@
-// PM 담당 — 전역 토스트
-// 컴포넌트 안:  const { toasts } = useToastStore()  (보통 <Toaster/>만 씀)
-// 어디서든:     import { toast } from '../store/toastStore'
-//               toast.success('삭제되었습니다')
+// PM 담당 — 전역 토스트 (한 번에 1개 표시)
+// 어디서든:  import { toast } from '../store/toastStore'
+//            toast.success('삭제되었습니다')
 //
-// 각 화면이 각자 들고 있던 toast state + triggerToast + <Toast/> 를
-// 이 store 하나로 대체합니다. #27(알림 토스트 전면 도입)의 선행 작업.
+// Toast.tsx가 이미 "화면에 1개 고정(fixed)"으로 뜨는 컴포넌트라,
+// 여러 개 쌓는 Toaster 없이 store로 "지금 뜰 토스트 1개"만 관리합니다.
+// App.tsx에서 <Toast/>를 store와 연결해 렌더합니다.
 
 import { create } from 'zustand'
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
-export interface ToastItem {
-  id: number
-  message: string
-  type: ToastType
-}
-
 interface ToastState {
-  toasts: ToastItem[]
+  current: { message: string; type: ToastType } | null
   show: (message: string, type?: ToastType) => void
-  remove: (id: number) => void
+  hide: () => void
 }
-
-let nextId = 1
 
 export const useToastStore = create<ToastState>((set) => ({
-  toasts: [],
-  show: (message, type = 'info') =>
-    set((s) => ({ toasts: [...s.toasts, { id: nextId++, message, type }] })),
-  remove: (id) =>
-    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  current: null,
+  show: (message, type = 'info') => set({ current: { message, type } }),
+  hide: () => set({ current: null }),
 }))
 
 // 컴포넌트 밖(핸들러·hook 등)에서도 호출할 수 있는 편의 함수
