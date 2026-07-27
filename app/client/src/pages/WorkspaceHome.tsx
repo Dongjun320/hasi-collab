@@ -25,20 +25,15 @@ export function WorkspaceHome() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const { refreshToken, clear, user } = useAuthStore();
   const handleLogout = async () => {
-    // 로그아웃 시 상태를 OFFLINE로 (status는 STOMP 자동감지가 아니라 수동 API)
     try {
       await api.PATCH('/api/users/me/status', { body: { statusCode: 'OFFLINE' } });
-    } catch (e) {
-      console.error("상태 변경 실패:", e);
-    }
+    } catch (e) { console.error("상태 변경 실패:", e); }
+
     try {
-      if (refreshToken) {
-        await api.POST('/api/auth/logout', {body: {refreshToken}})
-      }
-    } catch (error) {
-      console.error("로그아웃 실패:", error);
-    } finally {
-      disconnectStomp();   // STOMP 연결 종료
+      if (refreshToken) await api.POST('/api/auth/logout', {body: {refreshToken}})
+    } catch (error) { console.error("로그아웃 실패:", error); }
+    finally {
+      disconnectStomp();   // ← 이게 곧 offline (STOMP 세션 끊김)
       clear();
       navigate("/");
     }
