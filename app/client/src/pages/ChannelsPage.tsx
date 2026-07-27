@@ -7,6 +7,8 @@ import { useAuthStore } from "../store/authStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { api } from "../api/client"
 import { useMemberStore, type WorkspaceMember } from "../store/memberStore";
+import { usePresenceStore } from "../store/presenceStore";
+import { useWorkspacePresence } from "../hooks/usePresence";
 
 // uid로 색을 고정 배정 (서버에 색 개념이 없어 화면용으로만 사용)
 const AVATAR_COLORS = [
@@ -31,6 +33,8 @@ export function ChannelsPage() {
   const myUid = useAuthStore((s) => s.user?.uid);
   const { currentWorkspace } = useWorkspaceStore();
   const { members, setMembers } = useMemberStore();
+  const isOnline = usePresenceStore((s) => s.isOnline);
+  useWorkspacePresence(currentWorkspace?.id ?? null, members.map((m) => m.userId));
 
   // 실시간 메시지 (히스토리 + STOMP)
   const { messages, sendMessage } = useChannelMessage(channelId);
@@ -48,7 +52,6 @@ export function ChannelsPage() {
           userId: m.userId!,
           nickname: m.nickname ?? '',
           role: m.role ?? 'MEMBER',
-          statusCode: m.statusCode ?? 'OFFLINE',   // ← store 타입은 status가 아니라 statusCode
         })));
       } catch (e) {
         console.error('멤버 조회 실패:', e);
@@ -64,7 +67,7 @@ export function ChannelsPage() {
     let filtered = [...members];
 
     if (memberSortType === "online") {
-      filtered = filtered.filter((m) => m.statusCode === "ONLINE");
+      filtered = filtered.filter((m) => isOnline(m.userId));
     }
     return filtered.sort((a, b) => a.nickname.localeCompare(b.nickname));
   };
@@ -83,7 +86,7 @@ export function ChannelsPage() {
       }, {} as Record<string, WorkspaceMember[]>)
       : null;
 
-  const onlineCount = members.filter(m => m.statusCode === "ONLINE").length;
+  const onlineCount = members.filter((m) => isOnline(m.userId)).length;
   const totalCount = members.length;
 
   const handleSend = () => {
@@ -280,13 +283,13 @@ export function ChannelsPage() {
                                       {member.nickname.charAt(0)}
                                     </div>
                                     <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                                        member.statusCode === "ONLINE" ? "bg-green-500" : "bg-gray-400"
+                                        isOnline(member.userId) ? "bg-green-500" : "bg-gray-400"
                                     }`} />
                                   </div>
                                   <div className="flex-1">
                                     <p className="text-sm font-medium text-[#2C3E50]">{member.nickname}</p>
                                     <p className="text-xs text-gray-500">
-                                      {member.statusCode === "ONLINE" ? "온라인" : "오프라인"}
+                                      {isOnline(member.userId) ? "온라인" : "오프라인"}
                                     </p>
                                   </div>
                                 </div>
@@ -305,13 +308,13 @@ export function ChannelsPage() {
                               {member.nickname.charAt(0)}
                             </div>
                             <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                                member.statusCode === "ONLINE" ? "bg-green-500" : "bg-gray-400"
+                                isOnline(member.userId) ? "bg-green-500" : "bg-gray-400"
                             }`} />
                           </div>
                           <div className="flex-1">
                             <p className="text-sm font-medium text-[#2C3E50]">{member.nickname}</p>
                             <p className="text-xs text-gray-500">
-                              {ROLE_LABEL[member.role] ?? member.role} • {member.statusCode === "ONLINE" ? "온라인" : "오프라인"}
+                              {ROLE_LABEL[member.role] ?? member.role} • {isOnline(member.userId) ? "온라인" : "오프라인"}
                             </p>
                           </div>
                         </div>

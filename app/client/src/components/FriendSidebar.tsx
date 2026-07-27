@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { X, MoreHorizontal, Trash2, UserPlus, StickyNote } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
-import { useFriendStore, friendStatusOf } from "../store/friendStore";
+import { useFriendStore } from "../store/friendStore";
+import { usePresenceStore, presenceDotColor, presenceLabel } from "../store/presenceStore";
+import { useFriendPresence } from "../hooks/usePresence";
 import Modal from "./Modal";
 import { Tooltip } from "./Tooltip";
 import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
@@ -12,6 +14,8 @@ export function FriendSidebar() {
     const { activeRightPanel, closeRightPanel } = useUiStore();
     const navigate = useNavigate();
     const { friends, setFriends, removeFriend, setMemo } = useFriendStore();
+    const isOnline = usePresenceStore((s) => s.isOnline);
+    useFriendPresence(friends.map((f) => f.id));
 
     // 지금 ⋯ 메뉴가 열려있는 친구 id
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
@@ -40,7 +44,6 @@ export function FriendSidebar() {
                 setFriends(list.map((f: any) => ({
                     id: f.id,
                     name: f.name ?? '',
-                    status: f.status ?? 'OFFLINE',
                     statusMessage: f.statusMessage ?? undefined,
                     unreadCount: 0,   // 서버 미제공 — DM 연동 시 채울 예정
                 })));
@@ -53,7 +56,7 @@ export function FriendSidebar() {
 
     const open = activeRightPanel === 'friend';
 
-    const onlineCount = friends.filter((f) => f.status !== "OFFLINE").length;
+    const onlineCount = friends.filter((f) => isOnline(f.id)).length;
     const memoFriend = friends.find((f) => f.id === memoTarget);
 
     const openMemoModal = (id: number, current?: string) => {
@@ -151,7 +154,7 @@ export function FriendSidebar() {
                             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold">
                                 {f.avatar ?? f.name.charAt(0)}
                             </div>
-                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${friendStatusOf(f.status).dot}`} />
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${presenceDotColor(isOnline(f.id))}`} />
                         </div>
 
                         {/* 이름 + 상태 (여기가 DM 열기 영역) */}
@@ -161,7 +164,7 @@ export function FriendSidebar() {
                         >
                             <p className="text-sm font-semibold text-[#2C3E50] truncate">{f.name}</p>
                             <p className="text-[11px] text-gray-400 truncate">
-                                {f.memo ?? f.statusMessage ?? friendStatusOf(f.status).label}
+                                {f.memo ?? f.statusMessage ?? presenceLabel(isOnline(f.id))}
                             </p>
                         </button>
 
