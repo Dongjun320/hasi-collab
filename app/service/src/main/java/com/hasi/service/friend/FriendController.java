@@ -67,12 +67,12 @@ public class FriendController {
     }
 
     // 친구 삭제
-    @DeleteMapping("/{relationId}")
+    @DeleteMapping("/{friendId}")
     public ResponseEntity<Void> removeFriend(
             Authentication authentication,
-            @PathVariable Long relationId) {
+            @PathVariable Long friendId) {
         Long userId = Long.valueOf((String) authentication.getPrincipal());
-        friendService.removeFriend(userId, relationId);
+        friendService.removeFriend(userId, friendId);
         return ResponseEntity.ok().build();
     }
 }

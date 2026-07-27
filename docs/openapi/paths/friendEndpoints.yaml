@@ -28,7 +28,7 @@ paths:
         - Friend
       operationId: removeFriend
       parameters:
-        - name: relationId
+        - name: friendId
           in: path
           required: true
           schema:
