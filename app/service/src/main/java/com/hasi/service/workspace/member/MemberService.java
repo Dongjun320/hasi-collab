@@ -11,6 +11,7 @@ import com.hasi.service.workspace.member.entity.ChannelMember;
 import com.hasi.service.workspace.member.entity.WorkspaceMember;
 import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
+import com.hasi.service.workspace.workspace.entity.Workspace;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,7 +37,7 @@ public class MemberService {
         for(WorkspaceMember member : members) {
             WorkspaceMemberData item = new WorkspaceMemberData();
             User user = userRepository.findById(member.getUserId())
-                            .orElseThrow(() -> new ApiException(ErrorCode.MBR_001));
+                            .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
 
             item.setUserId(user.getUid());
             item.setNickname(user.getNickname());
@@ -55,7 +56,7 @@ public class MemberService {
         for(ChannelMember member : members) {
             ChannelMemberData item = new ChannelMemberData();
             User user = userRepository.findById(member.getUserId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.MBR_001));
+                    .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
 
             item.setUserId(user.getUid());
             item.setNickname(user.getNickname());
@@ -81,6 +82,9 @@ public class MemberService {
             throw new ApiException(ErrorCode.MBR_004);
         }
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
+
         WorkspaceMember workspaceMember = getWorkspaceMemberOrThrow(workspaceId, userId);
 
         if(request.getRole() != null)
@@ -91,9 +95,6 @@ public class MemberService {
         WorkspaceMemberData data = new WorkspaceMemberData();
         if(request.getRole() != null)
             data.setRole(WorkspaceMemberData.RoleEnum.fromValue(workspaceMember.getRole().name()));
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(ErrorCode.MBR_001));
 
         data.setUserId(userId);
         data.setNickname(user.getNickname());
@@ -119,6 +120,9 @@ public class MemberService {
             throw new ApiException(ErrorCode.MBR_004);
         }
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
+
         ChannelMember channelMember = getChannelMemberOrThrow(channelId, userId);
 
         if(request.getRole() != null)
@@ -129,9 +133,6 @@ public class MemberService {
         ChannelMemberData data = new ChannelMemberData();
         if(request.getRole() != null)
             data.setRole(ChannelMemberData.RoleEnum.fromValue(channelMember.getRole().name()));
-
-        User user = userRepository.findById(userId)
-                        .orElseThrow(() -> new ApiException(ErrorCode.MBR_001));
 
         data.setUserId(userId);
         data.setNickname(user.getNickname());
@@ -151,6 +152,14 @@ public class MemberService {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
+        // 멤버가 속했던 채널들의 채널 멤버 먼저 삭제
+        List<Channel> channels = channelRepository.findByWorkspaceId(workspaceId);
+        for (Channel channel : channels) {
+            channelMemberRepository.findByChannelIdAndUserId(channel.getId(), uid)
+                    .ifPresent(channelMemberRepository::delete);
+        }
+
+        // 워크스페이스 멤버 삭제
         workspaceMemberRepository.delete(workspaceMember);
 
         WorkspaceMemberLeaveResponseData data = new WorkspaceMemberLeaveResponseData();
@@ -163,11 +172,12 @@ public class MemberService {
     public ChannelMemberLeaveResponseData leaveChannelMember(Long workspaceId, Long channelId) {
         Long uid = getCurrentUserId();
 
-        // 채널에 해당 유저가 있는지 확인
-        ChannelMember channelMember = getChannelMemberOrThrow(channelId, uid);
-
+        // 채널이 있는지 확인(워크스페이스 있는지 확인 알수없음, 파라미터)
         Channel channel = channelRepository.findByWorkspaceIdAndId(workspaceId, channelId)
                 .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
+
+        // 채널에 해당 유저가 있는지 확인
+        ChannelMember channelMember = getChannelMemberOrThrow(channelId, uid);
 
         // 채널의 OWNER이면 나갈 수 없음(삭제해야됨)
         if(channelMember.getRole().equals(ChannelMember.Role.OWNER)) {
@@ -206,10 +216,16 @@ public class MemberService {
         }
 
         // OWNER가 자기 자신을 추방 불가
-        if(ownerId.equals(userId))
+        if(ownerId.equals(userId)) {
             throw new ApiException(ErrorCode.MBR_004);
+        }
 
-
+        // 멤버가 속했던 채널들의 채널 멤버 먼저 삭제
+        List<Channel> channels = channelRepository.findByWorkspaceId(workspaceId);
+        for (Channel channel : channels) {
+            channelMemberRepository.findByChannelIdAndUserId(channel.getId(), userId)
+                    .ifPresent(channelMemberRepository::delete);
+        }
 
         workspaceMemberRepository.delete(workspaceMember);
 
@@ -223,17 +239,14 @@ public class MemberService {
     public ChannelMemberRemoveResponseData removeChannelMember(Long workspaceId, Long channelId, Long userId) {
         Long ownerId = getCurrentUserId();
 
+        // 채널이 있는지 확인(워크스페이스 있는지 확인 알수없음, 파라미터)
+        Channel channel = channelRepository.findByWorkspaceIdAndId(workspaceId, channelId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
+
         // 추방할 유저가 채널에 소속되어 있는지 확인
         ChannelMember channelMember = getChannelMemberOrThrow(channelId, userId);
 
         ChannelMember channelOwner = getChannelMemberOrThrow(channelId, ownerId);
-
-        // 채널이 있는지 확인
-        Channel channel = channelRepository.findById(channelId)
-                .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
-
-        if(!channel.getWorkspaceId().equals(workspaceId))
-            throw new ApiException(ErrorCode.WS_002);
 
         // 채널의 OWNER인지 확인
         if(!channelOwner.getRole().equals(ChannelMember.Role.OWNER)) {
@@ -243,6 +256,15 @@ public class MemberService {
         // OWNER이 채널의 자기 자신을 추방 불가
         if(ownerId.equals(userId))
             throw new ApiException(ErrorCode.MBR_004);
+
+        // 나가는 채널이 상위 채널
+        if(channel.getParentId() == null) {
+            List<Channel> subChannels = channelRepository.findByParentId(channel.getId());
+            for(Channel subChannel : subChannels) {
+                channelMemberRepository.findByChannelIdAndUserId(subChannel.getId(), userId)
+                        .ifPresent(channelMemberRepository::delete);
+            }
+        }
 
         channelMemberRepository.delete(channelMember);
 
@@ -268,7 +290,7 @@ public class MemberService {
 
     private ChannelMember getChannelMemberOrThrow(Long channelId, Long userId) {
         return channelMemberRepository.findByChannelIdAndUserId(channelId, userId)
-                .orElseThrow(() -> new ApiException(ErrorCode.MBR_001));
+                .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
     }
 
 

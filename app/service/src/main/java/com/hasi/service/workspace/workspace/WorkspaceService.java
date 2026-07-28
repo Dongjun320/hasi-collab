@@ -150,6 +150,10 @@ public class WorkspaceService {
 
         Long uid = getCurrentUserId();
 
+        // 워크스페이스가 있는지 확인
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+
         // 워크스페이스에 소속한 멤버가 아니면 접근불가
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, uid)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
@@ -158,9 +162,6 @@ public class WorkspaceService {
         if(!workspaceMember.getRole().name().equals("OWNER")) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
-
-        Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
 
         if(request.getName() != null) {
             workspace.updateName(request.getName());
@@ -196,7 +197,11 @@ public class WorkspaceService {
     public WorkspaceDeleteResponseData deleteWorkspace(Long workspaceId) {
 
         Long uid = getCurrentUserId();
-        
+
+        // 워크스페이스가 있는지 확인
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+
         // 워크스페이스에 소속한 멤버가 아니면 접근불가
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, uid)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
@@ -205,10 +210,6 @@ public class WorkspaceService {
         if(!workspaceMember.getRole().name().equals("OWNER")) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
-
-        // 워크스페이스가 있는지 확인
-        Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
 
         // 워크스페이스 소속 채널들의 채널 멤버 먼저 삭제
         List<Channel> channels = channelRepository.findByWorkspaceId(workspaceId);
