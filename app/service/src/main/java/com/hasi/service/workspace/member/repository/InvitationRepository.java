@@ -13,4 +13,6 @@ public interface InvitationRepository extends JpaRepository<Invitation, Long> {
     List<Invitation> findByInviterId(Long inviterId);
 
     boolean existsByWorkspaceIdAndInviteeIdAndStatus(Long workspaceId, Long inviteeId, Invitation.Status status);
+
+    boolean existsByChannelIdAndInviteeIdAndStatus(Long channelId, Long uid, Invitation.Status status);
 }

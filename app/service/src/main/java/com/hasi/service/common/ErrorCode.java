@@ -40,6 +40,7 @@ public enum ErrorCode {
     CH_003(HttpStatus.BAD_REQUEST, "CH_003", "채널 입력값이 유효하지 않습니다"),
     CH_004(HttpStatus.CONFLICT, "CH_004", "하위 채널이 있어 삭제할 수 없습니다"),
     CH_005(HttpStatus.CONFLICT, "CH_005", "이미 채널에 참가한 멤버입니다"),
+    CH_006(HttpStatus.CONFLICT, "CH_006", "삭제할 수 없는 채널입니다"),
 
     // MEMBER
     MBR_001(HttpStatus.NOT_FOUND, "MBR_001", "해당 닉네임의 사용자를 찾을 수 없습니다"),
