@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Hash, Plus, X,
   PanelLeftClose, PanelLeftOpen, Settings, UserPlus,
-  ChevronRight, ChevronDown, LayoutGrid, Calendar,
+  ChevronRight, ChevronDown, LayoutGrid, Calendar, Megaphone,
 } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
@@ -220,6 +220,8 @@ export function WorkspaceSidebar({
                 >
               {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
             </span>
+            ) : isDefault ? (
+                <Megaphone size={14} className="flex-shrink-0" />
             ) : (
                 <Hash size={14} className="flex-shrink-0" />
             )}
@@ -266,7 +268,7 @@ export function WorkspaceSidebar({
                       title={isDefault ? "기본 채널은 삭제할 수 없습니다"
                           : hasKids ? "하위 채널을 먼저 삭제해야 합니다" : undefined}
                       onClick={() => { onDeleteChannel(ch.id); setChannelMenuOpenId(null); }}
-                      className="... disabled:text-white/25 disabled:cursor-not-allowed"
+                      className="w-full text-left px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 disabled:text-white/25 disabled:cursor-not-allowed"
                   >
                       삭제
                   </button>
