@@ -125,13 +125,24 @@ public class ChannelService {
     }
 
     // 채널/워크스페이스가 삭제될 때 남는 메시지·읽음상태 정리.
+    //
+    // 채널이 삭제 되어야만 삭제가 가능
     @Transactional
     public ChannelDtos.DeletedCounts deleteChannelMessages(List<Long> channelIds){
         if (channelIds == null || channelIds.isEmpty()) {
             return new ChannelDtos.DeletedCounts(0, 0);
         }
-        long readStates = readStateRepository.deleteByChannelIdIn(channelIds);
-        long messages = messageRepository.deleteByChannelIdIn(channelIds);
+
+        List<Long> deletable = channelIds.stream()
+                .filter(channelId -> !serviceDirectory.channelExists(channelId))
+                .toList();
+
+        if (deletable.isEmpty()) {
+            return new ChannelDtos.DeletedCounts(0, 0);
+        }
+
+        long readStates = readStateRepository.deleteByChannelIdIn(deletable);
+        long messages = messageRepository.deleteByChannelIdIn(deletable);
         return new ChannelDtos.DeletedCounts(messages, readStates);
     }
 

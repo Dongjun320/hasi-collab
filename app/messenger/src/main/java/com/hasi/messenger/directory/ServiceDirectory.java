@@ -39,6 +39,19 @@ public class ServiceDirectory {
                 userId));
     }
 
+    /**
+     * 채널 존재하는지 확인, 존재 시 연관 ChannelMessage, ReadState 삭제 x
+     */
+    public boolean channelExists(Long channelId){
+        if (channelId == null) {
+            return false;
+        }
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT EXISTS(SELECT 1 FROM channels WHERE id = ?)",
+                Boolean.class,
+                channelId));
+    }
+
     public boolean isWorkspaceMember(Long workspaceId, Long userId){
         if (workspaceId == null || userId == null) {
             return false;

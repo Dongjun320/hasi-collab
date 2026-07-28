@@ -1,6 +1,6 @@
 package com.hasi.messenger;
 
-import com.hasi.messenger.security.InternalTokenFilter;
+import com.hasi.messenger.security.InternalJwtFilter;
 import com.hasi.messenger.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,7 +21,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
-    private final InternalTokenFilter internalTokenFilter;
+    private final InternalJwtFilter internalJwtFilter;
 
     @Value("${app.cors.allowed-origins}")
     private List<String> allowedOrigins;
@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/messenger-api/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(internalTokenFilter, JwtFilter.class)
+                .addFilterAfter(internalJwtFilter, JwtFilter.class)
                 .csrf(AbstractHttpConfigurer::disable);
         return http.build();
     }

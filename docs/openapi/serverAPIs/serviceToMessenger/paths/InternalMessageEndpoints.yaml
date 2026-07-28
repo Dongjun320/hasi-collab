@@ -1,5 +1,5 @@
 paths:
-  # 서버 간(Service -> Messenger) 호출 전용. 사용자 JWT가 아니라 X-Internal-Token으로 인증합니다.
+  # 서버 간(Service -> Messenger) 호출 전용. Internal JWT로 인증
   /messenger-api/internal/channel-messages:
     delete:
       summary: "채널/워크스페이스 삭제 시 해당 채널들의 메시지·읽음상태 일괄 삭제"
@@ -39,9 +39,5 @@ paths:
             application/json:
               schema:
                 $ref: "../components/MessageResponseBodies.yaml#/components/schemas/InternalErrorResponse"
-        '401':
-          description: "X-Internal-Token 누락 또는 불일치"
-          content:
-            application/json:
-              schema:
-                $ref: "../components/MessageResponseBodies.yaml#/components/schemas/InternalErrorResponse"
+        '403':
+          description: "내부 JWT 누락/서명 불일치/만료, 또는 scope·iss 클레임 불충족"
