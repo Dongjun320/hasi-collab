@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Plus, ChevronDown, Calendar as CalendarIcon, X } from "lucide-react";
+import { Plus, ChevronDown, Calendar as CalendarIcon, X, Settings, UserPlus, Trash2 } from "lucide-react";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { useAuthStore } from "../store/authStore";
 import { useMemberStore } from "../store/memberStore";
-import { useBoardStore, boardBadgeOf, type Task, type TaskStatus, type TaskPriority } from "../store/boardStore";
+import { useBoardStore, boardBadgeOf, type Board, type Task, type TaskStatus, type TaskPriority } from "../store/boardStore";
 import Modal from "../components/Modal";
 
 const COLUMNS: { id: TaskStatus; title: string }[] = [
@@ -32,16 +32,20 @@ export function KanbanPage() {
   const {
     boards, currentBoardId, tasks, boardMembers, error,
     setCurrentBoard, fetchBoards, fetchTasks, fetchBoardMembers,
+    createBoard, updateBoard, addBoardMember, removeBoardMember,
     createTask, updateTask, deleteTask,
   } = useBoardStore();
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);   // null=닫힘, {id:0,...}=신규
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isNewBoardOpen, setIsNewBoardOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const currentBoard = boards.find((b) => b.id === currentBoardId) ?? null;
   const myRole = members.find((m) => m.userId === myUid)?.role;
   const isManager = !!currentBoard && (myRole === "OWNER" || currentBoard.ownerId === myUid);
+  const isWorkspaceOwner = myRole === "OWNER";
 
   useEffect(() => {
     if (!currentWorkspace) return;
@@ -118,20 +122,40 @@ export function KanbanPage() {
                     </button>
                   );
                 })}
+                {isWorkspaceOwner && (
+                  <button
+                    onClick={() => { setIsPickerOpen(false); setIsNewBoardOpen(true); }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-[#5CC87A] hover:bg-[#f0f9f4] transition-colors border-t border-gray-100 mt-1"
+                  >
+                    <Plus size={14} />
+                    새 보드 만들기
+                  </button>
+                )}
               </div>
             </>
           )}
         </div>
 
-        {currentBoard && (
-          <button
-            onClick={() => setIsCreateOpen(true)}
-            className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] text-white rounded-lg transition-all flex items-center gap-2"
-          >
-            <Plus size={18} />
-            <span>새 작업</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isManager && currentBoard && (
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-2 text-gray-400 hover:text-[#5CC87A] hover:bg-[#f0f9f4] rounded-lg transition-all"
+              title="보드 설정"
+            >
+              <Settings size={18} />
+            </button>
+          )}
+          {currentBoard && (
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] text-white rounded-lg transition-all flex items-center gap-2"
+            >
+              <Plus size={18} />
+              <span>새 작업</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <p className="text-xs text-red-500 text-center mt-2">{error}</p>}
@@ -258,6 +282,39 @@ export function KanbanPage() {
           if (ok) setEditing(null);
         }}
       />
+
+      <NewBoardModal
+        isOpen={isNewBoardOpen}
+        onClose={() => setIsNewBoardOpen(false)}
+        managerCandidates={members.filter((m) => m.role !== "MEMBER")}
+        onSubmit={async (body) => {
+          if (!currentWorkspace) return;
+          const ok = await createBoard(currentWorkspace.id, body);
+          if (ok) setIsNewBoardOpen(false);
+        }}
+      />
+
+      {currentBoard && (
+        <BoardSettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          board={currentBoard}
+          boardMembers={boardMembers}
+          workspaceMembers={members}
+          onRename={async (name) => {
+            if (!currentWorkspace) return;
+            await updateBoard(currentWorkspace.id, currentBoard.id, { name });
+          }}
+          onAddMember={async (userId) => {
+            if (!currentWorkspace) return;
+            await addBoardMember(currentWorkspace.id, currentBoard.id, userId);
+          }}
+          onRemoveMember={async (userId) => {
+            if (!currentWorkspace) return;
+            await removeBoardMember(currentWorkspace.id, currentBoard.id, userId);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -373,6 +430,178 @@ function TaskFormModal({
           </button>
           <button onClick={handleSubmit} className="px-3 py-1.5 text-sm bg-[#5CC87A] text-white rounded-lg hover:bg-[#4ab869] transition-colors">
             {initial ? "저장" : "생성"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// 새 보드 생성 — 워크스페이스 OWNER 전용
+function NewBoardModal({
+  isOpen, onClose, managerCandidates, onSubmit,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  managerCandidates: { userId: number; nickname: string; role: string }[];
+  onSubmit: (body: { name: string; ownerId?: number }) => void;
+}) {
+  const [name, setName] = useState("");
+  const [ownerId, setOwnerId] = useState<number | "">("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setName("");
+    setOwnerId("");
+  }, [isOpen]);
+
+  const handleSubmit = () => {
+    if (!name.trim()) return;
+    onSubmit({ name: name.trim(), ownerId: ownerId === "" ? undefined : ownerId });
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="새 보드">
+      <div className="flex flex-col gap-3">
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="보드 이름"
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]"
+        />
+        <select
+          value={ownerId}
+          onChange={(e) => setOwnerId(e.target.value ? Number(e.target.value) : "")}
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]"
+        >
+          <option value="">팀장: 본인</option>
+          {managerCandidates.map((m) => (
+            <option key={m.userId} value={m.userId}>{m.nickname} ({m.role === "OWNER" ? "OWNER" : "ADMIN"})</option>
+          ))}
+        </select>
+
+        <div className="flex gap-2 justify-end mt-2">
+          <button onClick={onClose} className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+            취소
+          </button>
+          <button onClick={handleSubmit} className="px-3 py-1.5 text-sm bg-[#5CC87A] text-white rounded-lg hover:bg-[#4ab869] transition-colors">
+            생성
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// 보드 설정 — 이름 변경 + 부서원 추가/제외 (OWNER·부서장 전용)
+function BoardSettingsModal({
+  isOpen, onClose, board, boardMembers, workspaceMembers, onRename, onAddMember, onRemoveMember,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  board: Board;
+  boardMembers: { userId: number; nickname: string }[];
+  workspaceMembers: { userId: number; nickname: string; role: string }[];
+  onRename: (name: string) => void;
+  onAddMember: (userId: number) => void;
+  onRemoveMember: (userId: number) => void;
+}) {
+  const [name, setName] = useState(board.name);
+  const [addTarget, setAddTarget] = useState<number | "">("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setName(board.name);
+    setAddTarget("");
+  }, [isOpen, board.name]);
+
+  const addableMembers = workspaceMembers.filter(
+    (m) => !boardMembers.some((bm) => bm.userId === m.userId)
+  );
+
+  const handleRename = () => {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === board.name) return;
+    onRename(trimmed);
+  };
+
+  const handleAdd = () => {
+    if (addTarget === "") return;
+    onAddMember(addTarget);
+    setAddTarget("");
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="보드 설정">
+      <div className="flex flex-col gap-4">
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">보드 이름</label>
+          <div className="flex gap-2">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]"
+            />
+            <button
+              onClick={handleRename}
+              disabled={!name.trim() || name.trim() === board.name}
+              className="px-3 py-2 text-sm bg-[#5CC87A] text-white rounded-lg hover:bg-[#4ab869] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              변경
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">부서원 ({boardMembers.length}명)</label>
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {boardMembers.map((m) => (
+              <div key={m.userId} className="flex items-center justify-between px-3 py-1.5 bg-[#f8fdf9] rounded-lg">
+                <span className="text-sm text-[#2C3E50]">
+                  {m.nickname}
+                  {m.userId === board.ownerId && (
+                    <span className="ml-1.5 text-[10px] text-[#5CC87A] font-medium">부서장</span>
+                  )}
+                </span>
+                {m.userId !== board.ownerId && (
+                  <button onClick={() => onRemoveMember(m.userId)} className="text-gray-300 hover:text-red-400">
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {addableMembers.length > 0 && (
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">부서원 추가</label>
+            <div className="flex gap-2">
+              <select
+                value={addTarget}
+                onChange={(e) => setAddTarget(e.target.value ? Number(e.target.value) : "")}
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]"
+              >
+                <option value="">멤버 선택</option>
+                {addableMembers.map((m) => (
+                  <option key={m.userId} value={m.userId}>{m.nickname}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleAdd}
+                disabled={addTarget === ""}
+                className="px-3 py-2 text-sm bg-[#5CC87A] text-white rounded-lg hover:bg-[#4ab869] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                <UserPlus size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end mt-1">
+          <button onClick={onClose} className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+            닫기
           </button>
         </div>
       </div>

@@ -60,6 +60,10 @@ interface BoardState {
   fetchBoards: (workspaceId: number) => Promise<void>
   fetchTasks: (workspaceId: number, boardId: number) => Promise<void>
   fetchBoardMembers: (workspaceId: number, boardId: number) => Promise<void>
+  createBoard: (workspaceId: number, body: { name: string; ownerId?: number }) => Promise<boolean>
+  updateBoard: (workspaceId: number, boardId: number, body: { name?: string; ownerId?: number }) => Promise<boolean>
+  addBoardMember: (workspaceId: number, boardId: number, userId: number) => Promise<boolean>
+  removeBoardMember: (workspaceId: number, boardId: number, userId: number) => Promise<boolean>
   createTask: (workspaceId: number, boardId: number, body: TaskInput & { title: string; status: TaskStatus }) => Promise<boolean>
   updateTask: (workspaceId: number, boardId: number, taskId: number, body: TaskInput) => Promise<boolean>
   deleteTask: (workspaceId: number, boardId: number, taskId: number) => Promise<boolean>
@@ -130,6 +134,67 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       set({ boardMembers: (data.data ?? []) as BoardMember[] })
     } catch (e) {
       console.error('부서원 조회 실패:', e)
+    }
+  },
+
+  createBoard: async (workspaceId, body) => {
+    try {
+      const { data, error } = await api.POST('/api/workspaces/{workspaceId}/boards', {
+        params: { path: { workspaceId } },
+        body,
+      })
+      if (error || !data?.success || !data.data) return false
+      const board = data.data as Board
+      set((s) => ({ boards: [...s.boards, board], currentBoardId: board.id, tasks: [], boardMembers: [] }))
+      return true
+    } catch (e) {
+      console.error('보드 생성 실패:', e)
+      return false
+    }
+  },
+
+  updateBoard: async (workspaceId, boardId, body) => {
+    try {
+      const { data, error } = await api.PATCH('/api/workspaces/{workspaceId}/boards/{boardId}', {
+        params: { path: { workspaceId, boardId } },
+        body,
+      })
+      if (error || !data?.success || !data.data) return false
+      const updated = data.data as Board
+      set((s) => ({ boards: s.boards.map((b) => (b.id === boardId ? updated : b)) }))
+      return true
+    } catch (e) {
+      console.error('보드 수정 실패:', e)
+      return false
+    }
+  },
+
+  addBoardMember: async (workspaceId, boardId, userId) => {
+    try {
+      const { error } = await api.POST('/api/workspaces/{workspaceId}/boards/{boardId}/members', {
+        params: { path: { workspaceId, boardId } },
+        body: { userId },
+      })
+      if (error) return false
+      await get().fetchBoardMembers(workspaceId, boardId)
+      return true
+    } catch (e) {
+      console.error('부서원 추가 실패:', e)
+      return false
+    }
+  },
+
+  removeBoardMember: async (workspaceId, boardId, userId) => {
+    try {
+      const { error } = await api.DELETE('/api/workspaces/{workspaceId}/boards/{boardId}/members/{userId}', {
+        params: { path: { workspaceId, boardId, userId } },
+      })
+      if (error) return false
+      set((s) => ({ boardMembers: s.boardMembers.filter((m) => m.userId !== userId) }))
+      return true
+    } catch (e) {
+      console.error('부서원 제외 실패:', e)
+      return false
     }
   },
 
