@@ -16,11 +16,15 @@ components:
           description: "공개/비공개"
         description:
           type: string
+          maxLength: 255
+          nullable: true
           description: "워크스페이스 설명"
         iconUrl:
           type: string
           maxLength: 512
+          nullable: true
           description: "워크스페이스 대표 이미지"
+
 
     WorkspacePatchRequest:
       type: object
@@ -35,8 +39,15 @@ components:
           description: "공개/비공개"
         description:
           type: string
+          maxLength: 255
+          nullable: true
           description: "워크스페이스 설명"
         iconUrl:
           type: string
           maxLength: 512
+          nullable: true
           description: "워크스페이스 대표 이미지"
+        defaultChannelId:
+          type: integer
+          format: int64
+          description: "워크스페이스 대표(기본) 채널"

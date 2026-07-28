@@ -4,6 +4,7 @@
 // 용도: 멤버 목록 화면, 채팅 sender(uid) → nickname 매핑, 사이드바 등에서 공용
 
 import { create } from 'zustand'
+import { api } from '../api/client'
 
 export interface WorkspaceMember {
   userId: number
@@ -15,11 +16,31 @@ export interface WorkspaceMember {
 interface MemberState {
   members: WorkspaceMember[]
   setMembers: (list: WorkspaceMember[]) => void
+  fetchMembers: (workspaceId: number) => Promise<void>
   clear: () => void
 }
 
 export const useMemberStore = create<MemberState>((set) => ({
   members: [],
   setMembers: (list) => set({ members: list }),
+
+  fetchMembers: async (workspaceId) => {
+    try {
+      const { data, error } = await api.GET('/api/workspaces/{workspaceId}/members', {
+        params: { path: { workspaceId } },
+      })
+      if (error || !data?.success) return
+      set({
+        members: (data.data ?? []).map((m) => ({
+          userId: m.userId!,
+          nickname: m.nickname ?? '',
+          role: m.role ?? 'MEMBER',
+        })),
+      })
+    } catch (e) {
+      console.error('멤버 조회 실패:', e)
+    }
+  },
+
   clear: () => set({ members: [] }),
 }))

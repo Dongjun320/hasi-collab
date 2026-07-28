@@ -5,6 +5,7 @@ import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
 import com.hasi.service.workspace.channel.entity.Channel;
 import com.hasi.service.workspace.channel.repository.ChannelRepository;
+import com.hasi.service.workspace.member.entity.ChannelMember;
 import com.hasi.service.workspace.member.entity.WorkspaceMember;
 import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
@@ -39,8 +40,9 @@ public class WorkspaceService {
         Workspace workspace = Workspace.builder()
                 .name(request.getName())
                 .isPrivate(request.getIsPrivate())
-                .description(request.getDescription())
-                .iconUrl(request.getIconUrl())
+                .description(request.getDescription().orElse(null))
+                .iconUrl(request.getIconUrl().orElse(null))
+                .defaultChannelId(null)
                 .ownerId(ownerId)
                 .build();
 
@@ -48,13 +50,32 @@ public class WorkspaceService {
         Workspace saved = workspaceRepository.save(workspace);
 
         // owner를 워크스페이스 멤버로 등록
-        WorkspaceMember ownerMember = WorkspaceMember.builder()
+        WorkspaceMember workspaceOwner = WorkspaceMember.builder()
                 .workspaceId(saved.getId())
                 .userId(ownerId)
                 .role(WorkspaceMember.Role.OWNER)
                 .build();
-        workspaceMemberRepository.save(ownerMember);
+        workspaceMemberRepository.save(workspaceOwner);
 
+        // Channel 엔티티 생성 및 저장
+        Channel channel = Channel.builder()
+                .workspaceId(workspace.getId())
+                .parentId(null)
+                .name(workspace.getName())
+                .isPrivate(false)
+                .build();
+
+        channelRepository.save(channel);
+
+        ChannelMember channelOwner = ChannelMember.builder()
+                .channelId(channel.getId())
+                .userId(ownerId)
+                .role(ChannelMember.Role.OWNER)
+                .build();
+
+        channelMemberRepository.save(channelOwner);
+
+        workspace.updateDefaultChannelId(channel.getId());
 
         // DTO 변환
         WorkspaceData data = new WorkspaceData();
@@ -64,6 +85,7 @@ public class WorkspaceService {
         data.setIsPrivate(saved.isPrivate());
         data.setDescription(JsonNullable.of(saved.getDescription()));
         data.setIconUrl(JsonNullable.of(saved.getIconUrl()));
+        data.setDefaultChannelId(JsonNullable.of(saved.getDefaultChannelId()));
         data.setCreatedAt(saved.getCreatedAt().atOffset(ZoneOffset.UTC));
         data.setUpdatedAt(saved.getUpdatedAt().atOffset(ZoneOffset.UTC));
 
@@ -83,6 +105,7 @@ public class WorkspaceService {
         data.setIsPrivate(workspace.isPrivate());
         data.setDescription(JsonNullable.of(workspace.getDescription()));
         data.setIconUrl(JsonNullable.of(workspace.getIconUrl()));
+        data.setDefaultChannelId(JsonNullable.of(workspace.getDefaultChannelId()));
         data.setCreatedAt(workspace.getCreatedAt().atOffset(ZoneOffset.UTC));
         data.setUpdatedAt(workspace.getUpdatedAt().atOffset(ZoneOffset.UTC));
 
@@ -128,7 +151,7 @@ public class WorkspaceService {
         Long uid = getCurrentUserId();
 
         // 워크스페이스에 소속한 멤버가 아니면 접근불가
-        WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, uid)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
         // owner가 아니면 수정 불가
@@ -142,14 +165,17 @@ public class WorkspaceService {
         if(request.getName() != null) {
             workspace.updateName(request.getName());
         }
-        if(request.getDescription() != null) {
-            workspace.updateDescription(request.getDescription());
+        if(request.getDescription().isPresent()) {
+            workspace.updateDescription(request.getDescription().get());
         }
-        if(request.getIconUrl() != null) {
-            workspace.updateIconUrl(request.getIconUrl());
+        if(request.getIconUrl().isPresent()) {
+            workspace.updateIconUrl(request.getIconUrl().get());
         }
         if(request.getIsPrivate() != null) {
             workspace.updateIsPrivate(request.getIsPrivate());
+        }
+        if(request.getDefaultChannelId() != null) {
+            workspace.updateDefaultChannelId(request.getDefaultChannelId());
         }
 
         WorkspaceData data = new WorkspaceData();
@@ -159,6 +185,7 @@ public class WorkspaceService {
         data.setIsPrivate(workspace.isPrivate());
         data.setDescription(JsonNullable.of(workspace.getDescription()));
         data.setIconUrl(JsonNullable.of(workspace.getIconUrl()));
+        data.setDefaultChannelId(JsonNullable.of(workspace.getDefaultChannelId()));
         data.setCreatedAt(workspace.getCreatedAt().atOffset(ZoneOffset.UTC));
         data.setUpdatedAt(workspace.getUpdatedAt().atOffset(ZoneOffset.UTC));
 
@@ -171,7 +198,7 @@ public class WorkspaceService {
         Long uid = getCurrentUserId();
         
         // 워크스페이스에 소속한 멤버가 아니면 접근불가
-        WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, uid)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
         // owner가 아니면 삭제 불가

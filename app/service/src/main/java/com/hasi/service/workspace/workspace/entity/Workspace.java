@@ -36,6 +36,9 @@ public class Workspace {
     @Column()
     private String description;
 
+    @Column(name = "default_channel_id")
+    private Long defaultChannelId;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -53,8 +56,7 @@ public class Workspace {
     public void updateIconUrl(String iconUrl) {
         this.iconUrl = iconUrl;
     }
-    public void updateDescription(String description) {
-        this.description = description;
-    }
+    public void updateDescription(String description) { this.description = description; }
+    public void updateDefaultChannelId(Long defaultChannelId) { this.defaultChannelId = defaultChannelId; }
 
 }

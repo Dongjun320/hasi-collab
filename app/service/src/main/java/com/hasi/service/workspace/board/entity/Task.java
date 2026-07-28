@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,6 +25,15 @@ public class Task {
 
     @Column(nullable = false, length = 200)
     private String title;
+
+    @Column(length = 2000)
+    private String content;   // 상세 내용 (선택)
+
+    @Column(name = "start_date")
+    private LocalDate startDate;   // 시작일 (선택)
+
+    @Column(name = "due_date")
+    private LocalDate dueDate;   // 종료일/마감일 (선택, 캘린더 표시에 사용)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -45,8 +55,11 @@ public class Task {
     private LocalDateTime updatedAt;
 
     // updateTask - null이 아닌 필드만 갱신 (TaskUpdateRequest 부분 수정 대응)
-    public void update(String title, Status status, Long assigneeId, Priority priority) {
+    public void update(String title, String content, LocalDate startDate, LocalDate dueDate, Status status, Long assigneeId, Priority priority) {
         if (title != null) this.title = title;
+        if (content != null) this.content = content;
+        if (startDate != null) this.startDate = startDate;
+        if (dueDate != null) this.dueDate = dueDate;
         if (status != null) this.status = status;
         if (assigneeId != null) this.assigneeId = assigneeId;
         if (priority != null) this.priority = priority;

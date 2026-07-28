@@ -44,6 +44,17 @@ components:
         title:
           type: string
           description: "태스크 제목"
+        content:
+          type: string
+          description: "상세 내용 (선택)"
+        startDate:
+          type: string
+          format: date
+          description: "시작일 (선택)"
+        dueDate:
+          type: string
+          format: date
+          description: "종료일/마감일 (선택, 캘린더 표시에 사용)"
         status:
           type: string
           enum: [TODO, IN_PROGRESS, REVIEW, DONE]
@@ -66,6 +77,17 @@ components:
         title:
           type: string
           description: "태스크 제목"
+        content:
+          type: string
+          description: "상세 내용"
+        startDate:
+          type: string
+          format: date
+          description: "시작일"
+        dueDate:
+          type: string
+          format: date
+          description: "종료일/마감일"
         status:
           type: string
           enum: [TODO, IN_PROGRESS, REVIEW, DONE]

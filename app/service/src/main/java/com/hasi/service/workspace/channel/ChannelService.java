@@ -31,8 +31,7 @@ public class ChannelService {
     public ChannelData createWorkspaceChannel(Long workspaceId, ChannelCreateRequest request) {
 
         Long uid = getCurrentUserId();
-        WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
+        WorkspaceMember workspaceMember = getWorkspaceMemberOrThrow(workspaceId, uid);
 
         if(!workspaceMember.getRole().name().equals("OWNER")) {
             throw new ApiException(ErrorCode.AUTH_004);
@@ -76,8 +75,7 @@ public class ChannelService {
     public ChannelDetailResponseData getWorkspaceChannel(Long workspaceId, Long channelId) {
 
         // 해당 Channel 을 찾고, channelMember 수를 count하기 위한 channelMember 리스트를 찾음
-        Channel channel = channelRepository.findByWorkspaceIdAndId(workspaceId, channelId)
-                .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
+        Channel channel = getChannelOrThrow(workspaceId, channelId);
 
         List<ChannelMember> channelMembers = channelMemberRepository.findByChannelId(channelId);
 
@@ -120,15 +118,13 @@ public class ChannelService {
     public ChannelData patchWorkspaceChannel(Long workspaceId, Long channelId, ChannelPatchRequest request) {
 
         Long uid = getCurrentUserId();
-        WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
+        WorkspaceMember workspaceMember = getWorkspaceMemberOrThrow(workspaceId, uid);
 
         if(!workspaceMember.getRole().name().equals("OWNER")) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
-        Channel channel = channelRepository.findByWorkspaceIdAndId(workspaceId, channelId)
-                .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
+        Channel channel = getChannelOrThrow(workspaceId, channelId);
 
         if(request.getName() != null) {
             channel.updateName(request.getName());
@@ -154,8 +150,7 @@ public class ChannelService {
         Long uid = getCurrentUserId();
 
         // 워크스페이스에 소속한 멤버가 아니면 접근불가
-        WorkspaceMember workspaceMember = workspaceMemberRepository.findByUserIdAndWorkspaceId(uid, workspaceId)
-                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
+        WorkspaceMember workspaceMember = getWorkspaceMemberOrThrow(workspaceId, uid);
 
         // owner가 아니면 삭제 불가
         if(!workspaceMember.getRole().name().equals("OWNER")) {
@@ -168,8 +163,7 @@ public class ChannelService {
             throw new ApiException(ErrorCode.CH_004);
         }
 
-        Channel channel = channelRepository.findByWorkspaceIdAndId(workspaceId, channelId)
-                .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
+        Channel channel = getChannelOrThrow(workspaceId, channelId);
 
         channelMemberRepository.deleteByChannelId(channel.getId());
         channelRepository.delete(channel);
@@ -180,9 +174,12 @@ public class ChannelService {
         return data;
     }
 
+    @Transactional
     public ChannelMemberJoinResponseData joinChannelMembers(Long workspaceId, Long channelId) {
 
         Long uid = getCurrentUserId();
+
+        Channel channel = getChannelOrThrow(workspaceId, channelId);
 
         if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, uid)) {
             throw new ApiException(ErrorCode.AUTH_004); // 워크스페이스 멤버가 아님
@@ -190,6 +187,10 @@ public class ChannelService {
 
         if (channelMemberRepository.existsByChannelIdAndUserId(channelId, uid)) {
             throw new ApiException(ErrorCode.CH_005); // 이미 참가한 멤버
+        }
+
+        if(channel.isPrivate()) {
+            throw new ApiException(ErrorCode.AUTH_004);
         }
 
         ChannelMember channelMember = ChannelMember.builder()
@@ -212,5 +213,15 @@ public class ChannelService {
             throw new ApiException(ErrorCode.AUTH_003);
         }
         return Long.valueOf(authentication.getName());
+    }
+
+    private WorkspaceMember getWorkspaceMemberOrThrow(Long workspaceId, Long userId) {
+        return workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
+    }
+
+    private Channel getChannelOrThrow(Long workspaceId, Long channelId) {
+        return channelRepository.findByWorkspaceIdAndId(workspaceId, channelId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
     }
 }

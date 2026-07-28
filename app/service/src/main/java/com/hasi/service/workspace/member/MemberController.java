@@ -107,6 +107,16 @@ public class MemberController implements WorkspaceMemberApi {
     }
 
     @Override
+    public ResponseEntity<ChannelMemberPatchResponse> patchChannelMember(Long workspaceId, Long channelId, Long userId, ChannelMemberPatchRequest request) {
+        ChannelMemberData data = memberService.patchChannelMember(workspaceId, channelId, userId, request);
+        ChannelMemberPatchResponse response = new ChannelMemberPatchResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     public ResponseEntity<WorkspaceMemberLeaveResponse> leaveWorkspaceMember(Long workspaceId) {
         WorkspaceMemberLeaveResponseData data = memberService.leaveWorkspaceMember(workspaceId);
         WorkspaceMemberLeaveResponse response = new WorkspaceMemberLeaveResponse();
