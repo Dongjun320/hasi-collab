@@ -50,6 +50,8 @@ public enum ErrorCode {
     MBR_005(HttpStatus.NOT_FOUND, "MBR_005", "워크스페이스 또는 채널 또는 멤버를 찾을 수 없습니다"),
     MBR_006(HttpStatus.NOT_FOUND, "MBR_006", "초대를 찾을 수 없습니다"),
     MBR_007(HttpStatus.CONFLICT, "MBR_007", "초대 대기 중인 사용자입니다"),
+    MBR_008(HttpStatus.FORBIDDEN, "MBR_008", "워크스페이스 멤버가 아닌 사용자입니다"),
+    MBR_009(HttpStatus.GONE, "MBR_009", "만료된 초대입니다"),
 
     // BOARD
     BRD_001(HttpStatus.NOT_FOUND, "BRD_001", "보드를 찾을 수 없습니다"),
@@ -66,7 +68,8 @@ public enum ErrorCode {
 
     // USER
     USER_001(HttpStatus.NOT_FOUND, "USER_001", "해당 닉네임의 사용자를 찾을 수 없습니다"),
-    USER_002(HttpStatus.CONFLICT, "USER_002", "이미 사용 중인 닉네임입니다");
+    USER_002(HttpStatus.CONFLICT, "USER_002", "이미 사용 중인 닉네임입니다"),
+    USER_003(HttpStatus.NOT_FOUND, "USER_003", "사용자를 찾을 수 없습니다");
 
     private final HttpStatus status;
     private final String code;

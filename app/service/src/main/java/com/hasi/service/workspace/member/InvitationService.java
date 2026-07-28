@@ -22,6 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,9 +41,14 @@ public class InvitationService {
 
         Long inviterId = getCurrentUserId();
 
+        // inviterId가 워크스페이스 멤버인지 확인
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, inviterId)) {
+            throw new ApiException(ErrorCode.MBR_008);
+        }
+
         // nickname으로 uid 찾기
         User user = userRepository.findByNickname(request.getNickname())
-                .orElseThrow(() -> new ApiException(ErrorCode.MBR_001)); // 추후 커스텀 에러 작성 및 교체
+                .orElseThrow(() -> new ApiException(ErrorCode.MBR_001));
 
         // 이미 워크스페이스에 속한 멤버인지 체크
         if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, user.getUid())) {
@@ -87,18 +93,18 @@ public class InvitationService {
         // nickname으로 uid 찾기
         List<User> users = userRepository.findAllById(request.getInviteeIds());
         if(users.size() != request.getInviteeIds().size()) {
-            throw new ApiException(ErrorCode.USER_001);
+            throw new ApiException(ErrorCode.USER_003);
         }
 
         for(User user : users) {
             // 이미 워크스페이스에 속한 멤버인지 체크
             if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, user.getUid())) {
-                throw new ApiException(ErrorCode.MBR_002);
+                throw new ApiException(ErrorCode.MBR_008);
             }
 
             // 이미 채널에 속한 멤버인지 체크
             if (channelMemberRepository.existsByChannelIdAndUserId(channelId, user.getUid())) {
-                throw new ApiException(ErrorCode.MBR_002);
+                throw new ApiException(ErrorCode.CH_005);
             }
 
             // 초대를 받는 사람이 자신인지 체크
@@ -141,7 +147,7 @@ public class InvitationService {
         // InvitationType(SENT, RECEIVED)에 따른 DB 검색(inviter, invitee) 변경
         Long inviteId = getCurrentUserId();
         List<Invitation> invites;
-        
+
         if (type == InvitationType.SENT) {
             invites = invitationRepository.findByInviterIdAndStatus(inviteId, Invitation.Status.PENDING);
         } else {
@@ -153,14 +159,14 @@ public class InvitationService {
         for (Invitation invite : invites) {
             Channel channel = null;
             User inviter = userRepository.findById(invite.getInviterId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
+                    .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
             User invitee = userRepository.findById(invite.getInviteeId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
+                    .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
             Workspace workspace = workspaceRepository.findById(invite.getWorkspaceId())
                     .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
             if(invite.getChannelId() != null) {
                 channel = channelRepository.findById(invite.getChannelId())
-                        .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+                        .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
             }
 
             InviteMemberData item = new InviteMemberData();
@@ -193,6 +199,7 @@ public class InvitationService {
     @Transactional
     public MemberInviteResponseData patchResponseInvitation(Long invitationId, MemberInvitePatchRequest request) {
 
+        // 초대를 받은 유저
         Long userId = getCurrentUserId();
 
         Invitation invitation = invitationRepository.findById(invitationId)
@@ -204,6 +211,10 @@ public class InvitationService {
 
         if (invitation.getStatus() != Invitation.Status.PENDING) {
             throw new ApiException(ErrorCode.MBR_006);
+        }
+
+        if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new ApiException(ErrorCode.MBR_009);
         }
 
         // 초대 수락/거절/취소에 따른 switch문

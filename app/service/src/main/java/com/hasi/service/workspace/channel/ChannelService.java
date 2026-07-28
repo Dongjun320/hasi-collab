@@ -152,6 +152,7 @@ public class ChannelService {
 
         Long uid = getCurrentUserId();
 
+        // 워크스페이스 있는지 확인
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
 
@@ -163,17 +164,19 @@ public class ChannelService {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
+        // 채널이 있는지 확인
+        Channel channel = getChannelOrThrow(workspaceId, channelId);
+
         // 하위 채널이 있을 경우 삭제 불가
         List<Channel> subChannels = channelRepository.findByParentId(channelId);
         if(!subChannels.isEmpty()) {
             throw new ApiException(ErrorCode.CH_004);
         }
 
+        // 기본 채널을 삭제하려는 경우
         if(channelId.equals(workspace.getDefaultChannelId())) {
             throw new ApiException(ErrorCode.CH_006);
         }
-
-        Channel channel = getChannelOrThrow(workspaceId, channelId);
 
         channelMemberRepository.deleteByChannelId(channel.getId());
         channelRepository.delete(channel);
