@@ -40,7 +40,7 @@ export function WorkspaceHome() {
   const { activeRightPanel, toggleRightPanel } = useUiStore();
   const { friends } = useFriendStore();
   const isOnline = usePresenceStore((s) => s.isOnline);
-  useFriendPresence(friends.map((f) => f.id));
+  useFriendPresence(friends.map((f) => f.uid));
   const { workspaces, setWorkspace, fetchWorkspaces, wsLoading } = useWorkspaceStore();
   const { notifications } = useNotificationStore();
   const unreadNotifications = notifications.filter((n) => n.unread).length;
@@ -116,7 +116,7 @@ export function WorkspaceHome() {
   }, []);
 
   // friendStore에서 가져옴 (오프라인 제외 = 온라인 친구)
-  const onlineFriends = friends.filter((f) => isOnline(f.id));
+  const onlineFriends = friends.filter((f) => isOnline(f.uid));
 
   const recentActivities = [
     { ws: "개", name: "개발팀",   text: "새 메시지 5개",   time: "5분 전",  color: "from-[#5CC87A] to-[#2E8B4F]" },
@@ -247,11 +247,11 @@ export function WorkspaceHome() {
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-xs font-bold">
                         {f.avatar ?? f.name.charAt(0)}
                       </div>
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${presenceDotColor(isOnline(f.id))}`} />
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${presenceDotColor(isOnline(f.uid))}`} />
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-[#2C3E50]">{f.name}</p>
-                      <p className="text-[10px] text-gray-400">{f.statusMessage ?? presenceLabel(isOnline(f.id))}</p>
+                      <p className="text-[10px] text-gray-400">{f.statusMessage ?? presenceLabel(isOnline(f.uid))}</p>
                     </div>
                   </div>
                 ))}

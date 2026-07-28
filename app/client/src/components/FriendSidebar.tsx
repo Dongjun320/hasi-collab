@@ -15,7 +15,7 @@ export function FriendSidebar() {
     const navigate = useNavigate();
     const { friends, setFriends, removeFriend, setMemo } = useFriendStore();
     const isOnline = usePresenceStore((s) => s.isOnline);
-    useFriendPresence(friends.map((f) => f.id));
+    useFriendPresence(friends.map((f) => f.uid));
 
     // 지금 ⋯ 메뉴가 열려있는 친구 id
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
@@ -43,6 +43,7 @@ export function FriendSidebar() {
                 const list = Array.isArray(data) ? data : data ? [data] : [];
                 setFriends(list.map((f: any) => ({
                     id: f.id,
+                    uid: f.uid,
                     name: f.name ?? '',
                     statusMessage: f.statusMessage ?? undefined,
                     unreadCount: 0,   // 서버 미제공 — DM 연동 시 채울 예정
@@ -56,7 +57,7 @@ export function FriendSidebar() {
 
     const open = activeRightPanel === 'friend';
 
-    const onlineCount = friends.filter((f) => isOnline(f.id)).length;
+    const onlineCount = friends.filter((f) => isOnline(f.uid)).length;
     const memoFriend = friends.find((f) => f.id === memoTarget);
 
     const openMemoModal = (id: number, current?: string) => {
@@ -154,17 +155,17 @@ export function FriendSidebar() {
                             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold">
                                 {f.avatar ?? f.name.charAt(0)}
                             </div>
-                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${presenceDotColor(isOnline(f.id))}`} />
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${presenceDotColor(isOnline(f.uid))}`} />
                         </div>
 
                         {/* 이름 + 상태 (여기가 DM 열기 영역) */}
                         <button
-                            onClick={() => { navigate(`/workspace/dm/${f.id}`); closeRightPanel(); }}
+                            onClick={() => { navigate(`/workspace/dm/${f.uid}`); closeRightPanel(); }}
                             className="flex-1 min-w-0 text-left"
                         >
                             <p className="text-sm font-semibold text-[#2C3E50] truncate">{f.name}</p>
                             <p className="text-[11px] text-gray-400 truncate">
-                                {f.memo ?? f.statusMessage ?? presenceLabel(isOnline(f.id))}
+                                {f.memo ?? f.statusMessage ?? presenceLabel(isOnline(f.uid))}
                             </p>
                         </button>
 
@@ -221,7 +222,7 @@ export function FriendSidebar() {
                 <UserSearchBox
                     actionLabel="친구 요청"
                     doneLabel="요청됨"
-                    doneIds={[...friends.map((f) => f.id), ...addedIds]}
+                    doneIds={[...friends.map((f) => f.uid), ...addedIds]}
                     onSelect={handleAddFriend}
                 />
             </Modal>
