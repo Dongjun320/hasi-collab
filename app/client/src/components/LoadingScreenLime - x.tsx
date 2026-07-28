@@ -133,7 +133,7 @@ export default function LoadingScreenLimeX() {
         const alpha = (p < 0.1 ? p / 0.1 : p > 0.9 ? (1 - p) / 0.1 : 1) * 0.9
         el.setAttribute('opacity', alpha.toFixed(3))
         if (p < 1) requestAnimationFrame(tick)
-        else if (el.parentNode) layer.removeChild(el)
+        else if (el.parentNode) layer!.removeChild(el)
       }
       requestAnimationFrame(tick)
     }

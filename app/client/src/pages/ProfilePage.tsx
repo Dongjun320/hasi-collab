@@ -1,4 +1,4 @@
-import { User, Mail, Calendar, MessageSquare } from "lucide-react";
+import { Mail, Calendar, MessageSquare } from "lucide-react";
 
 export function ProfilePage() {
   const profile = {

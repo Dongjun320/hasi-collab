@@ -3,7 +3,6 @@ import {
   Hash,
   MessageSquare,
   MessageCircle,
-  User,
   Settings,
   Plus,
   Search,
