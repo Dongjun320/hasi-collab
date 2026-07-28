@@ -61,7 +61,7 @@ public class WorkspaceService {
         Channel channel = Channel.builder()
                 .workspaceId(workspace.getId())
                 .parentId(null)
-                .name(workspace.getName())
+                .name("공지사항")
                 .isPrivate(false)
                 .build();
 

@@ -35,7 +35,7 @@ app:
   # Service -> Messenger용 JWT
   internal:
     jwt:
-      secret: ${INTERNAL_JWT_SECRET}
+      secret: ${INTERNAL_JWT_SECRET:1234567890987654323456789087654323456789222}
       issuer: ${INTERNAL_JWT_ISSUER:hasi-service}
 
   presence:
