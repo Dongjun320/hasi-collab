@@ -35,6 +35,14 @@ components:
           format: int64
         workspaceName:
           type: string
+        channelId:
+          type: integer
+          format: int64
+          nullable: true
+          description: "워크스페이스 초대면 채널 ID가 NULL, 채널 초대인 경우 채널 ID가 NULL이 아님"
+        channelName:
+          type: string
+          nullable: true
         inviterId:
           type: integer
           format: int64
@@ -167,6 +175,26 @@ components:
           nullable: true
           example: null
 
+    ChannelMemberInviteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "초대 완료"
+            invitationIds:
+              type: array
+              items:
+                type: integer
+                format: int64
+        error:
+          nullable: true
+          example: null
 
     ChannelMemberListResponse:
       type: object

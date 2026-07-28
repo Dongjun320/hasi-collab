@@ -20,8 +20,19 @@ public class MemberController implements WorkspaceMemberApi {
 
     @Override
     public ResponseEntity<WorkspaceMemberInviteResponse> inviteWorkspaceMember(Long workspaceId, WorkspaceMemberInviteRequest request) {
-        WorkspaceMemberInviteResponseData data = invitationService.createInvitation(workspaceId, request);
+        WorkspaceMemberInviteResponseData data = invitationService.createInviteWorkspace(workspaceId, request);
         WorkspaceMemberInviteResponse response = new WorkspaceMemberInviteResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Override
+    public ResponseEntity<ChannelMemberInviteResponse> inviteChannelMember(Long workspaceId, Long channelId, ChannelMemberInviteRequest request) {
+        ChannelMemberInviteResponseData data = invitationService.createInviteChannel(workspaceId, channelId, request);
+        ChannelMemberInviteResponse response = new ChannelMemberInviteResponse();
         response.setSuccess(true);
         response.setData(data);
         response.setError(null);

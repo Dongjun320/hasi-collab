@@ -11,11 +11,11 @@ import com.hasi.service.workspace.member.entity.ChannelMember;
 import com.hasi.service.workspace.member.entity.WorkspaceMember;
 import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;

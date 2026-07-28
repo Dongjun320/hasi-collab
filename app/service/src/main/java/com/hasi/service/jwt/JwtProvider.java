@@ -2,6 +2,7 @@ package com.hasi.service.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -63,5 +64,19 @@ public class JwtProvider {
 
     private SecretKey getKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public long getRemainingExpiration(String token) {
+        Date expiration = getClaims(token).getExpiration();
+        return expiration.getTime() - System.currentTimeMillis();
+    }
+
+    // Header에서 Bearer 토큰 추출
+    public String resolveToken(HttpServletRequest request) {
+        String bearer = request.getHeader("Authorization");
+        if (bearer != null && bearer.startsWith("Bearer ")) {
+            return bearer.substring(7);
+        }
+        return null;
     }
 }

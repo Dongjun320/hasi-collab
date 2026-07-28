@@ -9,12 +9,14 @@ import com.hasi.service.workspace.member.entity.ChannelMember;
 import com.hasi.service.workspace.member.entity.WorkspaceMember;
 import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
-import jakarta.transaction.Transactional;
+import com.hasi.service.workspace.workspace.entity.Workspace;
+import com.hasi.service.workspace.workspace.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -25,6 +27,7 @@ import java.util.List;
 public class ChannelService {
     private final ChannelRepository channelRepository;
     private final ChannelMemberRepository channelMemberRepository;
+    private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
 
     @Transactional
@@ -149,6 +152,9 @@ public class ChannelService {
 
         Long uid = getCurrentUserId();
 
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+
         // 워크스페이스에 소속한 멤버가 아니면 접근불가
         WorkspaceMember workspaceMember = getWorkspaceMemberOrThrow(workspaceId, uid);
 
@@ -161,6 +167,10 @@ public class ChannelService {
         List<Channel> subChannels = channelRepository.findByParentId(channelId);
         if(!subChannels.isEmpty()) {
             throw new ApiException(ErrorCode.CH_004);
+        }
+
+        if(channelId.equals(workspace.getDefaultChannelId())) {
+            throw new ApiException(ErrorCode.CH_006);
         }
 
         Channel channel = getChannelOrThrow(workspaceId, channelId);

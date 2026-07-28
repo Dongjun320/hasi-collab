@@ -34,6 +34,20 @@ components:
           enum: [ADMIN, MEMBER]
           description: "변경할 멤버 역할"
 
+    ChannelMemberInviteRequest:
+      type: object
+      required:
+        - inviteeIds
+      properties:
+        inviteeIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          minItems: 1
+          maxItems: 50
+          description: "초대할 워크스페이스 멤버의 userId 목록"
+
     MemberInvitePatchRequest:
       type: object
       description: "초대 수락/거절/취소 시 요청"

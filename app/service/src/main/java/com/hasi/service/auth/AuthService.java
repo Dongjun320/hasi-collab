@@ -1,7 +1,6 @@
 package com.hasi.service.auth;
 
 import com.hasi.collab.model.*;
-import com.hasi.service.auth.entity.SocialAccount;
 import com.hasi.service.auth.entity.User;
 import com.hasi.service.auth.repository.UserRepository;
 import com.hasi.service.auth.repository.SocialAccountRepository;
@@ -12,13 +11,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+
 import java.time.ZoneOffset;
 
 import java.time.Duration;
@@ -184,8 +180,11 @@ public class AuthService {
         javaMailSender.send(message);
     }
 
-    // logout() - refreshToken 블랙리스트 등록
-    public void logout(LogOutRequest request) {
+    // logout() - accesstoken, refreshToken 블랙리스트 등록
+    public void logout(String accessToken, LogOutRequest request) {
+        long remainingTime = jwtProvider.getRemainingExpiration(accessToken);
+        redisTemplate.opsForValue()
+                .set("BL:" + accessToken, "logout", Duration.ofMillis(remainingTime));
         redisTemplate.opsForValue()
                 .set("BL:" + request.getRefreshToken(), "logout", Duration.ofDays(7));
     }

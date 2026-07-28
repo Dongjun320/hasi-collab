@@ -11,12 +11,12 @@ import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
 import com.hasi.service.workspace.workspace.entity.Workspace;
 import com.hasi.service.workspace.workspace.repository.WorkspaceRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZoneOffset;
 import java.util.ArrayList;
