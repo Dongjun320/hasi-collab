@@ -14,7 +14,8 @@ import { DmConversation } from "./DmConversation";
 export function FriendSidebar() {
     const { activeRightPanel, closeRightPanel } = useUiStore();
     const { friends, setFriends, removeFriend, setMemo } = useFriendStore();
-    const isOnline = usePresenceStore((s) => s.isOnline);
+    const onlineUserIds = usePresenceStore((s) => s.onlineUserIds);
+    const isOnline = (id: number | string) => onlineUserIds.has(String(id));
     useFriendPresence(friends.map((f) => f.uid));
 
     // ✅ 다중 DM 팝업 상태 관리 (열려있는 친구들의 ID 배열)

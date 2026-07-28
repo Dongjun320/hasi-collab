@@ -33,7 +33,8 @@ export function ChannelsPage() {
   const myUid = useAuthStore((s) => s.user?.uid);
   const { currentWorkspace } = useWorkspaceStore();
   const { members, setMembers } = useMemberStore();
-  const isOnline = usePresenceStore((s) => s.isOnline);
+  const onlineUserIds = usePresenceStore((s) => s.onlineUserIds);
+  const isOnline = (id: number | string) => onlineUserIds.has(String(id));
   useWorkspacePresence(currentWorkspace?.id ?? null, members.map((m) => m.userId));
 
   // 실시간 메시지 (히스토리 + STOMP)

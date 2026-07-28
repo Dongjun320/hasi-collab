@@ -1,18 +1,12 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import {
-  Settings, Calendar, LayoutGrid,
-  Plus, Bell, User, Grid3x3, Search,
-  Phone, MessageSquare,  Users, Home,
-  AlertCircle, X,
-} from "lucide-react";
+import { Settings, LayoutGrid, Home, Search, AlertCircle, X,} from "lucide-react";
 import { useState, useEffect } from "react";
 import { WorkspaceSidebar } from "../components/WorkspaceSidebar";
 import { useWorkspaceStore } from "../store/workspaceStore";
-import { useFriendStore } from "../store/friendStore";
-import { useUiStore } from "../store/uiStore";
 import { FriendSidebar } from "../components/FriendSidebar";
 import { NotificationSidebar } from "../components/NotificationSidebar";
-import { useNotificationStore } from "../store/notificationStore";
+import { CalendarSidebar } from "../components/CalendarSidebar";
+import { BottomBar } from "../components/BottomBar";
 import { Tooltip } from "../components/Tooltip";
 import { api } from "../api/client";
 
@@ -28,10 +22,7 @@ export function WorkspaceLayout() {
   } = useWorkspaceStore();
   const location = useLocation();
   const navigate = useNavigate();
-  const { friends } = useFriendStore();
-  const { activeRightPanel, toggleRightPanel } = useUiStore();
   const channels = currentWorkspace ? channelsByWorkspace[currentWorkspace.id] ?? [] : [];
-  const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
 
   const isInChannel = location.pathname.startsWith("/workspace/channels");
 
@@ -170,22 +161,6 @@ export function WorkspaceLayout() {
       const getDefaultChannelId = (workspaceId: number): number | null =>
       lastChannelByWorkspace[workspaceId] ?? channelsByWorkspace[workspaceId]?.[0]?.id ?? null;
 
-
-  const QUICK_ITEMS = [
-    {
-      icon: MessageSquare,
-      label: "메시지",
-      to: currentWorkspace ? `/workspace/channels/${getDefaultChannelId(currentWorkspace.id)}` : "/workspace",
-    },
-    { icon: Calendar, label: "달력",   to: "/workspace/calendar" },
-    { icon: User,     label: "내정보", to: "/workspace/profile" },
-    { icon: Phone,    label: "전화",   to: "#" },
-  ];
-
-  const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0)
-  const { notifications } = useNotificationStore();
-  const unreadNotifications = notifications.filter((n) => n.unread).length;
-
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
 
@@ -280,112 +255,24 @@ export function WorkspaceLayout() {
               </div>
           )}
         </div>
-
-        {/* 빠른 메뉴 팝업 */}
-        {isQuickMenuOpen && (
-          <>
-            <div className="fixed bottom-20 right-4 z-50 bg-white rounded-2xl shadow-2xl border border-[#d4f4dd] p-4">
-              <div className="flex items-center gap-2">
-                {QUICK_ITEMS.map((item, idx) => (
-                  <Link
-                    key={idx}
-                    to={item.to}
-                    onClick={() => item.to !== "#" && setIsQuickMenuOpen(false)}
-                    className="flex flex-col items-center gap-2 p-3 hover:bg-[#f0f9f4] rounded-xl transition-all group"
-                  >
-                    <div className="w-11 h-11 bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <item.icon size={20} className="text-white" />
-                    </div>
-                    <span className="text-xs text-[#2C3E50] font-medium">{item.label}</span>
-                  </Link>
-                ))}
-                <div className="w-px h-14 bg-[#d4f4dd] mx-1" />
-                <button className="flex flex-col items-center gap-2 p-3 hover:bg-[#f0f9f4] rounded-xl transition-all group">
-                  <div className="w-11 h-11 bg-gradient-to-br from-[#d4f4dd] to-[#A8E6B8] rounded-full flex items-center justify-center border-2 border-dashed border-[#5CC87A] group-hover:scale-110 transition-transform">
-                    <Plus size={20} className="text-[#5CC87A]" />
-                  </div>
-                  <span className="text-xs text-[#2C3E50] font-medium">편집</span>
-                </button>
-              </div>
-            </div>
-            <div className="fixed inset-0 z-40" onClick={() => setIsQuickMenuOpen(false)} />
-          </>
-        )}
         </div>
         <FriendSidebar />
         <NotificationSidebar />
+        <CalendarSidebar />
       </div>
 
-      {/* ── 하단 작업표시줄 (윈도우 작업표시줄처럼 전체폭 고정) ── */}
-      <div className="app-chrome h-16 bg-[#1e3a28] flex items-center px-4 gap-1 flex-shrink-0 z-30">
-
-        {/* 홈버튼 */}
+      {/* ── 하단 작업표시줄 ── */}
+      <BottomBar>
+        {/* 좌측: 홈버튼 + 구분선 */}
         <Tooltip label="홈" side="top" align="start">
-          <button
-              onClick={() => navigate("/WorkspaceHome")}
-              className="w-11 h-11 rounded-xl flex items-center justify-center transition-all flex-shrink-0
-              text-white/60 hover:bg-white/10 hover:text-white"
-          >
+          <button onClick={() => navigate("/WorkspaceHome")}
+            className="w-11 h-11 rounded-xl flex items-center justify-center transition-all flex-shrink-0 text-white/60 hover:bg-white/10 hover:text-white">
             <Home size={19} />
           </button>
         </Tooltip>
-
         <div className="h-8 w-[2px] bg-white/20 rounded-full mx-2 flex-shrink-0" />
+      </BottomBar>
 
-          {/* 스페이서 */}
-          <div className="flex-1" />
-
-          <div className="h-8 w-[2px] bg-white/20 rounded-full mx-2 flex-shrink-0" />
-
-          {/* 개인 메뉴 */}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <Tooltip label="빠른 메뉴" side="top">
-              <button
-                onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)}
-                className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all
-                  ${isQuickMenuOpen ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
-              >
-                <Grid3x3 size={19} className="text-white" />
-              </button>
-            </Tooltip>
-            <Tooltip label="알림" side="top">
-              <button
-                  onClick={() => toggleRightPanel('notification')}
-                  className={`relative p-2 rounded-xl transition-all
-                ${activeRightPanel === 'notification' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
-              >
-                <Bell size={18} className="text-white" />
-                {activeRightPanel !== 'notification' && unreadNotifications > 0 && (
-                    <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
-                )}
-              </button>
-            </Tooltip>
-            <Tooltip label="친구 목록" side="top">
-              <button
-                onClick={() => toggleRightPanel('friend')}
-                className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
-                  ${activeRightPanel === 'friend' ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}
-              >
-                <Users size={19} className="text-white" />
-                {activeRightPanel !== 'friend' && totalUnread > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                    {totalUnread}
-                  </span>
-                )}
-              </button>
-            </Tooltip>
-
-            <Tooltip label="내 프로필" side="top" align="end">
-              <Link
-                to="/workspace/profile"
-                className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all ml-1"
-              >
-                나
-              </Link>
-            </Tooltip>
-          </div>
-
-        </div>
     </div>
   );
 }
