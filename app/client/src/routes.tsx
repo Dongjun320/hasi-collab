@@ -3,7 +3,6 @@ import LoginPage from "./pages/LoginPage";
 import ComponentTestPage from "./pages/ComponentTestPage.tsx";
 import { WorkspaceHome } from "./pages/WorkspaceHome.tsx";
 import { WorkspaceLayout } from "./pages/WorkspaceLayout.tsx";
-import { DirectMessagesPage } from "./pages/DirectMessagesPage.tsx";
 import { ChannelsPage } from "./pages/ChannelsPage";
 import { KanbanPage } from "./pages/KanbanPage.tsx";
 import { CalendarPage } from "./pages/CalendarPage.tsx";
@@ -50,8 +49,6 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: ChannelsPage },
       { path: "channels/:channelId", Component: ChannelsPage },
-      { path: "dm", Component: DirectMessagesPage },
-      { path: "dm/:userId", Component: DirectMessagesPage },
       { path: "threads", Component: ThreadsPage },
       { path: "kanban", Component: KanbanPage },
       { path: "calendar", Component: CalendarPage },
