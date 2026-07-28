@@ -1,299 +1,169 @@
-import { useState, useEffect } from "react";
-import { X, MoreHorizontal, Trash2, UserPlus, StickyNote } from "lucide-react";
-import { useUiStore } from "../store/uiStore";
-import { useFriendStore } from "../store/friendStore";
-import { usePresenceStore, presenceDotColor, presenceLabel } from "../store/presenceStore";
-import { useFriendPresence } from "../hooks/usePresence";
-import Modal from "./Modal";
-import { Tooltip } from "./Tooltip";
-import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
-import { api } from "../api/client";
-import { DmConversation } from "./DmConversation";
+import { useState, useEffect, useRef } from "react";
+import { useAuthStore } from "../store/authStore";
+import { useDmMessage } from "../hooks/useDmMessage"; // 기존 훅 재사용
+import { Cloud } from "lucide-react"; // 구름 아이콘 사용을 위해 추가
+// import { useFriendStore } from "../store/friendStore";
 
-export function FriendSidebar() {
-    // ✅ uiStore에서 activeDmPeerId 상태와 변경 함수를 가져옵니다.
-    const { activeRightPanel, closeRightPanel, activeDmPeerId, setActiveDmPeerId } = useUiStore();
+interface DmConversationProps {
+    peerId: number;
+}
 
-    const { friends, setFriends, removeFriend, setMemo } = useFriendStore();
-    const isOnline = usePresenceStore((s) => s.isOnline);
-    useFriendPresence(friends.map((f) => f.uid));
+export function DmConversation({ peerId }: DmConversationProps) {
+    const { user: myInfo } = useAuthStore();
+    const friend = { name: "임시이름", color: "bg-gray-400" }; // 추후 friendStore 연동
 
-    const [openMenuId, setOpenMenuId] = useState<number | null>(null);
-    const [memoTarget, setMemoTarget] = useState<number | null>(null);
-    const [memoText, setMemoText] = useState("");
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [addedIds, setAddedIds] = useState<number[]>([]);
-    const [loadError, setLoadError] = useState("");
-    const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+    const { dmMessages, sendMessage } = useDmMessage(peerId);
+    const [inputText, setInputText] = useState("");
 
+    // 스크롤 및 과거 메시지 로딩 상태 관리
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+
+    // 새 메시지가 오거나 처음 열렸을 때 맨 아래로 자동 스크롤
     useEffect(() => {
-        if (activeRightPanel !== 'friend') return;
-        (async () => {
-            try {
-                const { data, error } = await api.GET('/api/friends');
-                if (error) {
-                    setLoadError('친구 목록을 불러오지 못했습니다');
-                    return;
-                }
-                setLoadError('');
-                const list = Array.isArray(data) ? data : data ? [data] : [];
-                setFriends(list.map((f: any) => ({
-                    id: f.id,
-                    uid: f.uid,
-                    name: f.name ?? '',
-                    statusMessage: f.statusMessage ?? undefined,
-                    unreadCount: 0,
-                })));
-            } catch (e) {
-                console.error('친구 목록 조회 실패:', e);
-                setLoadError('서버에 연결할 수 없습니다');
-            }
-        })();
-    }, [activeRightPanel]);
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [dmMessages]);
 
-    const open = activeRightPanel === 'friend';
-    const onlineCount = friends.filter((f) => isOnline(f.uid)).length;
-    const memoFriend = friends.find((f) => f.id === memoTarget);
+    // 스크롤이 맨 위로 닿았을 때 과거 메시지 20개 불러오기 (구름 로딩 UI)
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        if (e.currentTarget.scrollTop === 0 && !isLoadingOlder) {
+            setIsLoadingOlder(true);
 
-    const openMemoModal = (id: number, current?: string) => {
-        setMemoTarget(id);
-        setMemoText(current ?? "");
-        setOpenMenuId(null);
+            // TODO: 실제 백엔드 페이징(과거 20개) API 호출 로직으로 교체
+            setTimeout(() => {
+                setIsLoadingOlder(false);
+                // 데이터를 불러온 후에는 기존 스크롤 위치를 유지하는 로직이 추가로 필요할 수 있습니다.
+            }, 1500);
+        }
     };
 
-    const handleSaveMemo = () => {
-        if (memoTarget !== null) setMemo(memoTarget, memoText);
-        setMemoTarget(null);
+    const handleSend = () => {
+        if (inputText.trim()) {
+            sendMessage(inputText);
+            setInputText("");
+        }
     };
 
-    const handleAddFriend = async (u: SearchedUser) => {
-        try {
-            const { error } = await api.POST('/api/friends/requests/{receiverId}', {
-                params: { path: { receiverId: u.uid } },
-            });
-            if (error) return;
-            setAddedIds((prev) => [...prev, u.uid]);
-        } catch (e) { console.error('친구 추가 실패:', e); }
+    // YYYY년 MM월 DD일 포맷팅 (날짜 구분선용)
+    const formatDate = (dateStr?: string) => {
+        if (!dateStr) return "";
+        const d = new Date(dateStr);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}년 ${mm}월 ${dd}일`;
     };
 
-    const askDelete = (id: number, name: string) => {
-        setDeleteTarget({ id, name });
-        setOpenMenuId(null);
+    // HH:mm:ss 포맷팅 (24시간 60분 60초)
+    const formatTime = (dateStr?: string) => {
+        if (!dateStr) return "";
+        const d = new Date(dateStr);
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mm = String(d.getMinutes()).padStart(2, "0");
+        const ss = String(d.getSeconds()).padStart(2, "0");
+        return `${hh}:${mm}:${ss}`;
     };
-
-    const confirmDelete = async () => {
-        if (!deleteTarget) return;
-        const { id } = deleteTarget;
-        setDeleteTarget(null);
-        try {
-            const { error } = await api.DELETE('/api/friends/{friendId}', {
-                params: { path: { friendId: id } },
-            });
-            if (error) return;
-            removeFriend(id);
-        } catch (e) { console.error('친구 삭제 실패:', e); }
-    };
-
-    // ✅ 열려있는 단일 DM 상대의 정보를 찾습니다.
-    const activeFriendData = activeDmPeerId ? friends.find(f => Number(f.uid) === activeDmPeerId) : null;
 
     return (
-        <>
-            <div className={`h-full overflow-hidden transition-all duration-200 ease-out flex-shrink-0 ${open ? "w-64" : "w-0"}`}>
-                <div className="app-chrome w-64 h-full bg-white border-l border-[#e8f8ed] flex flex-col">
-                    {/* 헤더 */}
-                    <div className="h-14 px-4 flex items-center justify-between border-b border-[#e8f8ed] flex-shrink-0">
-                        <h2 className="font-bold text-[#2C3E50] text-sm">
-                            친구 <span className="text-[#5CC87A]">· {onlineCount}명 온라인</span>
-                        </h2>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                            <Tooltip label="친구 추가" side="bottom">
-                                <button
-                                    onClick={() => { setAddedIds([]); setShowAddModal(true); }}
-                                    className="p-1 hover:bg-[#f0f9f4] rounded-md transition-all"
-                                >
-                                    <UserPlus size={16} className="text-[#5CC87A]" />
-                                </button>
-                            </Tooltip>
-                            <Tooltip label="친구 목록 닫기" side="bottom" align="end">
-                                <button
-                                    onClick={closeRightPanel}
-                                    className="p-1 hover:bg-[#f0f9f4] rounded-md transition-all"
-                                >
-                                    <X size={16} className="text-gray-400" />
-                                </button>
-                            </Tooltip>
-                        </div>
+        <div className="flex flex-col h-full w-full bg-white">
+
+            {/* 메시지 영역 */}
+            <div
+                ref={scrollRef}
+                onScroll={handleScroll}
+                className="flex-1 overflow-y-auto p-4 flex flex-col"
+            >
+                {/* 과거 메시지 로딩 구름 효과 */}
+                {isLoadingOlder && (
+                    <div className="flex flex-col items-center justify-center py-3 text-gray-400 animate-pulse transition-all">
+                        <Cloud size={24} className="mb-1 text-blue-300" />
+                        <span className="text-[10px] font-medium">이전 메시지 불러오는 중...</span>
                     </div>
+                )}
 
-                    {/* 친구 목록 */}
-                    <div className="flex-1 overflow-y-auto p-2">
-                        {loadError && <p className="text-xs text-red-500 text-center mt-6">{loadError}</p>}
-                        {!loadError && friends.length === 0 && <p className="text-xs text-gray-400 text-center mt-6">친구가 없습니다</p>}
+                {dmMessages.map((msg, index) => {
+                    const isMe = msg.sender === String(myInfo?.uid);
 
-                        {friends.map((f) => (
-                            <div key={f.id} className="relative group flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#f0f9f4] transition-all">
-                                {/* 아바타 */}
-                                <div className="relative flex-shrink-0">
-                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold">
-                                        {f.avatar ?? f.name.charAt(0)}
+                    // 현재 메시지와 이전 메시지의 날짜 비교
+                    const currentDate = formatDate(msg.createdAt);
+                    const prevDate = index > 0 ? formatDate(dmMessages[index - 1].createdAt) : null;
+                    const showDateDivider = currentDate !== prevDate; // 날짜가 달라지면 true
+
+                    return (
+                        <div key={msg.id || index} className="flex flex-col">
+
+                            {/* 그 날의 첫 메시지 위에만 렌더링되는 날짜 구분선 */}
+                            {showDateDivider && (
+                                <div className="flex justify-center my-4">
+                                    <div className="bg-[#f0f9f4] text-[#5CC87A] text-[10px] px-3 py-1 rounded-full font-bold">
+                                        {currentDate}
                                     </div>
-                                    <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${presenceDotColor(isOnline(f.uid))}`} />
                                 </div>
+                            )}
 
-                                {/* 이름 (DM 열기) */}
-                                <button
-                                    // ✅ uiStore의 setActiveDmPeerId를 호출하여 단일 팝업을 띄웁니다.
-                                    onClick={() => setActiveDmPeerId(Number(f.uid))}
-                                    className="flex-1 min-w-0 text-left"
-                                >
-                                    <p className="text-sm font-semibold text-[#2C3E50] truncate">{f.name}</p>
-                                    <p className="text-[11px] text-gray-400 truncate">
-                                        {f.memo ?? f.statusMessage ?? presenceLabel(isOnline(f.uid))}
-                                    </p>
-                                </button>
-
-                                {/* unread 뱃지 */}
-                                {f.unreadCount > 0 && (
-                                    <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center group-hover:hidden">
-                                        {f.unreadCount}
-                                    </span>
+                            {/* 개별 메시지 렌더링 */}
+                            <div className={`flex gap-2 mb-4 ${isMe ? "flex-row-reverse" : ""}`}>
+                                {!isMe && (
+                                    <div className={`w-8 h-8 rounded-full ${friend?.color} flex items-center justify-center text-white font-bold flex-shrink-0 text-sm mt-1`}>
+                                        {friend?.name?.charAt(0) || '?'}
+                                    </div>
                                 )}
 
-                                {/* 더보기 버튼 */}
-                                <button
-                                    onClick={() => setOpenMenuId(openMenuId === f.id ? null : f.id)}
-                                    className={`flex-shrink-0 p-1 rounded-md hover:bg-[#d4f4dd] transition-all ${openMenuId === f.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-                                >
-                                    <MoreHorizontal size={16} className="text-gray-400" />
-                                </button>
+                                <div className={`max-w-[75%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                                    {!isMe && (
+                                        <span className="font-bold text-[#2C3E50] text-xs mb-1 ml-1">{friend?.name}</span>
+                                    )}
 
-                                {/* 드롭다운 */}
-                                {openMenuId === f.id && (
-                                    <>
-                                        <div className="absolute right-2 top-full mt-0.5 w-32 bg-white rounded-xl shadow-xl border border-[#d4f4dd] py-1 z-50">
-                                            <button onClick={() => openMemoModal(f.id, f.memo)} className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-[#f0f9f4]">
-                                                <StickyNote size={13} /> 메모
-                                            </button>
-                                            <button onClick={() => askDelete(f.id, f.name)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50">
-                                                <Trash2 size={13} /> 친구 삭제
-                                            </button>
+                                    <div className={`flex items-end gap-1.5 ${isMe ? "flex-row-reverse" : ""}`}>
+                                        <div
+                                            className={`inline-block px-3 py-2 rounded-xl text-sm text-left break-words shadow-sm ${
+                                                isMe
+                                                    ? "bg-[#5CC87A] text-white rounded-tr-sm"
+                                                    : "bg-gray-100 text-[#2C3E50] rounded-tl-sm"
+                                            }`}
+                                        >
+                                            {msg.content}
                                         </div>
-                                        <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
-                                    </>
-                                )}
+                                        {/* 24시간 60분 60초 타임스탬프 */}
+                                        <span className="text-[9px] text-gray-400 font-medium whitespace-nowrap mb-0.5">
+                                            {formatTime(msg.createdAt)}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                        ))}
-                    </div>
-
-                    {/* 친구 추가 모달 */}
-                    <Modal
-                        isOpen={showAddModal}
-                        onClose={() => setShowAddModal(false)}
-                        title="친구 추가"
-                    >
-                        <UserSearchBox
-                            actionLabel="친구 요청"
-                            doneLabel="요청됨"
-                            doneIds={[...friends.map((f) => f.uid), ...addedIds]}
-                            onSelect={handleAddFriend}
-                        />
-                    </Modal>
-
-                    {/* 메모 모달 */}
-                    <Modal
-                        isOpen={memoTarget !== null}
-                        onClose={() => setMemoTarget(null)}
-                        title={`${memoFriend?.name ?? ""}님 메모`}
-                    >
-                        <input
-                            autoFocus
-                            value={memoText}
-                            onChange={(e) => setMemoText(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleSaveMemo()}
-                            placeholder="예) 디자인팀 팀장"
-                            className="w-full px-3 py-2 border border-[#d4f4dd] rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]"
-                        />
-                        <p className="text-[11px] text-gray-400 mt-2">
-                            메모는 나에게만 보이며, 상태 메시지 대신 표시됩니다.
-                        </p>
-                        <div className="flex justify-end gap-2 mt-4">
-                            <button
-                                onClick={() => setMemoTarget(null)}
-                                className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                취소
-                            </button>
-                            <button
-                                onClick={handleSaveMemo}
-                                className="px-3 py-1.5 text-sm bg-[#5CC87A] text-white rounded-lg hover:bg-[#4ab869] transition-colors"
-                            >
-                                저장
-                            </button>
                         </div>
-                    </Modal>
-
-                    {/* 친구 삭제 확인 모달 */}
-                    <Modal
-                        isOpen={deleteTarget !== null}
-                        onClose={() => setDeleteTarget(null)}
-                        title="친구 삭제"
-                    >
-                        <p className="text-sm text-[#2C3E50]">
-                            <span className="font-semibold">{deleteTarget?.name}</span>님을 친구 목록에서 삭제할까요?
-                        </p>
-                        <p className="text-[11px] text-gray-400 mt-2">
-                            상대방의 친구 목록에서도 삭제됩니다.
-                        </p>
-                        <div className="flex justify-end gap-2 mt-4">
-                            <button
-                                onClick={() => setDeleteTarget(null)}
-                                className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                취소
-                            </button>
-                            <button
-                                onClick={confirmDelete}
-                                className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                            >
-                                삭제
-                            </button>
-                        </div>
-                    </Modal>
-                </div>
+                    );
+                })}
+                {/* 스크롤을 맨 아래로 내리기 위한 보이지 않는 요소 */}
+                <div ref={messagesEndRef} className="h-1" />
             </div>
 
-            {/* ✅ 페이스북 스타일: 단일 DM 팝업 렌더링 영역 */}
-            {/* activeDmPeerId가 존재할 때만 딱 1개의 창을 렌더링합니다. */}
-            {activeDmPeerId !== null && (
-                <div className="fixed bottom-16 right-6 flex items-end gap-4 z-50 pointer-events-none">
-                    <div className="w-[320px] h-[450px] bg-white rounded-t-xl shadow-[0_0_20px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden pointer-events-auto border border-gray-200 animate-fade-in">
-                        {/* 팝업 헤더 (창 틀) */}
-                        <div className="bg-[#5CC87A] px-3 py-2.5 flex justify-between items-center text-white shrink-0">
-                            <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
-                                    {activeFriendData?.avatar ?? activeFriendData?.name?.charAt(0) ?? '?'}
-                                </div>
-                                <span className="font-bold text-sm">
-                                    {activeFriendData?.name || `유저 ${activeDmPeerId}`}
-                                </span>
-                            </div>
-                            {/* 닫기 버튼: id를 null로 만들어 팝업을 닫습니다. */}
-                            <button
-                                onClick={() => setActiveDmPeerId(null)}
-                                className="hover:bg-white/20 p-1 rounded-md transition-colors"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-
-                        {/* 팝업 내부 */}
-                        <div className="flex-1 overflow-hidden relative">
-                            <DmConversation peerId={activeDmPeerId} />
-                        </div>
-                    </div>
+            {/* 메시지 입력 영역 */}
+            <div className="p-3 border-t border-gray-100 bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.02)]">
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleSend();
+                            }
+                        }}
+                        placeholder="메시지 보내기..."
+                        className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A] focus:ring-1 focus:ring-[#5CC87A] transition-all bg-gray-50"
+                    />
+                    <button
+                        onClick={handleSend}
+                        disabled={!inputText.trim()}
+                        className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-bold rounded-lg transition-all"
+                    >
+                        전송
+                    </button>
                 </div>
-            )}
-        </>
+            </div>
+        </div>
     );
 }
