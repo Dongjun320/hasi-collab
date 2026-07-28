@@ -135,7 +135,8 @@ public class FriendService {
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_001));
 
         return new FriendResponse()
-                .id(relationId)               // 관계(요청) id
+                .id(relationId)
+                .uid(user.getUid())
                 .name(user.getNickname())
                 .statusMessage(user.getStatusMessage());
     }

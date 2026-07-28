@@ -23,6 +23,19 @@ JOIN users u ON u.email IN ('1@1.com', '2@2.com', '3@3.com')
 WHERE w.name = 'test_workspace'
 ON CONFLICT (workspace_id, user_id) DO NOTHING;
 
+-- u1 -> u2, u3 친구 - 친구 테스트용
+INSERT INTO friends (sender_id, receiver_id, status, created_at, updated_at)
+SELECT u1.uid, u2.uid, 'ACCEPTED', NOW(), NOW()
+FROM users u1, users u2
+WHERE u1.email = '1@1.com' AND u2.email = '2@2.com'
+    ON CONFLICT DO NOTHING;
+
+INSERT INTO friends (sender_id, receiver_id, status, created_at, updated_at)
+SELECT u1.uid, u2.uid, 'ACCEPTED', NOW(), NOW()
+FROM users u1, users u2
+WHERE u1.email = '1@1.com' AND u2.email = '3@3.com'
+    ON CONFLICT DO NOTHING;
+
 -- u2를 ADMIN(부서장 후보)으로 승격 — 보드 권한 테스트용
 UPDATE workspace_members wm
 SET role = 'ADMIN'
