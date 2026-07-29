@@ -14,7 +14,8 @@ export function FriendSidebar() {
     const { activeRightPanel, closeRightPanel, activeDmPeerId, setActiveDmPeerId } = useUiStore();
 
     const { friends, setFriends, removeFriend, setMemo } = useFriendStore();
-    const isOnline = usePresenceStore((s) => s.isOnline);
+    const onlineUserIds = usePresenceStore((s) => s.onlineUserIds);
+    const isOnline = (id: number | string) => onlineUserIds.has(String(id));
     useFriendPresence(friends.map((f) => f.uid));
 
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
