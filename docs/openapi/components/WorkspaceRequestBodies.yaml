@@ -51,3 +51,36 @@ components:
           type: integer
           format: int64
           description: "워크스페이스 대표(기본) 채널"
+
+    WorkspacePermissionsPatchRequest:
+      type: object
+      required:
+        - permissions
+      description: "워크스페이스 권한 수정 시 요청"
+      properties:
+        permissions:
+          type: array
+          items:
+            type: object
+            required:
+              - permission
+              - adminAllowed
+            properties:
+              permission:
+                type: string
+                enum:
+                  - EDIT_WORKSPACE
+                  - DELETE_WORKSPACE
+                  - INVITE_WORKSPACE_MEMBER
+                  - REMOVE_WORKSPACE_MEMBER
+                  - EDIT_WORKSPACE_MEMBER_ROLE
+                  - CREATE_CHANNEL
+                  - EDIT_CHANNEL
+                  - DELETE_CHANNEL
+                  - INVITE_CHANNEL_MEMBER
+                  - REMOVE_CHANNEL_MEMBER
+                  - EDIT_CHANNEL_MEMBER_ROLE
+                description: "권한 종류"
+              adminAllowed:
+                type: boolean
+                description: "ADMIN 허용 여부"

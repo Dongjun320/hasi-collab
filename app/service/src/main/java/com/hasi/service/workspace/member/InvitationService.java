@@ -14,6 +14,8 @@ import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.InvitationRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
 import com.hasi.service.workspace.workspace.entity.Workspace;
+import com.hasi.service.workspace.workspace.entity.WorkspacePermission;
+import com.hasi.service.workspace.workspace.repository.WorkspacePermissionRepository;
 import com.hasi.service.workspace.workspace.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
@@ -36,15 +38,15 @@ public class InvitationService {
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final ChannelRepository channelRepository;
     private final ChannelMemberRepository channelMemberRepository;
+    private final WorkspacePermissionRepository workspacePermissionRepository;
 
     public WorkspaceMemberInviteResponseData createInviteWorkspace(Long workspaceId, WorkspaceMemberInviteRequest request) {
 
         Long inviterId = getCurrentUserId();
 
         // inviterId가 워크스페이스 멤버인지 확인
-        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, inviterId)) {
-            throw new ApiException(ErrorCode.MBR_008);
-        }
+        WorkspaceMember inviterMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, inviterId)
+                .orElseThrow(() -> new ApiException(ErrorCode.MBR_008));
 
         // nickname으로 uid 찾기
         User user = userRepository.findByNickname(request.getNickname())
@@ -55,13 +57,18 @@ public class InvitationService {
             throw new ApiException(ErrorCode.MBR_002);
         }
 
+        // permission에 따른 확인
+        if(!hasPermission(workspaceId, inviterMember, WorkspacePermission.Permission.INVITE_WORKSPACE_MEMBER)) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
+
         // 초대를 받는 사람이 자신인지 체크
         if (inviterId.equals(user.getUid())) {
             throw new ApiException(ErrorCode.MBR_004);
         }
 
         // 이미 보낸 초대가 PENDING일 경우 다시 보낼 수 없음
-        if (invitationRepository.existsByWorkspaceIdAndInviteeIdAndStatus(workspaceId, user.getUid(), Invitation.Status.PENDING)) {
+        if (invitationRepository.existsByWorkspaceIdAndChannelIdIsNullAndInviteeIdAndStatus(workspaceId, user.getUid(), Invitation.Status.PENDING)) {
             throw new ApiException(ErrorCode.MBR_007);
         }
 
@@ -89,6 +96,14 @@ public class InvitationService {
     public ChannelMemberInviteResponseData createInviteChannel(Long workspaceId, Long channelId, ChannelMemberInviteRequest request) {
         Long inviterId = getCurrentUserId();
         List<Long> invitationIds = new ArrayList<>();
+
+        ChannelMember inviterMember = channelMemberRepository.findByChannelIdAndUserId(channelId, inviterId)
+                .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
+
+        // permission에 따른 확인
+        if(!hasPermission(workspaceId, inviterMember, WorkspacePermission.Permission.INVITE_CHANNEL_MEMBER)) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
 
         // nickname으로 uid 찾기
         List<User> users = userRepository.findAllById(request.getInviteeIds());
@@ -293,6 +308,24 @@ public class InvitationService {
             throw new ApiException(ErrorCode.AUTH_003);
         }
         return Long.valueOf(authentication.getName());
+    }
+
+    private boolean hasPermission(Long workspaceId, WorkspaceMember member, WorkspacePermission.Permission permission) {
+        if (member.getRole() == WorkspaceMember.Role.OWNER) return true;
+        if (member.getRole() == WorkspaceMember.Role.MEMBER) return false;
+
+        // ADMIN이면 워크스페이스별 권한 테이블 조회
+        return workspacePermissionRepository
+                .existsByWorkspaceIdAndPermissionAndAdminAllowed(workspaceId, permission, true);
+    }
+
+    private boolean hasPermission(Long workspaceId, ChannelMember member, WorkspacePermission.Permission permission) {
+        if (member.getRole() == ChannelMember.Role.OWNER) return true;
+        if (member.getRole() == ChannelMember.Role.MEMBER) return false;
+
+        // ADMIN이면 워크스페이스별 권한 테이블 조회
+        return workspacePermissionRepository
+                .existsByWorkspaceIdAndPermissionAndAdminAllowed(workspaceId, permission, true);
     }
 }
 

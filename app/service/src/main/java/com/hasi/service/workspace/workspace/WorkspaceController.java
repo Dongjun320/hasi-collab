@@ -70,4 +70,27 @@ public class WorkspaceController implements WorkspaceApi {
         return ResponseEntity.ok(response);
     }
 
+    @Override
+    public ResponseEntity<WorkspacePermissionsGetResponse> getWorkspacePermissions(Long workspaceId) {
+        List<WorkspacePermissionData> data = workspaceService.getWorkspacePermissions(workspaceId);
+        WorkspacePermissionsGetResponse response = new WorkspacePermissionsGetResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<WorkspacePermissionsPatchResponse> patchWorkspacePermissions(Long workspaceId, WorkspacePermissionsPatchRequest request) {
+        List<WorkspacePermissionData> data = workspaceService.patchWorkspacePermissions(workspaceId, request);
+        WorkspacePermissionsPatchResponse response = new WorkspacePermissionsPatchResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.ok(response);
+    }
+
+
 }

@@ -14,6 +14,8 @@ import com.hasi.service.workspace.member.entity.WorkspaceMember;
 import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
 import com.hasi.service.workspace.workspace.entity.Workspace;
+import com.hasi.service.workspace.workspace.entity.WorkspacePermission;
+import com.hasi.service.workspace.workspace.repository.WorkspacePermissionRepository;
 import com.hasi.service.workspace.workspace.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
@@ -37,6 +39,7 @@ public class WorkspaceService {
     private final BoardRepository boardRepository;
     private final BoardMemberRepository boardMemberRepository;
     private final TaskRepository taskRepository;
+    private final WorkspacePermissionRepository workspacePermissionRepository;
 
     @Transactional
     public WorkspaceData createWorkspace(WorkspaceCreateRequest request) {
@@ -83,6 +86,17 @@ public class WorkspaceService {
         channelMemberRepository.save(channelOwner);
 
         workspace.updateDefaultChannelId(channel.getId());
+
+        // WorkspacePermission 엔티티 생성 및 저장
+        for (WorkspacePermission.Permission permission : WorkspacePermission.Permission.values()) {
+            workspacePermissionRepository.save(
+                    WorkspacePermission.builder()
+                            .workspaceId(saved.getId())
+                            .permission(permission)
+                            .adminAllowed(false)
+                            .build()
+            );
+        }
 
         // DTO 변환
         WorkspaceData data = new WorkspaceData();
@@ -165,8 +179,8 @@ public class WorkspaceService {
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, uid)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
-        // owner가 아니면 수정 불가
-        if(!workspaceMember.getRole().name().equals("OWNER")) {
+        // permission에 따른 수정
+        if(!hasPermission(workspaceId, workspaceMember, WorkspacePermission.Permission.EDIT_WORKSPACE)) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -213,8 +227,8 @@ public class WorkspaceService {
         WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, uid)
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
 
-        // owner가 아니면 삭제 불가
-        if(!workspaceMember.getRole().name().equals("OWNER")) {
+        // permission에 따른 수정
+        if(!hasPermission(workspaceId, workspaceMember, WorkspacePermission.Permission.DELETE_WORKSPACE)) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -240,11 +254,79 @@ public class WorkspaceService {
         // 워크스페이스 멤버 삭제
         workspaceMemberRepository.deleteByWorkspaceId(workspaceId);
 
+        // 워크스페이스 권한 삭제
+        workspacePermissionRepository.deleteByWorkspaceId(workspaceId);
+
         // 워크스페이스 삭제
         workspaceRepository.delete(workspace);
         
         WorkspaceDeleteResponseData data = new WorkspaceDeleteResponseData();
         data.setMessage("워크스페이스 삭제 완료");
+
+        return data;
+    }
+
+    private boolean hasPermission(Long workspaceId, WorkspaceMember member, WorkspacePermission.Permission permission) {
+        if (member.getRole() == WorkspaceMember.Role.OWNER) return true;
+        if (member.getRole() == WorkspaceMember.Role.MEMBER) return false;
+
+        // ADMIN이면 워크스페이스별 권한 테이블 조회
+        return workspacePermissionRepository
+                .existsByWorkspaceIdAndPermissionAndAdminAllowed(workspaceId, permission, true);
+    }
+
+    public List<WorkspacePermissionData> getWorkspacePermissions(Long workspaceId) {
+        Long ownerId = getCurrentUserId();
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+
+        if(!ownerId.equals(workspace.getOwnerId())) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
+
+        List<WorkspacePermission> permissions = workspacePermissionRepository.findByWorkspaceId(workspaceId);
+
+        List<WorkspacePermissionData> data = new ArrayList<>();
+
+        for (WorkspacePermission permission : permissions) {
+            WorkspacePermissionData item = new WorkspacePermissionData();
+            item.setPermission(WorkspacePermissionData.PermissionEnum.fromValue(permission.getPermission().name()));
+            item.setAdminAllowed(permission.isAdminAllowed());
+            data.add(item);
+        }
+
+        return data;
+    }
+
+    @Transactional
+    public List<WorkspacePermissionData> patchWorkspacePermissions(Long workspaceId, WorkspacePermissionsPatchRequest request) {
+        Long ownerId = getCurrentUserId();
+
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+
+        if(!ownerId.equals(workspace.getOwnerId())) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
+
+        for (WorkspacePermissionsPatchRequestPermissionsInner item : request.getPermissions()) {
+            WorkspacePermission permission = workspacePermissionRepository
+                    .findByWorkspaceIdAndPermission(workspaceId, WorkspacePermission.Permission.valueOf(item.getPermission().name()))
+                    .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
+
+            permission.updateAdminAllowed(item.getAdminAllowed());
+        }
+
+        List<WorkspacePermission> permissions = workspacePermissionRepository.findByWorkspaceId(workspaceId);
+        List<WorkspacePermissionData> data = new ArrayList<>();
+
+        for (WorkspacePermission permission : permissions) {
+            WorkspacePermissionData permissionData = new WorkspacePermissionData();
+            permissionData.setPermission(WorkspacePermissionData.PermissionEnum.fromValue(permission.getPermission().name()));
+            permissionData.setAdminAllowed(permission.isAdminAllowed());
+            data.add(permissionData);
+        }
 
         return data;
     }

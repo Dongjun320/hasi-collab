@@ -10,6 +10,8 @@ import com.hasi.service.workspace.member.entity.WorkspaceMember;
 import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
 import com.hasi.service.workspace.workspace.entity.Workspace;
+import com.hasi.service.workspace.workspace.entity.WorkspacePermission;
+import com.hasi.service.workspace.workspace.repository.WorkspacePermissionRepository;
 import com.hasi.service.workspace.workspace.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
@@ -29,6 +31,7 @@ public class ChannelService {
     private final ChannelMemberRepository channelMemberRepository;
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final WorkspacePermissionRepository workspacePermissionRepository;
 
     @Transactional
     public ChannelData createWorkspaceChannel(Long workspaceId, ChannelCreateRequest request) {
@@ -36,7 +39,7 @@ public class ChannelService {
         Long uid = getCurrentUserId();
         WorkspaceMember workspaceMember = getWorkspaceMemberOrThrow(workspaceId, uid);
 
-        if(!workspaceMember.getRole().name().equals("OWNER")) {
+        if(!hasPermission(workspaceId, workspaceMember, WorkspacePermission.Permission.CREATE_CHANNEL)) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -123,7 +126,7 @@ public class ChannelService {
         Long uid = getCurrentUserId();
         WorkspaceMember workspaceMember = getWorkspaceMemberOrThrow(workspaceId, uid);
 
-        if(!workspaceMember.getRole().name().equals("OWNER")) {
+        if(!hasPermission(workspaceId, workspaceMember, WorkspacePermission.Permission.EDIT_CHANNEL)) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -159,8 +162,8 @@ public class ChannelService {
         // 워크스페이스에 소속한 멤버가 아니면 접근불가
         WorkspaceMember workspaceMember = getWorkspaceMemberOrThrow(workspaceId, uid);
 
-        // owner가 아니면 삭제 불가
-        if(!workspaceMember.getRole().name().equals("OWNER")) {
+        // permission에 따른 수정
+        if(!hasPermission(workspaceId, workspaceMember, WorkspacePermission.Permission.DELETE_CHANNEL)) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -236,5 +239,14 @@ public class ChannelService {
     private Channel getChannelOrThrow(Long workspaceId, Long channelId) {
         return channelRepository.findByWorkspaceIdAndId(workspaceId, channelId)
                 .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
+    }
+
+    private boolean hasPermission(Long workspaceId, WorkspaceMember member, WorkspacePermission.Permission permission) {
+        if (member.getRole() == WorkspaceMember.Role.OWNER) return true;
+        if (member.getRole() == WorkspaceMember.Role.MEMBER) return false;
+
+        // ADMIN이면 워크스페이스별 권한 테이블 조회
+        return workspacePermissionRepository
+                .existsByWorkspaceIdAndPermissionAndAdminAllowed(workspaceId, permission, true);
     }
 }

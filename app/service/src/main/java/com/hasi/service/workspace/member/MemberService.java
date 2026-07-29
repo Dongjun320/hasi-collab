@@ -12,6 +12,8 @@ import com.hasi.service.workspace.member.entity.WorkspaceMember;
 import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
 import com.hasi.service.workspace.workspace.entity.Workspace;
+import com.hasi.service.workspace.workspace.entity.WorkspacePermission;
+import com.hasi.service.workspace.workspace.repository.WorkspacePermissionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +30,7 @@ public class MemberService {
     private final ChannelMemberRepository channelMemberRepository;
     private final UserRepository userRepository;
     private final ChannelRepository channelRepository;
+    private final WorkspacePermissionRepository workspacePermissionRepository;
 
     public List<WorkspaceMemberData> getWorkspaceMembers(Long workspaceId) {
         List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
@@ -74,9 +77,10 @@ public class MemberService {
         // 워크스페이스의 멤버인지 확인
         WorkspaceMember workspaceOwner = getWorkspaceMemberOrThrow(workspaceId, ownerId);
 
-        if(!workspaceOwner.getRole().equals(WorkspaceMember.Role.OWNER)) {
+        if(!hasPermission(workspaceId, workspaceOwner, WorkspacePermission.Permission.EDIT_WORKSPACE_MEMBER_ROLE)) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
+
 
         if(userId.equals(ownerId)) {
             throw new ApiException(ErrorCode.MBR_004);
@@ -112,7 +116,7 @@ public class MemberService {
         // 채널의 멤버인지 확인
         ChannelMember channelOwner = getChannelMemberOrThrow(channelId, ownerId);
 
-        if(!channelOwner.getRole().equals(ChannelMember.Role.OWNER)) {
+        if(!hasPermission(workspaceId, channelOwner, WorkspacePermission.Permission.EDIT_CHANNEL_MEMBER_ROLE)) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -211,7 +215,7 @@ public class MemberService {
         WorkspaceMember workspaceOwner = getWorkspaceMemberOrThrow(workspaceId, ownerId);
 
         // 워크스페이스의 OWNER가 아니면 추방 불가
-        if(!workspaceOwner.getRole().equals(WorkspaceMember.Role.OWNER)) {
+        if(!hasPermission(workspaceId, workspaceOwner, WorkspacePermission.Permission.REMOVE_WORKSPACE_MEMBER)) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -248,8 +252,8 @@ public class MemberService {
 
         ChannelMember channelOwner = getChannelMemberOrThrow(channelId, ownerId);
 
-        // 채널의 OWNER인지 확인
-        if(!channelOwner.getRole().equals(ChannelMember.Role.OWNER)) {
+        // 채널의 permission에 따른 수정
+        if(!hasPermission(workspaceId, channelOwner, WorkspacePermission.Permission.REMOVE_CHANNEL_MEMBER)) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -291,6 +295,24 @@ public class MemberService {
     private ChannelMember getChannelMemberOrThrow(Long channelId, Long userId) {
         return channelMemberRepository.findByChannelIdAndUserId(channelId, userId)
                 .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
+    }
+
+    private boolean hasPermission(Long workspaceId, WorkspaceMember member, WorkspacePermission.Permission permission) {
+        if (member.getRole() == WorkspaceMember.Role.OWNER) return true;
+        if (member.getRole() == WorkspaceMember.Role.MEMBER) return false;
+
+        // ADMIN이면 워크스페이스별 권한 테이블 조회
+        return workspacePermissionRepository
+                .existsByWorkspaceIdAndPermissionAndAdminAllowed(workspaceId, permission, true);
+    }
+
+    private boolean hasPermission(Long workspaceId, ChannelMember member, WorkspacePermission.Permission permission) {
+        if (member.getRole() == ChannelMember.Role.OWNER) return true;
+        if (member.getRole() == ChannelMember.Role.MEMBER) return false;
+
+        // ADMIN이면 워크스페이스별 권한 테이블 조회
+        return workspacePermissionRepository
+                .existsByWorkspaceIdAndPermissionAndAdminAllowed(workspaceId, permission, true);
     }
 
 

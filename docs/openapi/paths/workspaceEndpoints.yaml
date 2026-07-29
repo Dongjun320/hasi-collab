@@ -261,3 +261,102 @@ paths:
             application/json:
               schema:
                 $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/workspaces/{workspaceId}/permissions:
+    get:
+      summary: "모든 권한 조회"
+      tags:
+        - Workspace
+      operationId: getWorkspacePermissions
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "모든 권한 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/WorkspaceResponseBodies.yaml#/components/schemas/WorkspacePermissionsGetResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 조회 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 워크스페이스가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS002Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+    patch:
+      summary: "권한 부분 수정"
+      tags:
+        - Workspace
+      operationId: patchWorkspacePermissions
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/WorkspaceRequestBodies.yaml#/components/schemas/WorkspacePermissionsPatchRequest"
+      responses:
+        '200':
+          description: "권한 부분 수정 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/WorkspaceResponseBodies.yaml#/components/schemas/WorkspacePermissionsPatchResponse"
+        '400':
+          description: "Bad Request, 유효하지 않은 값"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS003Error"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 해당 워크스페이스 권한 수정 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 워크스페이스가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS002Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"

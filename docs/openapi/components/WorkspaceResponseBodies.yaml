@@ -39,6 +39,18 @@ components:
           format: date-time
           description: "수정일시"
 
+    WorkspacePermissionData:
+      type: object
+      properties:
+        permission:
+          type: string
+          enum: [EDIT_WORKSPACE, DELETE_WORKSPACE, INVITE_WORKSPACE_MEMBER,
+                REMOVE_WORKSPACE_MEMBER, EDIT_WORKSPACE_MEMBER_ROLE, CREATE_CHANNEL,
+                EDIT_CHANNEL, DELETE_CHANNEL, INVITE_CHANNEL_MEMBER,
+                 REMOVE_CHANNEL_MEMBER, EDIT_CHANNEL_MEMBER_ROLE]
+        adminAllowed:
+          type: boolean
+
     WorkspaceCreateResponse:
       type: object
       properties:
@@ -142,3 +154,30 @@ components:
           nullable: true
           example: null
 
+    WorkspacePermissionsGetResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkspacePermissionData'
+        error:
+          nullable: true
+          example: null
+
+    WorkspacePermissionsPatchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkspacePermissionData'
+        error:
+          nullable: true
+          example: null
