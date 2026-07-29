@@ -3,6 +3,10 @@ package com.hasi.service.workspace.workspace;
 import com.hasi.collab.model.*;
 import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
+import com.hasi.service.workspace.board.entity.Board;
+import com.hasi.service.workspace.board.repository.BoardMemberRepository;
+import com.hasi.service.workspace.board.repository.BoardRepository;
+import com.hasi.service.workspace.board.repository.TaskRepository;
 import com.hasi.service.workspace.channel.entity.Channel;
 import com.hasi.service.workspace.channel.repository.ChannelRepository;
 import com.hasi.service.workspace.member.entity.ChannelMember;
@@ -30,6 +34,9 @@ public class WorkspaceService {
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final ChannelRepository channelRepository;
     private final ChannelMemberRepository channelMemberRepository;
+    private final BoardRepository boardRepository;
+    private final BoardMemberRepository boardMemberRepository;
+    private final TaskRepository taskRepository;
 
     @Transactional
     public WorkspaceData createWorkspace(WorkspaceCreateRequest request) {
@@ -219,6 +226,16 @@ public class WorkspaceService {
 
         // 채널 삭제
         channelRepository.deleteAll(channels);
+
+        // 워크스페이스 소속 보드들의 태스크·부서원 먼저 삭제
+        List<Board> boards = boardRepository.findByWorkspaceId(workspaceId);
+        for (Board board : boards) {
+            taskRepository.deleteByBoardId(board.getId());
+            boardMemberRepository.deleteByBoardId(board.getId());
+        }
+
+        // 보드 삭제
+        boardRepository.deleteAll(boards);
 
         // 워크스페이스 멤버 삭제
         workspaceMemberRepository.deleteByWorkspaceId(workspaceId);
