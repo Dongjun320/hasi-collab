@@ -53,7 +53,7 @@ export const useWeatherStore = create<WeatherState>()(
               const { latitude: lat, longitude: lon } = pos.coords
               const [wRes, gRes] = await Promise.all([
                 fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`),
-                fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ko`),
+                fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ja`),
               ])
               const w = await wRes.json()
               const g = await gRes.json().catch(() => ({} as any))

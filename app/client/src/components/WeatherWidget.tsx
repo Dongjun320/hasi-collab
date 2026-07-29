@@ -7,16 +7,16 @@ import { useWeatherStore } from '../store/weatherStore'
 
 // WMO weather_code → 이모지 + 한글 설명
 const weatherInfo = (code: number): { icon: string; label: string } => {
-  if (code === 0) return { icon: '☀️', label: '맑음' }
-  if (code <= 2) return { icon: '🌤️', label: '구름 조금' }
-  if (code === 3) return { icon: '☁️', label: '흐림' }
-  if (code <= 48) return { icon: '🌫️', label: '안개' }
-  if (code <= 57) return { icon: '🌦️', label: '이슬비' }
-  if (code <= 67) return { icon: '🌧️', label: '비' }
-  if (code <= 77) return { icon: '🌨️', label: '눈' }
-  if (code <= 82) return { icon: '🌦️', label: '소나기' }
-  if (code <= 86) return { icon: '🌨️', label: '소낙눈' }
-  return { icon: '⛈️', label: '뇌우' }
+  if (code === 0) return { icon: '☀️', label: '快晴' }
+  if (code <= 2) return { icon: '🌤️', label: '晴れ' }
+  if (code === 3) return { icon: '☁️', label: '曇り' }
+  if (code <= 48) return { icon: '🌫️', label: '霧' }
+  if (code <= 57) return { icon: '🌦️', label: '霧雨' }
+  if (code <= 67) return { icon: '🌧️', label: '雨' }
+  if (code <= 77) return { icon: '🌨️', label: '雪' }
+  if (code <= 82) return { icon: '🌦️', label: 'にわか雨' }
+  if (code <= 86) return { icon: '🌨️', label: 'にわか雪' }
+  return { icon: '⛈️', label: '雷雨' }
 }
 
 export function WeatherWidget() {
@@ -33,7 +33,7 @@ export function WeatherWidget() {
   if (!enabled || status === 'denied' || status === 'error') return null
 
   if (!data) {
-    return <span className="no-drag text-[11px] text-white/40 select-none">날씨…</span>
+    return <span className="no-drag text-[11px] text-white/40 select-none">天気…</span>
   }
 
   const { icon, label } = weatherInfo(data.code)
