@@ -106,6 +106,19 @@ logging:
     org.springframework.security: DEBUG
     org.springframework.web.client: DEBUG
 
+app:
+  # Service -> Messenger 서버 간 호출용.
+  internal:
+    jwt:
+      # messenger의 app.internal.jwt.secret과 반드시 같아야 합니다.
+      secret: ${INTERNAL_JWT_SECRET:1234567890987654323456789087654323456789222}
+      issuer: ${INTERNAL_JWT_ISSUER:hasi-service}
+      # 요청마다 새로 발급하므로 짧게.
+      ttl-seconds: ${INTERNAL_JWT_TTL_SECONDS:60}
+
+  messenger:
+    base-url: ${MESSENGER_BASE_URL:http://localhost:8081}
+
 ncp:
   object-storage:
     endpoint: https://kr.object.ncloudstorage.com
