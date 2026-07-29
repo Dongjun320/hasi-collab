@@ -38,7 +38,8 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     private static final Pattern WORKSPACE_PRESENCE_TOPIC = Pattern.compile("^/topic/workspace\\.(\\d+)\\.presence$");
 
     private static final Set<String> USER_DESTINATIONS =
-            Set.of("/user/queue/dm", "/user/queue/errors", "/user/queue/presence");
+            Set.of("/user/queue/dm", "/user/queue/errors", "/user/queue/presence",
+                    "/user/queue/notifications");
 
     private final JwtProvider jwtProvider;
     private final ServiceDirectory serviceDirectory;

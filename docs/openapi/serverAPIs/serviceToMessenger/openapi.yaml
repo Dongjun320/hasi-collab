@@ -7,6 +7,12 @@ paths:
   /messenger-api/internal/channel-messages:
     $ref: "./paths/InternalMessageEndpoints.yaml#/paths/~1messenger-api~1internal~1channel-messages"
 
+  /messenger-api/internal/notifications:
+    $ref: "./paths/InternalNotificationEndpoints.yaml#/paths/~1messenger-api~1internal~1notifications"
+
+  /messenger-api/internal/notifications/resolve:
+    $ref: "./paths/InternalNotificationEndpoints.yaml#/paths/~1messenger-api~1internal~1notifications~1resolve"
+
 components:
   securitySchemes:
     # 서버 간 호출용 JWT. 사용자 토큰과 서명 키가 분리돼 있습니다
