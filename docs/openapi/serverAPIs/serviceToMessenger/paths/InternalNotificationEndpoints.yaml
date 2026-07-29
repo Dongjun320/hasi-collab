@@ -1,0 +1,71 @@
+paths:
+  # 서버 간(Service -> Messenger) 호출 전용.
+  /messenger-api/internal/notifications:
+    post:
+      summary: "알림 생성 후 수신자의 개인 큐로 푸시"
+      description: >
+        트랜잭션 커밋 후에 호출하세요. 한 번에 한 명입니다. 채널 초대처럼 여러 명에게 보낼 때는 수신자별로 호출하세요.
+      operationId: createNotification
+      tags:
+        - InternalNotification
+      security:
+        - InternalToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../components/NotificationResponseBodies.yaml#/components/schemas/NotificationCreateRequest"
+      responses:
+        '200':
+          description: "저장·푸시 완료. dedupKey가 중복이면 created=false와 기존 알림을 반환"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/NotificationResponseBodies.yaml#/components/schemas/NotificationCreateResponse"
+        '400':
+          description: "필수 필드 누락, 알 수 없는 type, 또는 존재하지 않는 recipientId"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MessageResponseBodies.yaml#/components/schemas/InternalErrorResponse"
+        '403':
+          description: "내부 JWT 누락/서명 불일치/만료, 또는 scope·iss 클레임 불충족"
+
+  /messenger-api/internal/notifications/resolve:
+    patch:
+      summary: "처리된 알림에 resolved 표시"
+      description: >
+        초대가 수락·거절되거나 친구 요청이 처리되면 호출합니다.
+        없는 dedupKey를 넘겨도 0을 반환합니다(idempotent).
+      operationId: resolveNotifications
+      tags:
+        - InternalNotification
+      security:
+        - InternalToken: []
+      parameters:
+        - name: dedupKeys
+          in: query
+          required: true
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            items:
+              type: string
+      responses:
+        '200':
+          description: "처리 완료. resolved로 바뀐 row 수 반환"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/NotificationResponseBodies.yaml#/components/schemas/NotificationResolveResponse"
+        '400':
+          description: "dedupKeys가 비었거나 형식이 잘못됨"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MessageResponseBodies.yaml#/components/schemas/InternalErrorResponse"
+        '403':
+          description: "내부 JWT 누락/서명 불일치/만료, 또는 scope·iss 클레임 불충족"
