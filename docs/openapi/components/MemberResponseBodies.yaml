@@ -77,12 +77,14 @@ components:
             message:
               type: string
               example: "초대 완료"
-            userId:
-              type: integer
-              format: int64
+            invitationIds:
+              type: array
+              items:
+                type: integer
+                format: int64
             role:
               type: string
-              enum: [OWNER, ADMIN, MEMBER]
+              enum: [ADMIN, MEMBER]
         error:
           nullable: true
           example: null
