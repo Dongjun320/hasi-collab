@@ -171,4 +171,26 @@ public class MemberController implements WorkspaceMemberApi {
         return ResponseEntity.ok(response);
     }
 
+    @Override
+    public ResponseEntity<TransferWorkspaceOwnershipResponse> transferWorkspaceOwnership(Long workspaceId, TransferWorkspaceOwnershipRequest request) {
+        TransferWorkspaceOwnershipResponseData data = memberService.transferWorkspaceOwnership(workspaceId, request);
+        TransferWorkspaceOwnershipResponse response = new TransferWorkspaceOwnershipResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<TransferChannelOwnershipResponse> transferChannelOwnership(Long workspaceId, Long channelId, TransferChannelOwnershipRequest request) {
+        TransferChannelOwnershipResponseData data = memberService.transferChannelOwnership(workspaceId, channelId, request);
+        TransferChannelOwnershipResponse response = new TransferChannelOwnershipResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.ok(response);
+    }
+
 }

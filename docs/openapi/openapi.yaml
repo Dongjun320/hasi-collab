@@ -104,6 +104,12 @@ paths:
   /api/invitations/{invitationId}:
     $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1invitations~1{invitationId}"
 
+  /api/workspaces/{workspaceId}/transfer-ownership:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1transfer-ownership"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/transfer-ownership:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}~1transfer-ownership"
+
   /api/friends:
     $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends"
 

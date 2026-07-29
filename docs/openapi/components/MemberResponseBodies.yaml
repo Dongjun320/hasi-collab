@@ -277,3 +277,43 @@ components:
         error:
           nullable: true
           example: null
+
+    TransferWorkspaceOwnershipResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: "OWNER 위임 성공 메시지"
+            previousOwner:
+              $ref: "#/components/schemas/WorkspaceMemberData"
+            newOwner:
+              $ref: "#/components/schemas/WorkspaceMemberData"
+        error:
+          nullable: true
+          example: null
+
+    TransferChannelOwnershipResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: "OWNER 위임 성공 메시지"
+            previousOwner:
+              $ref: "#/components/schemas/ChannelMemberData"
+            newOwner:
+              $ref: "#/components/schemas/ChannelMemberData"
+        error:
+          nullable: true
+          example: null

@@ -668,3 +668,121 @@ paths:
             application/json:
               schema:
                 $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/workspaces/{workspaceId}/transfer-ownership:
+    post:
+      summary: "워크스페이스 OWNER 위임"
+      tags:
+        - WorkspaceMember
+      operationId: transferWorkspaceOwnership
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/MemberRequestBodies.yaml#/components/schemas/TransferWorkspaceOwnershipRequest"
+      responses:
+        '200':
+          description: "워크스페이스 OWNER 위임 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/TransferWorkspaceOwnershipResponse"
+        '400':
+          description: "Bad Request, 자기 자신에게 위임 불가"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR004Error"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, OWNER 위임 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 대상 멤버가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/transfer-ownership:
+    post:
+      summary: "채널 OWNER 위임"
+      tags:
+        - WorkspaceMember
+      operationId: transferChannelOwnership
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: channelId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "../components/MemberRequestBodies.yaml#/components/schemas/TransferChannelOwnershipRequest"
+      responses:
+        '200':
+          description: "채널 OWNER 위임 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/MemberResponseBodies.yaml#/components/schemas/TransferChannelOwnershipResponse"
+        '400':
+          description: "Bad Request, 자기 자신에게 위임 불가"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR004Error"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, OWNER 위임 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 대상 멤버가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/MBR003Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"

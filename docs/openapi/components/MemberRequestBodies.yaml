@@ -55,3 +55,22 @@ components:
         action:
           type: string
           enum: [ACCEPTED, DECLINED, CANCELLED]
+
+    TransferWorkspaceOwnershipRequest:
+      type: object
+      required:
+        - newOwnerUserId
+      properties:
+        newOwnerUserId:
+          type: integer
+          format: int64
+          
+    TransferChannelOwnershipRequest:
+      type: object
+      required:
+        - newOwnerUserId
+      properties:
+        newOwnerUserId:
+          type: integer
+          format: int64
+

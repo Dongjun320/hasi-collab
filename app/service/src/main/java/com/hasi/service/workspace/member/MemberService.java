@@ -315,5 +315,94 @@ public class MemberService {
                 .existsByWorkspaceIdAndPermissionAndAdminAllowed(workspaceId, permission, true);
     }
 
+    @Transactional
+    public TransferWorkspaceOwnershipResponseData transferWorkspaceOwnership(Long workspaceId, TransferWorkspaceOwnershipRequest request) {
+        Long previousOwnerId = getCurrentUserId();
 
+        User previousUser = userRepository.findById(previousOwnerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
+        User newUser = userRepository.findById(request.getNewOwnerUserId())
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
+
+        WorkspaceMember previousOwner = getWorkspaceMemberOrThrow(workspaceId, previousOwnerId);
+        WorkspaceMember newOwner = getWorkspaceMemberOrThrow(workspaceId, request.getNewOwnerUserId());
+
+        if(!previousOwner.getRole().equals(WorkspaceMember.Role.OWNER)) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
+
+        if (previousOwnerId.equals(request.getNewOwnerUserId())) {
+            throw new ApiException(ErrorCode.MBR_004);
+        }
+
+        newOwner.updateRole(WorkspaceMember.Role.OWNER);
+        previousOwner.updateRole(WorkspaceMember.Role.ADMIN);
+
+        TransferWorkspaceOwnershipResponseData data = new TransferWorkspaceOwnershipResponseData();
+        WorkspaceMemberData newOwnerData = new WorkspaceMemberData();
+        WorkspaceMemberData previousOwnerData = new WorkspaceMemberData();
+
+        newOwnerData.setUserId(newOwner.getUserId());
+        newOwnerData.setNickname(newUser.getNickname());
+        newOwnerData.setRole(WorkspaceMemberData.RoleEnum.fromValue(newOwner.getRole().name()));
+
+        previousOwnerData.setUserId(previousOwner.getUserId());
+        previousOwnerData.setNickname(previousUser.getNickname());
+        previousOwnerData.setRole(WorkspaceMemberData.RoleEnum.fromValue(previousOwner.getRole().name()));
+
+        data.setNewOwner(newOwnerData);
+        data.setPreviousOwner(previousOwnerData);
+        data.setMessage("워크스페이스 OWNER 위임 성공");
+
+        return data;
+    }
+
+    @Transactional
+    public TransferChannelOwnershipResponseData transferChannelOwnership(Long workspaceId, Long channelId, TransferChannelOwnershipRequest request) {
+        Long previousOwnerId = getCurrentUserId();
+
+        User previousUser = userRepository.findById(previousOwnerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
+        User newUser = userRepository.findById(request.getNewOwnerUserId())
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
+
+        Channel channel = getChannelOrThrow(workspaceId, channelId);
+
+        ChannelMember previousOwner = getChannelMemberOrThrow(channelId, previousOwnerId);
+        ChannelMember newOwner = getChannelMemberOrThrow(channelId, request.getNewOwnerUserId());
+
+        if(!previousOwner.getRole().equals(ChannelMember.Role.OWNER)) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
+
+        if (previousOwnerId.equals(request.getNewOwnerUserId())) {
+            throw new ApiException(ErrorCode.MBR_004);
+        }
+
+        newOwner.updateRole(ChannelMember.Role.OWNER);
+        previousOwner.updateRole(ChannelMember.Role.ADMIN);
+
+        TransferChannelOwnershipResponseData data = new TransferChannelOwnershipResponseData();
+        ChannelMemberData newOwnerData = new ChannelMemberData();
+        ChannelMemberData previousOwnerData = new ChannelMemberData();
+
+        newOwnerData.setUserId(newOwner.getUserId());
+        newOwnerData.setNickname(newUser.getNickname());
+        newOwnerData.setRole(ChannelMemberData.RoleEnum.fromValue(newOwner.getRole().name()));
+
+        previousOwnerData.setUserId(previousOwner.getUserId());
+        previousOwnerData.setNickname(previousUser.getNickname());
+        previousOwnerData.setRole(ChannelMemberData.RoleEnum.fromValue(previousOwner.getRole().name()));
+
+        data.setNewOwner(newOwnerData);
+        data.setPreviousOwner(previousOwnerData);
+        data.setMessage("채널 OWNER 위임 성공");
+
+        return data;
+    }
+
+    private Channel getChannelOrThrow(Long workspaceId, Long channelId) {
+        return channelRepository.findByWorkspaceIdAndId(workspaceId, channelId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
+    }
 }
