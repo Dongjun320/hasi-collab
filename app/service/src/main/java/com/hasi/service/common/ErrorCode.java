@@ -17,6 +17,7 @@ public enum ErrorCode {
     AUTH_008(HttpStatus.CONFLICT, "AUTH_008", "이미 연동된 소셜 계정이 있습니다. 해제 후 다시 시도해주세요"),
     AUTH_009(HttpStatus.NOT_FOUND, "AUTH_009", "연동된 소셜 계정이 없습니다"),
     AUTH_010(HttpStatus.BAD_REQUEST, "AUTH_010", "연동 코드가 유효하지 않거나 만료되었습니다"),
+    AUTH_011(HttpStatus.FORBIDDEN, "AUTH_011", "탈퇴한 계정입니다"),
 
 
     // VERIFY
@@ -69,7 +70,8 @@ public enum ErrorCode {
     // USER
     USER_001(HttpStatus.NOT_FOUND, "USER_001", "해당 닉네임의 사용자를 찾을 수 없습니다"),
     USER_002(HttpStatus.CONFLICT, "USER_002", "이미 사용 중인 닉네임입니다"),
-    USER_003(HttpStatus.NOT_FOUND, "USER_003", "사용자를 찾을 수 없습니다");
+    USER_003(HttpStatus.NOT_FOUND, "USER_003", "사용자를 찾을 수 없습니다"),
+    USER_004(HttpStatus.BAD_REQUEST, "USER_004", "자기 자신에게 메모를 남길 수 없습니다");
 
     private final HttpStatus status;
     private final String code;

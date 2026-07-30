@@ -32,6 +32,8 @@ components:
       required:
         - uid
         - nickname
+        - avatarUrl
+        - statusMessage
         - createdAt
         - updatedAt
       properties:
@@ -42,6 +44,14 @@ components:
         nickname:
           type: string
           description: "유저 닉네임"
+        avatarUrl:
+          type: string
+          nullable: true
+          description: "프로필 이미지 URL"
+        statusMessage:
+          type: string
+          nullable: true
+          description: "상태 메시지"
         createdAt:
           type: string
           format: date-time

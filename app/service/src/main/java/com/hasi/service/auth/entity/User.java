@@ -36,6 +36,9 @@ public class User {
     @Column(name = "status_message", length = 100)
     private String statusMessage;
 
+    @Column(name = "position", length = 50)
+    private String position;
+
     @Column(name = "dept_id")
     private Long deptId;           // FK to Departments
 
@@ -73,6 +76,13 @@ public class User {
 
     public void updateAvatarUrl(String avatarUrl) {
         this.avatarUrl = avatarUrl;
+    }
+
+    public void withdraw() {
+        this.passwordHash = null;
+        this.nickname = "탈퇴한 사용자_" + this.uid;
+        this.avatarUrl = null;
+        this.isActive = false;
     }
 
 }
