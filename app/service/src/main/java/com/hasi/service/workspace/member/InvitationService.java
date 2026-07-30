@@ -40,52 +40,58 @@ public class InvitationService {
     private final ChannelMemberRepository channelMemberRepository;
     private final WorkspacePermissionRepository workspacePermissionRepository;
 
+    @Transactional
     public WorkspaceMemberInviteResponseData createInviteWorkspace(Long workspaceId, WorkspaceMemberInviteRequest request) {
-
         Long inviterId = getCurrentUserId();
+        List<Long> invitationIds = new ArrayList<>();
 
         // inviterId가 워크스페이스 멤버인지 확인
         WorkspaceMember inviterMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, inviterId)
                 .orElseThrow(() -> new ApiException(ErrorCode.MBR_008));
-
-        // nickname으로 uid 찾기
-        User user = userRepository.findByNickname(request.getNickname())
-                .orElseThrow(() -> new ApiException(ErrorCode.MBR_001));
-
-        // 이미 워크스페이스에 속한 멤버인지 체크
-        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, user.getUid())) {
-            throw new ApiException(ErrorCode.MBR_002);
-        }
 
         // permission에 따른 확인
         if(!hasPermission(workspaceId, inviterMember, WorkspacePermission.Permission.INVITE_WORKSPACE_MEMBER)) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
-        // 초대를 받는 사람이 자신인지 체크
-        if (inviterId.equals(user.getUid())) {
-            throw new ApiException(ErrorCode.MBR_004);
+        // nickname으로 uid 찾기
+        List<User> users = userRepository.findAllByNicknameIn(request.getNicknames());
+        if(users.size() != request.getNicknames().size()) {
+            throw new ApiException(ErrorCode.USER_003);
         }
 
-        // 이미 보낸 초대가 PENDING일 경우 다시 보낼 수 없음
-        if (invitationRepository.existsByWorkspaceIdAndChannelIdIsNullAndInviteeIdAndStatus(workspaceId, user.getUid(), Invitation.Status.PENDING)) {
-            throw new ApiException(ErrorCode.MBR_007);
+        for(User user : users) {
+            // 이미 워크스페이스에 속한 멤버인지 체크
+            if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, user.getUid())) {
+                throw new ApiException(ErrorCode.MBR_002);
+            }
+
+            // 초대를 받는 사람이 자신인지 체크
+            if (inviterId.equals(user.getUid())) {
+                throw new ApiException(ErrorCode.MBR_004);
+            }
+
+            // 이미 보낸 초대가 PENDING일 경우 다시 보낼 수 없음
+            if (invitationRepository.existsByWorkspaceIdAndChannelIdIsNullAndInviteeIdAndStatus(workspaceId, user.getUid(), Invitation.Status.PENDING)) {
+                throw new ApiException(ErrorCode.MBR_007);
+            }
+
+            // invitation 레코드 생성
+            Invitation invitation = Invitation.builder()
+                    .workspaceId(workspaceId)
+                    .channelId(null)
+                    .inviterId(inviterId)
+                    .inviteeId(user.getUid())
+                    .status(Invitation.Status.PENDING)
+                    .build();
+
+            invitationRepository.save(invitation);
+            invitationIds.add(invitation.getId());
         }
-
-        // invitation 레코드 생성
-        Invitation invitation = Invitation.builder()
-                .workspaceId(workspaceId)
-                .channelId(null)
-                .inviterId(inviterId)
-                .inviteeId(user.getUid())
-                .status(Invitation.Status.PENDING)
-                .build();
-
-        invitationRepository.save(invitation);
 
         // response 리턴
         WorkspaceMemberInviteResponseData data = new WorkspaceMemberInviteResponseData();
-        data.setUserId(user.getUid());
+        data.setInvitationIds(invitationIds);
         data.setRole(WorkspaceMemberInviteResponseData.RoleEnum.fromValue(request.getRole().name()));
         data.setMessage("초대 완료");
 
@@ -148,8 +154,8 @@ public class InvitationService {
         // response 리턴
         ChannelMemberInviteResponseData data = new ChannelMemberInviteResponseData();
         data.setInvitationIds(invitationIds);
-
         data.setMessage("초대 완료");
+
         return data;
     }
 
