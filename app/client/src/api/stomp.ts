@@ -1,6 +1,8 @@
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 
-const MESSENGER_WS_URL = 'ws://localhost:8081/ws';
+// HTTPS로 배포된 클라이언트에서는 ws://가 차단되므로 wss:// 필수.
+const MESSENGER_WS_URL =
+  import.meta.env.VITE_WS_URL ?? 'ws://localhost:8081/ws';
 
 const DM_INBOX_DESTINATION = '/user/queue/dm';
 

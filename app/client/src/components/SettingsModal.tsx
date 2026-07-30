@@ -4,6 +4,7 @@ import { BigModal } from "./BigModal";
 import { useUiStore } from "../store/uiStore";
 import { api } from "../api/client";
 import { toast } from "../store/toastStore";
+import { oauthAuthorizeUrl } from "../api/urls";
 
 // 백엔드 SocialAccountResponse.provider enum과 1:1 (google | line | amazon | twitter)
 // X = twitter registrationId. 현재 백엔드는 google만 등록됨 — 나머지 3개는 registration 추가 후 동작(상현님 백엔드 담당).
@@ -69,7 +70,7 @@ export function SettingsModal() {
         const left = window.screenX + (window.outerWidth - w) / 2;
         const top = window.screenY + (window.outerHeight - h) / 2;
         window.open(
-            `http://localhost:8080/oauth2/authorization/${provider}`,
+            oauthAuthorizeUrl(provider),
             "social-link",
             `width=${w},height=${h},left=${left},top=${top}`,
         );

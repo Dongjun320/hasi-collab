@@ -9,7 +9,9 @@ import type {
   MessengerNotification,
 } from './stomp';
 
-const MESSENGER_API_BASE = 'http://localhost:8081/messenger-api';
+const MESSENGER_API_BASE =
+  import.meta.env.VITE_MESSENGER_API_BASE_URL ??
+  'http://localhost:8081/messenger-api';
 
 export class MessengerApiError extends Error {
   constructor(readonly status: number, readonly path: string) {

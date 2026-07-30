@@ -5,6 +5,7 @@ import com.hasi.service.oauth.CustomOAuth2UserService;
 import com.hasi.service.oauth.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -34,10 +35,17 @@ public class SecurityConfig {
 
     @Autowired
     private ClientRegistrationRepository clientRegistrationRepository;
+
+    // 개발은 application.yml의 기본값(localhost:5173), 배포는 application-prod.yml.
+    @Value("${app.cors.allowed-origins}")
+    private String[] allowedOrigins;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        // setAllowedOrigins는 allowCredentials(true)와 함께 와일드카드를 못 씁니다.
+        // 패턴 방식이어야 나중에 프리뷰 배포 오리진을 코드 수정 없이 추가할 수 있습니다.
+        configuration.setAllowedOriginPatterns(List.of(allowedOrigins));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

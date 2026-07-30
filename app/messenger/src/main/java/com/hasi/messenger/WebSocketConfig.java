@@ -20,6 +20,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Value("${app.broker.login}")      private String login;
     @Value("${app.broker.passcode}")   private String passcode;
 
+    @Value("${app.cors.allowed-origins}") private String[] allowedOrigins;
+
     private final StompAuthChannelInterceptor stompAuthChannelInterceptor;
 
     @Override
@@ -43,7 +45,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")               // ws://localhost:8081/ws
-                .setAllowedOrigins("http://localhost:5173");
+        // setAllowedOrigins는 와일드카드를 받지 않으므로 패턴 방식을 사용합니다.
+        // (Cloudflare Pages의 프리뷰 배포는 브랜치마다 오리진이 달라짐)
+        registry.addEndpoint("/ws")               // 개발: ws://localhost:8081/ws
+                .setAllowedOriginPatterns(allowedOrigins);
     }
 }
