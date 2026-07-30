@@ -14,15 +14,19 @@ interface Message {
 
 interface ChannelState {
   messages: Message[]
+  unreadCount: number
   addMessage: (msg: Message) => void
   setMessages: (msgs: Message[]) => void
   updateMessage: (id: number, content: string) => void
   deleteMessage: (id: number) => void
+  setUnreadCount: (count: number) => void
+  resetUnread: () => void
   clearMessages: () => void
 }
 
 export const useChannelStore = create<ChannelState>((set) => ({
   messages: [],
+  unreadCount: 0,
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
   setMessages: (msgs) => set({ messages: msgs }),
   updateMessage: (id, content) => set((s) => ({
@@ -33,5 +37,7 @@ export const useChannelStore = create<ChannelState>((set) => ({
       m.id === id ? { ...m, isDeleted: true, content: null } : m
     ),
   })),
-  clearMessages: () => set({ messages: [] }),
+  setUnreadCount: (count) => set({ unreadCount: count }),
+  resetUnread: () => set({ unreadCount: 0 }),
+  clearMessages: () => set({ messages: [], unreadCount: 0 }),
 }))
