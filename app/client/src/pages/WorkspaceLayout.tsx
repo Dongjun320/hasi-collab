@@ -1,5 +1,5 @@
-import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { Settings, LayoutGrid, Home, Search, AlertCircle, X,} from "lucide-react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { LayoutGrid, Home, Search, AlertCircle, X,} from "lucide-react";
 import { useState, useEffect } from "react";
 import { WorkspaceSidebar } from "../components/WorkspaceSidebar";
 import { useWorkspaceStore } from "../store/workspaceStore";
@@ -208,18 +208,6 @@ export function WorkspaceLayout() {
             </button>
           </Tooltip>
 
-          <Tooltip label="설정" side="bottom">
-            <Link to="/workspace/settings" className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all">
-              <Settings size={18} className="text-[#5CC87A]" />
-            </Link>
-          </Tooltip>
-          <Tooltip label="내 프로필" side="bottom" align="end">
-            <Link to="/workspace/profile">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-1 transition-all">
-                나
-              </div>
-            </Link>
-          </Tooltip>
         </div>
 
         {/* ── 채널 작업 실패 안내 ── */}

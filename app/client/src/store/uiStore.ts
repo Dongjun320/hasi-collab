@@ -19,6 +19,12 @@ interface UiState {
   // ✅ PM 피드백 반영: 다이렉트 메시지(DM) 팝업 상대 ID 관리 (단일 창)
   activeDmPeerId: number | null
   setActiveDmPeerId: (id: number | null) => void
+
+  // 전역 개인 모달: 프로필 / 설정
+  activeModal: 'profile' | 'settings' | null
+  openModal: (m: 'profile' | 'settings') => void
+  closeModal: () => void
+
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -38,4 +44,8 @@ export const useUiStore = create<UiState>((set) => ({
   // ✅ DM 팝업 상태 초기값 및 업데이트 함수 추가
   activeDmPeerId: null,
   setActiveDmPeerId: (id) => set({ activeDmPeerId: id }),
+
+  activeModal: null,
+  openModal: (m) => set({ activeModal: m }),
+  closeModal: () => set({ activeModal: null }),
 }))

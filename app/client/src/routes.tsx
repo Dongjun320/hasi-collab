@@ -7,8 +7,6 @@ import { ChannelsPage } from "./pages/ChannelsPage";
 import { KanbanPage } from "./pages/KanbanPage.tsx";
 import { CalendarPage } from "./pages/CalendarPage.tsx";
 import { ThreadsPage } from "./pages/ThreadsPage.tsx";
-import { ProfilePage } from "./pages/ProfilePage";
-import { SettingsPage } from "./pages/SettingsPage.tsx";
 import OAuth2RedirectPage from "./pages/OAuth2RedirectPage.tsx";
 
 // 💡 새로 생성한 가드 컴포넌트를 import 합니다. (경로는 프로젝트 구조에 맞게 수정해주세요)
@@ -52,8 +50,6 @@ export const router = createBrowserRouter([
       { path: "threads", Component: ThreadsPage },
       { path: "kanban", Component: KanbanPage },
       { path: "calendar", Component: CalendarPage },
-      { path: "profile", Component: ProfilePage },
-      { path: "settings", Component: SettingsPage },
     ],
   },
 ]);
