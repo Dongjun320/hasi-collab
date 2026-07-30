@@ -41,24 +41,24 @@ export function ChannelsPage() {
   const { messages, sendMessage } = useChannelMessage(channelId);
 
 
-  useEffect(() => {
+  const loadMembers = async () => {
     if (!currentWorkspace) return;
-    (async () => {
-      try {
-        const { data, error } = await api.GET('/api/workspaces/{workspaceId}/members', {
-          params: { path: { workspaceId: currentWorkspace.id } },
-        });
-        if (error || !data?.success) return;
-        setMembers((data.data ?? []).map((m) => ({
-          userId: m.userId!,
-          nickname: m.nickname ?? '',
-          role: m.role ?? 'MEMBER',
-        })));
-      } catch (e) {
-        console.error('멤버 조회 실패:', e);
-      }
-    })();
-  }, [currentWorkspace?.id]);
+    try {
+      const { data, error } = await api.GET('/api/workspaces/{workspaceId}/members', {
+        params: { path: { workspaceId: currentWorkspace.id } },
+      });
+      if (error || !data?.success) return;
+      setMembers((data.data ?? []).map((m) => ({
+        userId: m.userId!,
+        nickname: m.nickname ?? '',
+        role: m.role ?? 'MEMBER',
+      })));
+    } catch (e) {
+      console.error('멤버 조회 실패:', e);
+    }
+  };
+
+  useEffect(() => { loadMembers(); }, [currentWorkspace?.id]);
 
   const nicknameOf = (uid: number) =>
       members.find((m) => m.userId === uid)?.nickname ?? `사용자 ${uid}`;
@@ -125,7 +125,7 @@ export function ChannelsPage() {
           <h2 className="font-bold text-[#2C3E50]">{channelName}</h2>
         </div>
         <button
-          onClick={() => setIsMemberListOpen(!isMemberListOpen)}
+          onClick={() => { const next = !isMemberListOpen; setIsMemberListOpen(next); if (next) loadMembers(); }}
           className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-all text-sm text-gray-600"
         >
           <Users size={16} />

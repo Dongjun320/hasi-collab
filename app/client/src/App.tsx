@@ -3,6 +3,8 @@ import { router } from "./routes"
 import Toast from "./components/Toast"
 import { useToastStore } from "./store/toastStore"
 import './styles/index.css'
+import { ProfileModal } from "./components/ProfileModal";
+import { SettingsModal } from "./components/SettingsModal";
 
 
 function App() {
@@ -17,7 +19,11 @@ function App() {
         type={current?.type}
         onClose={hide}
       />
+      <ProfileModal />
+      <SettingsModal />
     </>
+
+
   )
 }
 

@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Bell, Users, Grid3x3, Settings, LogOut, Calendar, } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, Users, Grid3x3, Settings, LogOut, Calendar, User } from "lucide-react";
 import { WeatherWidget } from "./WeatherWidget";
 import { Tooltip } from "./Tooltip";
 import { useUiStore } from "../store/uiStore";
@@ -19,16 +19,18 @@ const btn = "relative w-11 h-11 rounded-2xl flex items-center justify-center tra
 
 export function BottomBar({ children }: BottomBarProps) {
     const navigate = useNavigate();
-    const { activeRightPanel, toggleRightPanel } = useUiStore();
+    const { activeRightPanel, toggleRightPanel, openModal } = useUiStore();
     const notifications = useNotificationStore((s) => s.notifications);
     const friends = useFriendStore((s) => s.friends);
     const { refreshToken, clear } = useAuthStore();
     const [quickOpen, setQuickOpen] = useState(false);
+    const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
     const unreadNotifications = notifications.filter((n) => n.unread).length;
     const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0);
 
     const handleLogout = async () => {
+        setLogoutConfirmOpen(false);
         try {
             if (refreshToken) await api.POST("/api/auth/logout", { body: { refreshToken } });
         } catch (e) { console.error("로그아웃 실패:", e); }
@@ -79,10 +81,10 @@ export function BottomBar({ children }: BottomBarProps) {
                 </Tooltip>
 
                 <Tooltip label="내 프로필" side="top" align="end">
-                    <Link to="/workspace/profile"
-                          className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all ml-1">
+                    <button onClick={() => openModal('profile')}
+                            className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all ml-1">
                         나
-                    </Link>
+                    </button>
                 </Tooltip>
             </div>
 
@@ -91,14 +93,20 @@ export function BottomBar({ children }: BottomBarProps) {
                 <>
                     <div className="fixed bottom-20 right-4 z-50 bg-white rounded-2xl shadow-2xl border border-[#d4f4dd] p-4">
                         <div className="flex items-center gap-2">
-                            <button onClick={() => setQuickOpen(false)}
+                            <button onClick={() => { openModal('settings'); setQuickOpen(false); }}
                                     className="flex flex-col items-center gap-2 p-3 hover:bg-[#f0f9f4] rounded-xl transition-all group">
                                 <div className="w-11 h-11 bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <Settings size={20} className="text-white" />
                                 </div>
                                 <span className="text-xs text-[#2C3E50] font-medium">설정</span>
                             </button>
-                            <button onClick={handleLogout}
+                            <button onClick={() => { openModal('profile'); setQuickOpen(false); }} className="flex flex-col items-center gap-2 p-3 hover:bg-[#f0f9f4] rounded-xl transition-all group">
+                                <div className="w-11 h-11 bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <User size={20} className="text-white" />
+                                </div>
+                                <span className="text-xs text-[#2C3E50] font-medium">프로필</span>
+                            </button>
+                            <button onClick={() => { setLogoutConfirmOpen(true); setQuickOpen(false); }}
                                     className="flex flex-col items-center gap-2 p-3 hover:bg-red-50 rounded-xl transition-all group">
                                 <div className="w-11 h-11 bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <LogOut size={20} className="text-white" />
@@ -109,6 +117,28 @@ export function BottomBar({ children }: BottomBarProps) {
                     </div>
                     <div className="fixed inset-0 z-40" onClick={() => setQuickOpen(false)} />
                 </>
+            )}
+
+            {/* 로그아웃 확인 모달 */}
+            {logoutConfirmOpen && (
+                <div className="fixed inset-0 z-[110] bg-black/40 flex items-center justify-center p-4"
+                     onClick={() => setLogoutConfirmOpen(false)}>
+                    <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl"
+                         onClick={(e) => e.stopPropagation()}>
+                        <h4 className="font-bold text-[#2C3E50] mb-2">로그아웃</h4>
+                        <p className="text-sm text-gray-500 mb-5">로그아웃 하시겠습니까?</p>
+                        <div className="flex justify-end gap-2">
+                            <button onClick={() => setLogoutConfirmOpen(false)}
+                                    className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">
+                                취소
+                            </button>
+                            <button onClick={handleLogout}
+                                    className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all">
+                                로그아웃
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
