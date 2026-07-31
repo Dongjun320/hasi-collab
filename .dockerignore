@@ -1,0 +1,41 @@
+# 빌드 컨텍스트는 저장소 루트입니다(부모 pom + docs/openapi 참조 때문).
+# 불필요한 파일을 제외해 컨텍스트 전송과 캐시 무효화를 줄입니다.
+#
+# 주의: `!` 재포함(negation) 패턴을 추가하지 마세요. 재포함 대상이 있는지
+# 확인하려고 BuildKit이 제외된 디렉터리까지 전부 탐색하게 되고, 읽을 수 없는
+# .data/ 에서 "permission denied" 로 빌드가 실패합니다.
+
+.git
+.gitignore
+.idea
+*.iml
+
+# Maven / Node 빌드 산출물
+**/target/
+**/node_modules/
+**/dist/
+
+# 개발 인프라 bind mount 데이터 (docker-compose.yml).
+# 컨테이너가 root 소유로 쓰기 때문에 빌드 사용자가 읽을 수 없어,
+# 제외하지 않으면 컨텍스트 전송 단계에서 permission denied로 빌드가 실패합니다.
+**/.data
+
+# 시크릿 — 이미지에 절대 들어가면 안 됩니다.
+#
+# .dockerignore 패턴은 .gitignore와 달리 슬래시 없는 패턴이 컨텍스트 루트에만
+# 매칭됩니다. 즉 `.env` 는 /.env 만 걸러내고 app/service/.env 는 그대로 통과합니다.
+# 각 모듈에 .env 가 있으므로(app/service/.env, app/messenger/.env) `**/` 가 필수입니다.
+**/.env
+**/.env.*
+**/application-secret.yml
+
+# 개발 전용
+docker-compose.yml
+docker/
+seed.sh
+seed_test_data.sql
+start.sh
+kill.sh
+README.md
+docs/readme/
+docs/tutorials/

@@ -149,6 +149,12 @@ paths:
   /api/auth/social/link:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1social~1link"
 
+  /api/auth/withdraw:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1withdraw"
+
+  /api/users/{targetId}/memo:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1{targetId}~1memo"
+
 
 
 

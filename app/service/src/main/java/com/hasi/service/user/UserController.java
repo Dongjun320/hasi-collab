@@ -1,9 +1,6 @@
 package com.hasi.service.user;
 
-import com.hasi.collab.model.UserData;
-import com.hasi.collab.model.UserSearchResponse;
-import com.hasi.collab.model.NicknameUpdateRequest;
-import com.hasi.collab.model.StatusMessageUpdateRequest;
+import com.hasi.collab.model.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -46,5 +43,31 @@ public class UserController {
     @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> updateAvatar(@RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(userService.updateAvatar(file));
+    }
+
+    @DeleteMapping("/me/avatar/delete")
+    public ResponseEntity<Void> deleteAvatar(){
+        userService.deleteAvatar();
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{targetId}/memo")
+    public ResponseEntity<Void> upsertMemo(
+            @PathVariable Long targetId,
+            @Valid @RequestBody MemoRequest request) {
+        userService.upsertMemo(targetId, request.getContent());
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{targetId}/memo")
+    public ResponseEntity<MemoResponse> getMemo(@PathVariable Long targetId) {
+        String content = userService.getMemo(targetId);
+        return ResponseEntity.ok(new MemoResponse().content(content));
+    }
+
+    @DeleteMapping("/{targetId}/memo")
+    public ResponseEntity<Void> deleteMemo(@PathVariable Long targetId) {
+        userService.deleteMemo(targetId);
+        return ResponseEntity.ok().build();
     }
 }

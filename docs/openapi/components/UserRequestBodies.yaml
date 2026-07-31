@@ -22,3 +22,14 @@ components:
           maxLength: 100
           nullable: true
           description: "새 상태 메시지"
+
+    MemoRequest:
+      type: object
+      required:
+        - content
+      description: "유저 메모 작성/수정 요청"
+      properties:
+        content:
+          type: string
+          maxLength: 500
+          description: "메모 내용"

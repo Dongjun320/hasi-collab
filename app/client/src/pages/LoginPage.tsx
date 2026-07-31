@@ -9,6 +9,7 @@ import { api } from '../api/client'
 import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
 import { connectStomp } from '../api/stomp'
+import { oauthAuthorizeUrl } from '../api/urls'
 
 const LoginPage = () => {
   const navigate = useNavigate()
@@ -262,7 +263,7 @@ const LoginPage = () => {
             <div className="flex flex-col gap-2.5 w-full mt-auto mb-2">
               {/* Google Button */}
               <button
-                  onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/google'}
+                  onClick={() => window.location.href = oauthAuthorizeUrl('google')}
                   className="relative flex items-center justify-center w-full py-2.5 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 transition duration-200">
                 <div className="absolute left-5 flex items-center">
                   <svg viewBox="0 0 24 24" className="w-5 h-5">
@@ -277,7 +278,7 @@ const LoginPage = () => {
 
               {/* Amazon Button */}
               <button
-                  onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/amazon'}
+                  onClick={() => window.location.href = oauthAuthorizeUrl('amazon')}
                   className="relative flex items-center justify-center w-full py-2.5 bg-[#131921] rounded-full shadow-sm hover:bg-[#232f3e] transition duration-200">
                 <div className="absolute left-5 flex items-center">
                   <svg viewBox="0 0 512 512" className="w-[22px] h-[22px]">
@@ -290,7 +291,7 @@ const LoginPage = () => {
 
               {/* Line Button */}
               <button
-                  onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/line'}
+                  onClick={() => window.location.href = oauthAuthorizeUrl('line')}
                   className="relative flex items-center justify-center w-full py-2.5 bg-[#06C755] rounded-full shadow-sm hover:bg-[#05b34c] transition duration-200">
                 <div className="absolute left-5 flex items-center">
                   <svg viewBox="0 0 24 24" className="w-[22px] h-[22px]">
@@ -303,7 +304,7 @@ const LoginPage = () => {
 
               {/* X Button */}
               <button
-                  onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/twitter'}
+                  onClick={() => window.location.href = oauthAuthorizeUrl('twitter')}
                   className="relative flex items-center justify-center w-full py-2.5 bg-black rounded-full shadow-sm hover:bg-zinc-900 transition duration-200">
                 <div className="absolute left-5 flex items-center">
                   <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] text-white" fill="currentColor">

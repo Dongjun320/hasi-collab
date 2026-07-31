@@ -124,3 +124,13 @@ components:
         code:
           type: string
           description: "linkCode (5분 유효, 1회용)"
+
+    WithdrawRequest:
+      type: object
+      required:
+        - currentPassword
+      description: "회원 탈퇴 요청 (비밀번호 재확인)"
+      properties:
+        currentPassword:
+          type: string
+          description: "현재 비밀번호"

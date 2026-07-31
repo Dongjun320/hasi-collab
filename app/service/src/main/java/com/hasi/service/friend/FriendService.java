@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -127,12 +128,17 @@ public class FriendService {
                     Long friendUid = f.getSenderId().equals(userId) ? f.getReceiverId() : f.getSenderId();
                     return toResponse(f.getId(), friendUid);
                 })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     private FriendResponse toResponse(Long relationId, Long targetUserId) {
         User user = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_001));
+
+        if (user == null || !user.isActive()) {   // ← 탈퇴 계정이면 목록에서 제외
+            return null;
+        }
 
         return new FriendResponse()
                 .id(relationId)

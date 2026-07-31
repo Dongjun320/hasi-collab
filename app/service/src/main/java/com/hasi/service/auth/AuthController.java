@@ -5,12 +5,15 @@ import com.hasi.collab.model.*;
 import com.hasi.service.jwt.JwtProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -127,5 +130,12 @@ public class AuthController implements AuthApi {
     public ResponseEntity<LogInResponse> extendSession(Authentication authentication) {
         Long userId = Long.valueOf((String) authentication.getPrincipal());
         return ResponseEntity.ok(authService.extendSession(userId));
+    }
+
+    @Override
+    public ResponseEntity<Void> withdraw(WithdrawRequest withdrawRequest) {
+        Long userId = getCurrentUserId();
+        authService.withdraw(userId, withdrawRequest.getCurrentPassword());
+        return ResponseEntity.ok().build();
     }
 }

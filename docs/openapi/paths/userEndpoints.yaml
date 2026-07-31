@@ -83,3 +83,70 @@ paths:
       responses:
         '200':
           description: "변경 성공"
+
+  /api/users/{targetId}/memo:
+    put:
+      summary: "유저 메모 작성/수정"
+      tags:
+        - User
+      operationId: upsertMemo
+      parameters:
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../components/UserRequestBodies.yaml#/components/schemas/MemoRequest"
+      responses:
+        '200':
+          description: "저장 성공"
+        '400':
+          description: "자기 자신에게 메모 불가"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/ErrorResponse"
+
+    get:
+      summary: "유저 메모 조회"
+      tags:
+        - User
+      operationId: getMemo
+      parameters:
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/UserResponseBodies.yaml#/components/schemas/MemoResponse"
+
+    delete:
+      summary: "유저 메모 삭제"
+      tags:
+        - User
+      operationId: deleteMemo
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "삭제 성공"

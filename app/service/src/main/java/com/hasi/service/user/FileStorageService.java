@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -42,6 +43,24 @@ public class FileStorageService {
         }
 
         return endpoint + "/" + bucket + "/" + key;   // 공개 접근 URL
+    }
+
+    private String extractKeyFromUrl(String url) {
+        // endpoint + "/" + bucket + "/" 부분을 제거하면 key만 남음
+        String prefix = endpoint + "/" + bucket + "/";
+        return url.replace(prefix, "");
+    }
+
+    public void deleteAvatar(String avatarUrl){
+        String key = extractKeyFromUrl(avatarUrl);   // URL에서 "profile/xxx.png" 부분만 추출
+
+        s3Client.deleteObject(
+                DeleteObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(key)
+                        .build()
+        );
+
     }
 
     private String getExtension(String filename) {

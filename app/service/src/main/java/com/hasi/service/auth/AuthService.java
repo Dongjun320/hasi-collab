@@ -7,6 +7,7 @@ import com.hasi.service.auth.repository.SocialAccountRepository;
 import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
 import com.hasi.service.jwt.JwtProvider;
+import com.hasi.service.user.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
@@ -32,6 +33,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final RedisTemplate<String, String> redisTemplate;
     private final JavaMailSender javaMailSender;
+    private final FileStorageService fileStorageService;
 
     // 회원가입
     @Transactional
@@ -92,6 +94,10 @@ public class AuthService {
         // 비밀번호 검증
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new ApiException(ErrorCode.AUTH_001);
+        }
+
+        if (!user.isActive()) {
+            throw new ApiException(ErrorCode.AUTH_011); // 탈퇴한 계정 (신규 코드)
         }
 
         // 이메일 인증 여부 확인
@@ -219,6 +225,23 @@ public class AuthService {
 
         // Redis 코드 삭제
         redisTemplate.delete("email:reset:" + email);
+    }
+
+    //회원탈퇴
+    @Transactional
+    public void withdraw(Long userId, String currentPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new ApiException(ErrorCode.AUTH_001);
+        }
+
+        if (user.getAvatarUrl() != null) {
+            fileStorageService.deleteAvatar(user.getAvatarUrl());
+        }
+
+        user.withdraw();
     }
 
 }
