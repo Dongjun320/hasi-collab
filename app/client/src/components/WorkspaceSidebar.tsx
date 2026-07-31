@@ -11,6 +11,7 @@ import Modal from "@/components/Modal.tsx";
 import { api } from '../api/client';
 import { Tooltip } from "./Tooltip";
 import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
+import { useChannelStore } from "../store/channelStore";
 
 
 interface WorkspaceSidebarProps {
@@ -33,6 +34,7 @@ export function WorkspaceSidebar({
     currentWorkspace,
     setWorkspace,
     workspaces,
+    channelsByWorkspace,
     updateWorkspace,
     fetchWorkspaces,
     fetchChannels,
@@ -56,6 +58,7 @@ export function WorkspaceSidebar({
   const [addingChildOf, setAddingChildOf] = useState<number | null>(null);
   const [childName, setChildName] = useState("");
   const [defaultChannelId, setDefaultChannelId] = useState<number | null>(null);
+  const unreadByChannel = useChannelStore((s) => s.unreadByChannel);
 
 
   const handleRailMouseDown = (e: React.MouseEvent) => {
@@ -175,6 +178,7 @@ export function WorkspaceSidebar({
     const active = ch.id === activeChannelId;
     const isRenaming = renamingChannelId === ch.id;
     const isDefault = ch.id === defaultChannelId;
+    const unread = unreadByChannel[ch.id] ?? 0;
 
     if (isRenaming) {
       return (
@@ -249,7 +253,12 @@ export function WorkspaceSidebar({
           >
             <Settings size={12} className="text-white/70" />
           </button>
-
+            {/* 안읽음 뱃지 — 비활성 채널에만, 호버 시 톱니/＋버튼에 자리 양보 */}
+            {!active && unread > 0 && (
+                <span className="absolute right-1.5 top-1/2 -translate-y-1/2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center pointer-events-none group-hover/channel:opacity-0 transition-opacity">
+                {unread > 99 ? "99+" : unread}
+              </span>
+            )}
           {channelMenuOpenId === ch.id && (
               <div className="absolute right-0 top-8 bg-[#1e3a28] rounded-lg shadow-xl z-50 py-1 w-32">
                 <button
@@ -457,9 +466,15 @@ export function WorkspaceSidebar({
                   {active && (
                     <div className="absolute -left-[14px] top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
                   )}
-                  {ws.unread && !active && (
-                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-[#1e3a28]" />
-                  )}
+                    {!active && (() => {
+                        const chs = channelsByWorkspace[ws.id] ?? [];
+                        const total = chs.reduce((sum, c) => sum + (unreadByChannel[c.id] ?? 0), 0);
+                        return total > 0 ? (
+                            <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border border-[#1e3a28]">
+                                {total > 99 ? "99+" : total}
+                            </span>
+                        ) : null;
+                    })()}
                 </button>
               </Tooltip>
             );

@@ -18,10 +18,10 @@ import { fetchChannelHistory, fetchChannelReadStates } from '../api/messenger'
 import { api } from '../api/client'
 
 export const useChannelMessage = (channelId: number) => {
-  const {
-    messages, setMessages, addMessage, clearMessages,
-    unreadCount, setUnreadCount, resetUnread,
-  } = useChannelStore()
+    const {
+        messages, setMessages, addMessage, clearMessages,
+        unreadByChannel, setUnread, resetUnread,
+    } = useChannelStore()
 
   // 구독 콜백 클로저 안에서 최신 마지막 메시지 id를 들고 있기 위한 ref
   const lastMessageIdRef = useRef<number | null>(null)
@@ -53,7 +53,7 @@ export const useChannelMessage = (channelId: number) => {
 
             const myReadState = readStates.find((s) => s.userId === String(myUid))
             const myLastReadId = myReadState?.lastReadMessageId ?? 0
-            setUnreadCount(history.filter((m) => m.id > myLastReadId).length)
+              setUnread(channelId, history.filter((m) => m.id > myLastReadId).length)
 
             // 채널을 열람했으니 커서를 최신 메시지까지 올림 (다른 탭/기기 동기화용)
             if (lastMessageIdRef.current != null) {
@@ -75,7 +75,7 @@ export const useChannelMessage = (channelId: number) => {
             unsubRead = subscribeToChannelRead(channelId, (state) => {
               // 다른 탭/기기에서 내가 먼저 읽은 경우 뱃지 동기화
               if (state.userId === String(myUid)) {
-                resetUnread()
+                resetUnread(channelId)
               }
             })
           })
@@ -90,15 +90,15 @@ export const useChannelMessage = (channelId: number) => {
     }
   }, [channelId])
 
-  return {
-    messages,
-    unreadCount,
-    markAsRead: () => {
-      if (lastMessageIdRef.current != null) {
-        sendChannelRead(channelId, lastMessageIdRef.current)
-      }
-      resetUnread()
-    },
-    sendMessage: (content: string) => sendChannelMessage(channelId, content),
-  }
+    return {
+        messages,
+        unreadCount: unreadByChannel[channelId] ?? 0,
+        markAsRead: () => {
+            if (lastMessageIdRef.current != null) {
+                sendChannelRead(channelId, lastMessageIdRef.current)
+            }
+            resetUnread(channelId)
+        },
+        sendMessage: (content: string) => sendChannelMessage(channelId, content),
+    }
 }
