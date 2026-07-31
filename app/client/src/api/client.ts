@@ -25,10 +25,10 @@ api.use({
     return request
   },
 
-  // 응답 미들웨어: 401이면 로그인 페이지로 이동
+  // 응답 미들웨어: 401이면 로그인 페이지로 이동.
   onResponse({ response }) {
     if (response.status === 401) {
-      window.location.href = '/login'
+      window.location.href = '/'
     }
     return response
   },

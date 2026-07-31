@@ -74,7 +74,7 @@ export function WorkspaceSidebar({
           '/api/workspaces/{workspaceId}/members',
           {
             params: {path: {workspaceId: currentWorkspace.id}},
-            body: {nickname: user.nickname, role: "MEMBER"},   // 스펙상 role이 required로 바뀌어 명시
+            body: {nicknames: [user.nickname], role: "MEMBER"},   // 스펙상 nicknames(배열) + role required
           }
       );
 

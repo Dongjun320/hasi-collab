@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import ComponentTestPage from "./pages/ComponentTestPage.tsx";
 import { WorkspaceHome } from "./pages/WorkspaceHome.tsx";
@@ -51,5 +51,12 @@ export const router = createBrowserRouter([
       { path: "kanban", Component: KanbanPage },
       { path: "calendar", Component: CalendarPage },
     ],
+  },
+
+  // 배포에서는 SPA fallback 때문에 존재하지 않는 경로도 index.html이 서빙됩니다.
+  // catch-all이 없으면 그런 URL이 빈 화면으로 보이므로 로그인/홈으로 되돌립니다.
+  {
+    path: "*",
+    element: <Navigate to="/" replace />
   },
 ]);

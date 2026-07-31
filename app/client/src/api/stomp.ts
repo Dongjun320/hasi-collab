@@ -4,6 +4,17 @@ import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 const MESSENGER_WS_URL =
   import.meta.env.VITE_WS_URL ?? 'ws://localhost:8081/ws';
 
+if (
+  typeof window !== 'undefined' &&
+  window.location.protocol === 'https:' &&
+  MESSENGER_WS_URL.startsWith('ws://')
+) {
+  console.error(
+    `[stomp] HTTPS 페이지에서 ws:// 는 mixed content로 차단됩니다: ${MESSENGER_WS_URL}\n` +
+      'VITE_WS_URL 을 wss:// 로 설정한 뒤 다시 빌드하세요 (값은 빌드 시점에 인라인됩니다).'
+  );
+}
+
 const DM_INBOX_DESTINATION = '/user/queue/dm';
 
 const ERROR_DESTINATION = '/user/queue/errors';
