@@ -9,12 +9,42 @@ import { CalendarSidebar } from "../components/CalendarSidebar";
 import { BottomBar } from "../components/BottomBar";
 import { Tooltip } from "../components/Tooltip";
 import { api } from "../api/client";
-
+import { fetchChannelHistory, fetchChannelReadStates } from "../api/messenger";
+import { useChannelStore } from "../store/channelStore";
+import { useAuthStore } from "../store/authStore";
+import { useWorkspaceUnread } from "../hooks/useWorkspaceUnread";
 
 // 서버는 실패 시 { success:false, error:{ code, message } }를 내려줌 (한국어 메시지 포함).
 // openapi-fetch의 error는 타입이 넓어 any 경유가 불가피 — 메시지 추출을 한 곳으로 모음.
 const errorMessageOf = (error: unknown, fallback: string) =>
   (error as any)?.error?.message ?? fallback;
+
+// 워크스페이스 진입 시 채널별 안읽음 계산 (프론트 계산: 채널마다 history+read-states)
+// 벌크 엔드포인트 생기면 이 함수만 1줄로 교체하면 됨.
+async function loadWorkspaceUnread(channelIds: number[]) {
+    const token = useAuthStore.getState().accessToken;
+    const myUid = useAuthStore.getState().user?.uid;
+    if (!token || myUid == null || channelIds.length === 0) return;
+
+    const entries = await Promise.all(
+        channelIds.map(async (id) => {
+            try {
+                const [history, readStates] = await Promise.all([
+                    fetchChannelHistory(id, token),
+                    fetchChannelReadStates(id, token),
+                ]);
+                const mine = readStates.find((s) => s.userId === String(myUid));
+                const lastRead = mine?.lastReadMessageId ?? 0;
+                return [id, history.filter((m) => m.id > lastRead).length] as const;
+            } catch {
+                // 아직 참여 안 한 채널은 messenger가 403 → 0으로 둠
+                return [id, 0] as const;
+            }
+        })
+    );
+
+    useChannelStore.getState().setUnreadBatch(Object.fromEntries(entries));
+}
 
 export function WorkspaceLayout() {
   const {currentWorkspace, channelsByWorkspace, setWorkspaceChannels, addChannel, updateChannel, removeChannel,
@@ -29,6 +59,7 @@ export function WorkspaceLayout() {
   const activeChannelId = isInChannel
       ? Number(location.pathname.split("/workspace/channels/")[1]) || null
       : null;
+    useWorkspaceUnread(channels, activeChannelId);
 
   const [lastChannelByWorkspace, setLastChannelByWorkspace] = useState<Record<number, number>>({});
 
@@ -49,13 +80,15 @@ export function WorkspaceLayout() {
           console.error('채널 목록 조회 실패:', error);
           return;
         }
-        setWorkspaceChannels(wsId, (data.data ?? []).map((c) => ({
-          id: c.id!,
-          name: c.name ?? '',
-          parentId: c.parentId ?? null,
-          workspaceId: c.workspaceId,
-          isPrivate: c.isPrivate,
-        })));
+          setWorkspaceChannels(wsId, (data.data ?? []).map((c) => ({
+              id: c.id!,
+              name: c.name ?? '',
+              parentId: c.parentId ?? null,
+              workspaceId: c.workspaceId,
+              isPrivate: c.isPrivate,
+          })));
+          // ▼▼ 추가: 진입 시 채널별 안읽음 계산
+          loadWorkspaceUnread((data.data ?? []).map((c) => c.id!));
       } catch (e) {
         console.error('채널 목록 조회 실패:', e);
       }
