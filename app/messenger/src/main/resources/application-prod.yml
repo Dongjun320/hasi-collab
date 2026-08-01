@@ -43,6 +43,9 @@ app:
   broker:
     relay-host: ${RABBITMQ_HOST}
     relay-port: ${RABBITMQ_STOMP_PORT:61613}
+    # 공용 브로커를 다른 프로젝트와 공유하므로 전용 vhost가 필수입니다.
+    # default 두지 않았습니다
+    virtual-host: ${RABBITMQ_VHOST}
     login: ${RABBITMQ_USER}
     passcode: ${RABBITMQ_PASSWORD}
 

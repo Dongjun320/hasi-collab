@@ -47,6 +47,10 @@ app:
     relay-port: 8204
     login: hasi
     passcode: "1234"
+    # 개발은 RabbitMQ 기본 vhost("/")를 그대로 씁니다 — docker-compose.yml 수정이
+    # 필요 없고, 기존 ./.data/rabbitmq 를 지울 일도 없습니다.
+    # prod와 맞춰보고 싶으면 RABBITMQ_VHOST 만 export 하면 됩니다(코드 수정 불필요).
+    virtual-host: ${RABBITMQ_VHOST:/}
 
 # ── JWT 검증 (service와 동일한 시크릿 사용) ───────────────
 jwt:

@@ -24,7 +24,39 @@ networks:
     name: infra
     external: true
 
+volumes:
+  hasi_redis_data:
+
 services:
+
+  # 프로젝트 전용 Redis.
+  hasi-redis:
+    image: redis:8-alpine
+    container_name: hasi-redis
+    restart: unless-stopped
+    logging: *default-logging
+    # infra 에만 붙입니다. 웹에 노출되지 않으므로 edge 는 불필요합니다.
+    networks: [infra]
+    env_file: .env.prod
+    command:
+      - sh
+      - -c
+      - |
+        test -n "$$REDIS_PASSWORD" || {
+          echo "FATAL: REDIS_PASSWORD is empty — refusing to start an unauthenticated Redis" >&2
+          exit 1
+        }
+        exec redis-server \
+          --requirepass "$$REDIS_PASSWORD" \
+          --appendonly yes \
+          --maxmemory-policy noeviction
+    volumes:
+      - hasi_redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   hasi-service:
     build:
@@ -41,6 +73,8 @@ services:
     depends_on:
       hasi-messenger:
         condition: service_started
+      hasi-redis:
+        condition: service_healthy
     healthcheck:
       # actuator 의존성이 없어 TCP 연결만 확인합니다.
       # 런타임 이미지가 alpine(busybox)이라 bash가 없습니다 — nc 사용.
@@ -62,6 +96,9 @@ services:
     env_file: .env.prod
     environment:
       SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      hasi-redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 8081"]
       interval: 15s

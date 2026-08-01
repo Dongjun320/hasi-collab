@@ -4,7 +4,7 @@
 services:
 
   postgres:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     container_name: hasi-postgres
     restart: unless-stopped
     environment:
@@ -14,10 +14,13 @@ services:
     ports:
       - "8200:5432"
     volumes:
-      - ./.data/postgres:/var/lib/postgresql/data
+      # PG18은 PGDATA가 /var/lib/postgresql/18/docker 로 바뀌었습니다.
+      # 상위 디렉터리를 마운트해야 합니다 — .../data 로 마운트하면 볼륨에 아무것도
+      # 담기지 않고 컨테이너를 다시 만들 때 데이터가 사라집니다.
+      - ./.data/postgres:/var/lib/postgresql
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: hasi-redis
     restart: unless-stopped
     ports:

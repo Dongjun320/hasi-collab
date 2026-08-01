@@ -20,6 +20,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Value("${app.broker.login}")      private String login;
     @Value("${app.broker.passcode}")   private String passcode;
 
+    // 공용 VPS에서 다른 프로젝트와 RabbitMQ를 공유하므로 vhost로 격리합니다.
+    @Value("${app.broker.virtual-host}") private String virtualHost;
+
     @Value("${app.cors.allowed-origins}") private String[] allowedOrigins;
 
     private final StompAuthChannelInterceptor stompAuthChannelInterceptor;
@@ -37,6 +40,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         config.enableStompBrokerRelay("/topic", "/queue")
                 .setRelayHost(relayHost)
                 .setRelayPort(relayPort)
+                // relay가 보내는 STOMP CONNECT 프레임의 host 헤더가 되고,
+                // RabbitMQ STOMP 어댑터가 이를 vhost로 mapping.
+                .setVirtualHost(virtualHost)
                 .setClientLogin(login)
                 .setClientPasscode(passcode)
                 .setSystemLogin(login)
