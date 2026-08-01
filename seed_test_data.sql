@@ -45,6 +45,53 @@ WHERE wm.workspace_id = w.id
   AND w.name = 'test_workspace'
   AND u.email = '2@2.com';
 
+-- ─────────────────────────── 채널 ───────────────────────────
+-- general        : 공개,  u1(OWNER)·u2·u3 전원 → /topic/channel.{id} SUBSCRIBE 성공 케이스
+-- design_channel : 비공개, u1(OWNER)·u2 만      → u3는 SUBSCRIBE 거부되어야 정상
+--
+-- messenger의 StompAuthChannelInterceptor가 ServiceDirectory.isChannelMember()로
+-- channel_members를 조회하므로, 이 두 행이 없으면 모든 채널 구독이 거부됩니다.
+-- channels에는 unique 제약이 없어 NOT EXISTS로, channel_members는
+-- (channel_id, user_id) unique가 있어 ON CONFLICT로 멱등성을 맞춥니다.
+
+INSERT INTO channels (workspace_id, name, is_private, created_at)
+SELECT w.id, 'general', false, NOW()
+FROM workspaces w
+WHERE w.name = 'test_workspace'
+  AND NOT EXISTS (
+      SELECT 1 FROM channels c WHERE c.workspace_id = w.id AND c.name = 'general'
+  );
+
+INSERT INTO channels (workspace_id, name, is_private, created_at)
+SELECT w.id, 'design_channel', true, NOW()
+FROM workspaces w
+WHERE w.name = 'test_workspace'
+  AND NOT EXISTS (
+      SELECT 1 FROM channels c WHERE c.workspace_id = w.id AND c.name = 'design_channel'
+  );
+
+-- general: 전원 참여 (u1만 OWNER)
+INSERT INTO channel_members (channel_id, user_id, role, created_at)
+SELECT c.id, u.uid,
+       CASE WHEN u.email = '1@1.com' THEN 'OWNER' ELSE 'MEMBER' END,
+       NOW()
+FROM channels c
+JOIN workspaces w ON w.id = c.workspace_id
+JOIN users u ON u.email IN ('1@1.com', '2@2.com', '3@3.com')
+WHERE w.name = 'test_workspace' AND c.name = 'general'
+ON CONFLICT (channel_id, user_id) DO NOTHING;
+
+-- design_channel: u1·u2 만 (u3 제외 — 권한 거부 테스트용)
+INSERT INTO channel_members (channel_id, user_id, role, created_at)
+SELECT c.id, u.uid,
+       CASE WHEN u.email = '1@1.com' THEN 'OWNER' ELSE 'MEMBER' END,
+       NOW()
+FROM channels c
+JOIN workspaces w ON w.id = c.workspace_id
+JOIN users u ON u.email IN ('1@1.com', '2@2.com')
+WHERE w.name = 'test_workspace' AND c.name = 'design_channel'
+ON CONFLICT (channel_id, user_id) DO NOTHING;
+
 -- ─────────────────────────── 칸반 보드 ───────────────────────────
 -- design_board : 부서장 u2, 부서원 u2·u3        → u1(OWNER)·u2·u3 접근 가능
 -- backend_board: 부서장 u1, 부서원 u1           → u3는 조회 목록에서 안 보여야 정상
