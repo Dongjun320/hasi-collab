@@ -48,11 +48,6 @@ WHERE wm.workspace_id = w.id
 -- ─────────────────────────── 채널 ───────────────────────────
 -- general        : 공개,  u1(OWNER)·u2·u3 전원 → /topic/channel.{id} SUBSCRIBE 성공 케이스
 -- design_channel : 비공개, u1(OWNER)·u2 만      → u3는 SUBSCRIBE 거부되어야 정상
---
--- messenger의 StompAuthChannelInterceptor가 ServiceDirectory.isChannelMember()로
--- channel_members를 조회하므로, 이 두 행이 없으면 모든 채널 구독이 거부됩니다.
--- channels에는 unique 제약이 없어 NOT EXISTS로, channel_members는
--- (channel_id, user_id) unique가 있어 ON CONFLICT로 멱등성을 맞춥니다.
 
 INSERT INTO channels (workspace_id, name, is_private, created_at)
 SELECT w.id, 'general', false, NOW()

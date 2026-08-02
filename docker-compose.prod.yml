@@ -2,7 +2,11 @@ name: hasi-collab
 
 # Prod용 공용 인프라는 VPS에서 전체적으로 관리할거고 /srv/vps-infra/infra에 따로 둘 예정입니다.
 # 이건 Docker Compose는 별도 private 레포에 있음.
-# 사용: docker compose -f docker-compose.prod.yml up -d --build
+# 사용:
+#   docker compose -f docker-compose.prod.yml build hasi-service
+#   docker compose -f docker-compose.prod.yml build hasi-messenger
+#   docker compose -f docker-compose.prod.yml up -d
+#
 # 개발용 docker-compose.yml 은 그대로 두고 이 파일만 배포에 사용합니다.
 #
 # 전제:
@@ -49,6 +53,7 @@ services:
         exec redis-server \
           --requirepass "$$REDIS_PASSWORD" \
           --appendonly yes \
+          --maxmemory 256mb \
           --maxmemory-policy noeviction
     volumes:
       - hasi_redis_data:/data
@@ -57,6 +62,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 320m
 
   hasi-service:
     build:
@@ -71,8 +80,6 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
     depends_on:
-      hasi-messenger:
-        condition: service_started
       hasi-redis:
         condition: service_healthy
     healthcheck:
@@ -83,6 +90,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 90s
+    deploy:
+      resources:
+        limits:
+          # JAVA_TOOL_OPTIONS 가 힙을 -Xmx256m 로 고정합니다. 나머지는 metaspace/스택 몫.
+          memory: 512m
 
   hasi-messenger:
     build:
@@ -97,6 +109,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
     depends_on:
+      hasi-service:
+        condition: service_healthy
       hasi-redis:
         condition: service_healthy
     healthcheck:
@@ -105,3 +119,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
