@@ -252,6 +252,17 @@ components:
           code: "CH_003"
           message: "채널 입력값이 유효하지 않습니다"
 
+    CH005Error:
+      description: "CH_005 | 409 | 이미 채널에 존재하는 멤버"
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+      example:
+        success: false
+        data: null
+        error:
+          code: "CH_005"
+          message: "이미 채널에 존재하는 멤버입니다"
+
     # ── MEMBER 에러 ───────────────────────────────────────────────────
 
     MBR001Error:

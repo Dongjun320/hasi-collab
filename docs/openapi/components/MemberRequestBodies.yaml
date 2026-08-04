@@ -3,13 +3,16 @@ components:
     WorkspaceMemberInviteRequest:
       type: object
       required:
-        - nickname
+        - nicknames
       description: "워크스페이스 멤버 초대 시 요청"
       properties:
-        nickname:
-          type: string
-          maxLength: 50
-          description: "초대할 사용자의 닉네임"
+        nicknames:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 50
+          description: "초대할 사용자들의 닉네임"
         role:
           type: string
           enum: [ADMIN, MEMBER]
@@ -25,6 +28,29 @@ components:
           enum: [ADMIN, MEMBER]
           description: "변경할 멤버 역할"
 
+    ChannelMemberPatchRequest:
+      type: object
+      description: "채널 멤버 부분 수정 시 요청"
+      properties:
+        role:
+          type: string
+          enum: [ADMIN, MEMBER]
+          description: "변경할 멤버 역할"
+
+    ChannelMemberInviteRequest:
+      type: object
+      required:
+        - inviteeIds
+      properties:
+        inviteeIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          minItems: 1
+          maxItems: 50
+          description: "초대할 워크스페이스 멤버의 userId 목록"
+
     MemberInvitePatchRequest:
       type: object
       description: "초대 수락/거절/취소 시 요청"
@@ -32,3 +58,22 @@ components:
         action:
           type: string
           enum: [ACCEPTED, DECLINED, CANCELLED]
+
+    TransferWorkspaceOwnershipRequest:
+      type: object
+      required:
+        - newOwnerUserId
+      properties:
+        newOwnerUserId:
+          type: integer
+          format: int64
+
+    TransferChannelOwnershipRequest:
+      type: object
+      required:
+        - newOwnerUserId
+      properties:
+        newOwnerUserId:
+          type: integer
+          format: int64
+

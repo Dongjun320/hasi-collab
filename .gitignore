@@ -12,6 +12,9 @@ env
 **/application-secret.yml
 postgres_data/
 
+# 배포용 시크릿 (.env 규칙은 정확히 `.env`만 잡으므로 별도로 명시)
+.env.prod
+
 # Maven 빌드 산출물
 **/target/
 
@@ -26,7 +29,8 @@ postgres_data/
 *.log
 logs/
 
-# Docker PostgreSQL 데이터
+# Docker 개발 인프라 데이터 (docker-compose.yml의 bind mount 대상)
+.data/
 postgres_data/
 
 # 자동 생성 파일 (openapi-typescript)

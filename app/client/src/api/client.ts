@@ -8,8 +8,10 @@
 import createClient from 'openapi-fetch'
 import type { paths } from '../types/openapi'
 
+// 개발:  '' -> vite.config.ts의 /api가 처리.
+// 배포: VITE_API_BASE_URL(예: https://api.example.com)로 cross origin 호출.
 export const api = createClient<paths>({
-  baseUrl: '',
+  baseUrl: import.meta.env.VITE_API_BASE_URL ?? '',
 })
 
 // 요청 미들웨어: 모든 요청에 JWT 자동 첨부
@@ -23,10 +25,10 @@ api.use({
     return request
   },
 
-  // 응답 미들웨어: 401이면 로그인 페이지로 이동
+  // 응답 미들웨어: 401이면 로그인 페이지로 이동.
   onResponse({ response }) {
     if (response.status === 401) {
-      window.location.href = '/login'
+      window.location.href = '/'
     }
     return response
   },

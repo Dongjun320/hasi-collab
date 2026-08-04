@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ChannelRepository extends JpaRepository<Channel, Long> {
-    Optional<Channel> findByWorkspaceIdAndId(Long workspaceId, Long channelId);
-
     List<Channel> findByWorkspaceId(Long workspaceId);
 
     List<Channel> findByParentId(Long parentId);
+
+    Optional<Channel> findByWorkspaceIdAndId(Long workspaceId, Long channelId);
 }

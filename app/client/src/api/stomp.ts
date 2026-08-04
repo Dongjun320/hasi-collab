@@ -1,10 +1,27 @@
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 
-const MESSENGER_WS_URL = 'ws://localhost:8081/ws';
+// HTTPS로 배포된 클라이언트에서는 ws://가 차단되므로 wss:// 필수.
+const MESSENGER_WS_URL =
+  import.meta.env.VITE_WS_URL ?? 'ws://localhost:8081/ws';
+
+if (
+  typeof window !== 'undefined' &&
+  window.location.protocol === 'https:' &&
+  MESSENGER_WS_URL.startsWith('ws://')
+) {
+  console.error(
+    `[stomp] HTTPS 페이지에서 ws:// 는 mixed content로 차단됩니다: ${MESSENGER_WS_URL}\n` +
+      'VITE_WS_URL 을 wss:// 로 설정한 뒤 다시 빌드하세요 (값은 빌드 시점에 인라인됩니다).'
+  );
+}
 
 const DM_INBOX_DESTINATION = '/user/queue/dm';
 
 const ERROR_DESTINATION = '/user/queue/errors';
+
+const FRIEND_PRESENCE_DESTINATION = '/user/queue/presence';
+
+const NOTIFICATION_DESTINATION = '/user/queue/notifications';
 
 let client: Client | null = null;
 let connectPromise: Promise<void> | null = null;
@@ -52,6 +69,11 @@ export function connectStomp(token: string): Promise<void> {
 
       channelReadSubscriptions.clear();
 
+      workspacePresenceSubscriptions.clear();
+      friendPresenceSubscription = null;
+
+      notificationSubscription = null;
+
       ensureErrorSubscription();
       if (dmListeners.size > 0 || dmInboxListeners.size > 0) {
         ensureDmInboxSubscription();
@@ -61,6 +83,15 @@ export function connectStomp(token: string): Promise<void> {
       }
       for (const channelId of channelReadListeners.keys()) {
         ensureChannelReadSubscription(channelId);
+      }
+      for (const workspaceId of workspacePresenceListeners.keys()) {
+        ensureWorkspacePresenceSubscription(workspaceId);
+      }
+      if (friendPresenceListeners.size > 0) {
+        ensureFriendPresenceSubscription();
+      }
+      if (notificationListeners.size > 0) {
+        ensureNotificationSubscription();
       }
       resolve();
     };
@@ -96,6 +127,9 @@ function teardownConnection(): void {
   dmInboxSubscription = null;
   channelSubscriptions.clear();
   channelReadSubscriptions.clear();
+  workspacePresenceSubscriptions.clear();
+  friendPresenceSubscription = null;
+  notificationSubscription = null;
 
   void stale?.deactivate();
   pendingReject?.(new Error('STOMP connection was reset before it was established.'));
@@ -105,6 +139,9 @@ export function disconnectStomp(): void {
   teardownConnection();
   channelListeners.clear();
   channelReadListeners.clear();
+  workspacePresenceListeners.clear();
+  friendPresenceListeners.clear();
+  notificationListeners.clear();
   dmListeners.clear();
   dmInboxListeners.clear();
   errorListeners.clear();
@@ -242,6 +279,101 @@ export function subscribeToChannel(
   };
 }
 
+// 접속 상태.
+export type PresenceEvent = {
+  userId: string;
+  online: boolean;
+  updatedAt: string;
+};
+
+type PresenceListener = (event: PresenceEvent) => void;
+
+const workspacePresenceListeners = new Map<string, Set<PresenceListener>>();
+const workspacePresenceSubscriptions = new Map<string, StompSubscription>();
+
+const friendPresenceListeners = new Set<PresenceListener>();
+let friendPresenceSubscription: StompSubscription | null = null;
+
+function ensureWorkspacePresenceSubscription(workspaceId: string): void {
+  if (workspacePresenceSubscriptions.has(workspaceId) || !client?.connected) {
+    return;
+  }
+  const subscription = client.subscribe(`/topic/workspace.${workspaceId}.presence`, (message) => {
+    const event = parseBody<PresenceEvent>(message);
+    for (const listener of workspacePresenceListeners.get(workspaceId) ?? []) {
+      listener(event);
+    }
+  });
+  workspacePresenceSubscriptions.set(workspaceId, subscription);
+}
+
+// /topic/workspace.{workspaceId}.presence — 같은 워크스페이스 멤버들의 온/오프라인
+export function subscribeToWorkspacePresence(
+  workspaceId: number | string,
+  onPresence: PresenceListener
+): () => void {
+  const key = String(workspaceId);
+
+  let listeners = workspacePresenceListeners.get(key);
+  if (!listeners) {
+    listeners = new Set<PresenceListener>();
+    workspacePresenceListeners.set(key, listeners);
+  }
+  listeners.add(onPresence);
+  ensureWorkspacePresenceSubscription(key);
+
+  return () => {
+    const current = workspacePresenceListeners.get(key);
+    if (!current) {
+      return;
+    }
+    current.delete(onPresence);
+    if (current.size > 0) {
+      return;
+    }
+    workspacePresenceListeners.delete(key);
+
+    const subscription = workspacePresenceSubscriptions.get(key);
+    if (!subscription) {
+      return;
+    }
+    workspacePresenceSubscriptions.delete(key);
+    if (client?.connected) {
+      subscription.unsubscribe();
+    }
+  };
+}
+
+function ensureFriendPresenceSubscription(): void {
+  if (friendPresenceSubscription || !client?.connected) {
+    return;
+  }
+  friendPresenceSubscription = client.subscribe(FRIEND_PRESENCE_DESTINATION, (message) => {
+    const event = parseBody<PresenceEvent>(message);
+    for (const listener of friendPresenceListeners) {
+      listener(event);
+    }
+  });
+}
+
+// /user/queue/presence — 친구의 온/오프라인 (워크스페이스를 공유하지 않아도 옴)
+export function subscribeToFriendPresence(onPresence: PresenceListener): () => void {
+  ensureFriendPresenceSubscription();
+  friendPresenceListeners.add(onPresence);
+
+  return () => {
+    friendPresenceListeners.delete(onPresence);
+    if (friendPresenceListeners.size > 0) {
+      return;
+    }
+    const subscription = friendPresenceSubscription;
+    friendPresenceSubscription = null;
+    if (subscription && client?.connected) {
+      subscription.unsubscribe();
+    }
+  };
+}
+
 type ChannelReadListener = (state: ChannelReadState) => void;
 
 const channelReadListeners = new Map<string, Set<ChannelReadListener>>();
@@ -358,6 +490,54 @@ export function subscribeToDmInbox(onMessage: DmInboxListener): () => void {
   return () => {
     dmInboxListeners.delete(onMessage);
     releaseDmInboxSubscription();
+  };
+}
+
+export type MessengerNotificationType = 'message' | 'mention' | 'invite' | 'friend' | 'system';
+
+export type MessengerNotification = {
+  id: number;
+  type: MessengerNotificationType;
+  actorId: number | null;
+  subjectId: number | null;
+  workspaceId: number | null;
+  payload: Record<string, unknown>;
+  unread: boolean;
+  resolved: boolean;
+  createdAt: string;
+};
+
+type NotificationListener = (notification: MessengerNotification) => void;
+
+let notificationSubscription: StompSubscription | null = null;
+const notificationListeners = new Set<NotificationListener>();
+
+function ensureNotificationSubscription(): void {
+  if (notificationSubscription || !client?.connected) {
+    return;
+  }
+  notificationSubscription = client.subscribe(NOTIFICATION_DESTINATION, (message) => {
+    const notification = parseBody<MessengerNotification>(message);
+    for (const listener of notificationListeners) {
+      listener(notification);
+    }
+  });
+}
+
+export function subscribeToNotifications(onNotification: NotificationListener): () => void {
+  ensureNotificationSubscription();
+  notificationListeners.add(onNotification);
+
+  return () => {
+    notificationListeners.delete(onNotification);
+    if (notificationListeners.size > 0) {
+      return;
+    }
+    const subscription = notificationSubscription;
+    notificationSubscription = null;
+    if (subscription && client?.connected) {
+      subscription.unsubscribe();
+    }
   };
 }
 

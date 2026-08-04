@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -36,7 +37,7 @@ public class FriendService {
 
         Optional<Friend> existing = friendRepository
                 .findBySenderIdAndReceiverIdOrReceiverIdAndSenderId(
-                        senderId, receiverId, receiverId, senderId);
+                        senderId, receiverId, senderId, receiverId);
 
         // 이미 친구신청 혹은 친구관계인지 확인
         if (existing.isPresent()) {
@@ -89,10 +90,15 @@ public class FriendService {
 
     // 친구 삭제
     @Transactional
-    public void removeFriend(Long userId, Long friendId) {
+    public void removeFriend(Long userId, Long relationId) {
         Friend friend = friendRepository
-                .findBySenderIdAndReceiverIdOrReceiverIdAndSenderId(userId, friendId, userId, friendId)
+                .findById(relationId)
                 .orElseThrow(() -> new ApiException(ErrorCode.FRIEND_003));
+
+        // 참여자 검증 - 본인이 sender나 receiver로 포함된 관계인지 확인
+        if (!friend.getSenderId().equals(userId) && !friend.getReceiverId().equals(userId)) {
+            throw new ApiException(ErrorCode.FRIEND_004);
+        }
 
         friendRepository.deleteById(friend.getId());
     }
@@ -122,6 +128,7 @@ public class FriendService {
                     Long friendUid = f.getSenderId().equals(userId) ? f.getReceiverId() : f.getSenderId();
                     return toResponse(f.getId(), friendUid);
                 })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -129,10 +136,14 @@ public class FriendService {
         User user = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_001));
 
+        if (user == null || !user.isActive()) {   // ← 탈퇴 계정이면 목록에서 제외
+            return null;
+        }
+
         return new FriendResponse()
-                .id(relationId)               // 관계(요청) id
+                .id(relationId)
+                .uid(user.getUid())
                 .name(user.getNickname())
-                .status(FriendResponse.StatusEnum.fromValue(user.getStatusCode().name()))
                 .statusMessage(user.getStatusMessage());
     }
 }

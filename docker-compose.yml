@@ -1,7 +1,10 @@
+# 개발용 local 인프라.
+# 데이터는 프로젝트 안의 ./.data/ 에 bind mount로 저장합니다(.gitignore 처리됨).
+# anon volume에서 dangling volume 문제로 바꿈
 services:
 
   postgres:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     container_name: hasi-postgres
     restart: unless-stopped
     environment:
@@ -10,19 +13,29 @@ services:
       POSTGRES_PASSWORD: hasi1234
     ports:
       - "8200:5432"
+    volumes:
+      # PG18은 PGDATA가 /var/lib/postgresql/18/docker 로 바뀌었습니다.
+      # 상위 디렉터리를 마운트해야 합니다 — .../data 로 마운트하면 볼륨에 아무것도
+      # 담기지 않고 컨테이너를 다시 만들 때 데이터가 사라집니다.
+      - ./.data/postgres:/var/lib/postgresql
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: hasi-redis
     restart: unless-stopped
     ports:
       - "8201:6379"
+    volumes:
+      - ./.data/redis:/data
 
   rabbitMq:
     build:
       context: ./docker/rabbitmq
     image: hasi-rabbitmq:stomp
     container_name: rabbit-mq
+    # RabbitMQ는 노드 데이터 디렉터리 이름에 hostname을 씁니다. 고정하지 않으면
+    # 컨테이너를 다시 만들 때마다 hostname이 바뀌어 이전 데이터를 못 찾습니다.
+    hostname: rabbit-mq
     restart: no
     ports:
       - "8202:5672" # AMQP
@@ -32,3 +45,5 @@ services:
       # 테스트용 유저.
       RABBITMQ_DEFAULT_USER: "hasi"
       RABBITMQ_DEFAULT_PASS: "1234"
+    volumes:
+      - ./.data/rabbitmq:/var/lib/rabbitmq

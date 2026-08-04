@@ -1,0 +1,15 @@
+{
+  "name": "hasi-collab",
+  "compatibility_date": "2026-07-31",
+
+  // API는 Worker를 거치지 않고 api.hasi-collab.com(Cloudflare proxy -> Caddy)으로 직접 갑니다.
+  "assets": {
+    "directory": "./dist",
+    // react-router의 createBrowserRouter(history API)용 SPA fallback.
+    "not_found_handling": "single-page-application"
+  },
+
+  "routes": [
+    { "pattern": "hasi-collab.com", "custom_domain": true }
+  ]
+}

@@ -20,8 +20,19 @@ public class MemberController implements WorkspaceMemberApi {
 
     @Override
     public ResponseEntity<WorkspaceMemberInviteResponse> inviteWorkspaceMember(Long workspaceId, WorkspaceMemberInviteRequest request) {
-        WorkspaceMemberInviteResponseData data = invitationService.createInvitation(workspaceId, request);
+        WorkspaceMemberInviteResponseData data = invitationService.createInviteWorkspace(workspaceId, request);
         WorkspaceMemberInviteResponse response = new WorkspaceMemberInviteResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Override
+    public ResponseEntity<ChannelMemberInviteResponse> inviteChannelMember(Long workspaceId, Long channelId, ChannelMemberInviteRequest request) {
+        ChannelMemberInviteResponseData data = invitationService.createInviteChannel(workspaceId, channelId, request);
+        ChannelMemberInviteResponse response = new ChannelMemberInviteResponse();
         response.setSuccess(true);
         response.setData(data);
         response.setError(null);
@@ -107,6 +118,16 @@ public class MemberController implements WorkspaceMemberApi {
     }
 
     @Override
+    public ResponseEntity<ChannelMemberPatchResponse> patchChannelMember(Long workspaceId, Long channelId, Long userId, ChannelMemberPatchRequest request) {
+        ChannelMemberData data = memberService.patchChannelMember(workspaceId, channelId, userId, request);
+        ChannelMemberPatchResponse response = new ChannelMemberPatchResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
     public ResponseEntity<WorkspaceMemberLeaveResponse> leaveWorkspaceMember(Long workspaceId) {
         WorkspaceMemberLeaveResponseData data = memberService.leaveWorkspaceMember(workspaceId);
         WorkspaceMemberLeaveResponse response = new WorkspaceMemberLeaveResponse();
@@ -143,6 +164,28 @@ public class MemberController implements WorkspaceMemberApi {
     public ResponseEntity<ChannelMemberRemoveResponse> removeChannelMember(Long workspaceId, Long channelId, Long userId) {
         ChannelMemberRemoveResponseData data = memberService.removeChannelMember(workspaceId, channelId, userId);
         ChannelMemberRemoveResponse response = new ChannelMemberRemoveResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<TransferWorkspaceOwnershipResponse> transferWorkspaceOwnership(Long workspaceId, TransferWorkspaceOwnershipRequest request) {
+        TransferWorkspaceOwnershipResponseData data = memberService.transferWorkspaceOwnership(workspaceId, request);
+        TransferWorkspaceOwnershipResponse response = new TransferWorkspaceOwnershipResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<TransferChannelOwnershipResponse> transferChannelOwnership(Long workspaceId, Long channelId, TransferChannelOwnershipRequest request) {
+        TransferChannelOwnershipResponseData data = memberService.transferChannelOwnership(workspaceId, channelId, request);
+        TransferChannelOwnershipResponse response = new TransferChannelOwnershipResponse();
         response.setSuccess(true);
         response.setData(data);
         response.setError(null);

@@ -12,6 +12,12 @@ spring:
     password: hasi1234
     driver-class-name: org.postgresql.Driver
 
+  # ── Redis (presence 저장. service와 같은 인스턴스 공유) ────
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:8201}
+
   # ── JPA / Hibernate ───────────────────────────────────────
   jpa:
     hibernate:
@@ -26,11 +32,25 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
+  # Service -> Messenger용 JWT
+  internal:
+    jwt:
+      secret: ${INTERNAL_JWT_SECRET:1234567890987654323456789087654323456789222}
+      issuer: ${INTERNAL_JWT_ISSUER:hasi-service}
+
+  presence:
+    ttl-seconds: ${PRESENCE_TTL_SECONDS:60}
+    refresh-interval-ms: ${PRESENCE_REFRESH_INTERVAL_MS:20000}
+
   broker:
     relay-host: localhost
     relay-port: 8204
     login: hasi
     passcode: "1234"
+    # 개발은 RabbitMQ 기본 vhost("/")를 그대로 씁니다 — docker-compose.yml 수정이
+    # 필요 없고, 기존 ./.data/rabbitmq 를 지울 일도 없습니다.
+    # prod와 맞춰보고 싶으면 RABBITMQ_VHOST 만 export 하면 됩니다(코드 수정 불필요).
+    virtual-host: ${RABBITMQ_VHOST:/}
 
 # ── JWT 검증 (service와 동일한 시크릿 사용) ───────────────
 jwt:

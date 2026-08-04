@@ -1,67 +1,39 @@
 components:
   schemas:
-    BoardListResponse:
-      type: array
-      items:
-        type: object
-        properties:
-          id:
-            type: integer
-            format: int64
-          name:
-            type: string
-          workspaceId:
-            type: integer
-            format: int64
-          createdAt:
-            type: string
-            format: date-time
-
-    BoardCreateResponse:
+    # ── 공통 데이터 스키마 (List/Create/Update 응답에서 재사용) ──
+    BoardData:
       type: object
       properties:
         id:
           type: integer
           format: int64
-        name:
-          type: string
         workspaceId:
           type: integer
           format: int64
+        name:
+          type: string
+        ownerId:
+          type: integer
+          format: int64
+          description: "부서장 userId"
         createdAt:
           type: string
           format: date-time
 
-    TaskListResponse:
-      type: array
-      items:
-        type: object
-        properties:
-          id:
-            type: integer
-            format: int64
-          boardId:
-            type: integer
-            format: int64
-          title:
-            type: string
-          status:
-            type: string
-            enum: [TODO, IN_PROGRESS, REVIEW, DONE]
-          assigneeId:
-            type: integer
-            format: int64
-          priority:
-            type: string
-            enum: [HIGH, MEDIUM, LOW]
-          createdAt:
-            type: string
-            format: date-time
-          updatedAt:
-            type: string
-            format: date-time
+    BoardMemberData:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+        role:
+          type: string
+          enum: [OWNER, ADMIN, MEMBER]
+          description: "워크스페이스 역할"
 
-    TaskCreateResponse:
+    TaskData:
       type: object
       properties:
         id:
@@ -72,6 +44,14 @@ components:
           format: int64
         title:
           type: string
+        content:
+          type: string
+        startDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
         status:
           type: string
           enum: [TODO, IN_PROGRESS, REVIEW, DONE]
@@ -84,34 +64,176 @@ components:
         createdAt:
           type: string
           format: date-time
-
-    TaskUpdateResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        title:
-          type: string
-        status:
-          type: string
-          enum: [TODO, IN_PROGRESS, REVIEW, DONE]
-        assigneeId:
-          type: integer
-          format: int64
-        priority:
-          type: string
-          enum: [HIGH, MEDIUM, LOW]
         updatedAt:
           type: string
           format: date-time
 
+    # ── 보드 ──
+    BoardListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/BoardData"
+        error:
+          nullable: true
+          example: null
+
+    BoardCreateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: "#/components/schemas/BoardData"
+        error:
+          nullable: true
+          example: null
+
+    BoardUpdateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: "#/components/schemas/BoardData"
+        error:
+          nullable: true
+          example: null
+
+    BoardDeleteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            message:
+              type: string
+              example: "보드가 삭제되었습니다."
+        error:
+          nullable: true
+          example: null
+
+    # ── 보드 멤버(부서원) ──
+    BoardMemberListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/BoardMemberData"
+        error:
+          nullable: true
+          example: null
+
+    BoardMemberAddResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "부서원 추가 완료"
+            userId:
+              type: integer
+              format: int64
+        error:
+          nullable: true
+          example: null
+
+    BoardMemberRemoveResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "부서원이 제외되었습니다."
+        error:
+          nullable: true
+          example: null
+
+    # ── 태스크 ──
+    TaskListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskData"
+        error:
+          nullable: true
+          example: null
+
+    TaskCreateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: "#/components/schemas/TaskData"
+        error:
+          nullable: true
+          example: null
+
+    TaskUpdateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: "#/components/schemas/TaskData"
+        error:
+          nullable: true
+          example: null
+
     TaskDeleteResponse:
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
-        message:
-          type: string
-          example: "태스크가 삭제되었습니다."
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            message:
+              type: string
+              example: "태스크가 삭제되었습니다."
+        error:
+          nullable: true
+          example: null

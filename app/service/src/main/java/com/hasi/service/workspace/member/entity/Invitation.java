@@ -7,7 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "invitations", uniqueConstraints = @UniqueConstraint(columnNames = {"workspace_id", "invitee_id"}))
+@Table(name = "invitations")
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -21,6 +21,9 @@ public class Invitation {
 
     @Column(name = "workspace_id", nullable = false)
     private Long workspaceId;
+
+    @Column(name = "channel_id")
+    private Long channelId;
 
     @Column(name = "inviter_id", nullable = false)
     private Long inviterId;

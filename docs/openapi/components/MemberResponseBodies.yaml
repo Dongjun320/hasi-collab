@@ -11,9 +11,6 @@ components:
         role:
           type: string
           enum: [OWNER, ADMIN, MEMBER]
-        statusCode:
-          type: string
-          enum: [ONLINE, AWAY, BUSY, OFFLINE, OUTSIDE, REMOTE]
 
     ChannelMemberData:
       type: object
@@ -38,6 +35,14 @@ components:
           format: int64
         workspaceName:
           type: string
+        channelId:
+          type: integer
+          format: int64
+          nullable: true
+          description: "워크스페이스 초대면 채널 ID가 NULL, 채널 초대인 경우 채널 ID가 NULL이 아님"
+        channelName:
+          type: string
+          nullable: true
         inviterId:
           type: integer
           format: int64
@@ -72,12 +77,14 @@ components:
             message:
               type: string
               example: "초대 완료"
-            userId:
-              type: integer
-              format: int64
+            invitationIds:
+              type: array
+              items:
+                type: integer
+                format: int64
             role:
               type: string
-              enum: [OWNER, ADMIN, MEMBER]
+              enum: [ADMIN, MEMBER]
         error:
           nullable: true
           example: null
@@ -125,6 +132,19 @@ components:
           nullable: true
           example: null
 
+    ChannelMemberPatchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          allOf:
+            - $ref: "#/components/schemas/ChannelMemberData"
+        error:
+          nullable: true
+          example: null
+
     WorkspaceMemberRemoveResponse:
       type: object
       properties:
@@ -157,6 +177,26 @@ components:
           nullable: true
           example: null
 
+    ChannelMemberInviteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "초대 완료"
+            invitationIds:
+              type: array
+              items:
+                type: integer
+                format: int64
+        error:
+          nullable: true
+          example: null
 
     ChannelMemberListResponse:
       type: object
@@ -236,6 +276,46 @@ components:
             status:
               type: string
               enum: [ACCEPTED, DECLINED, CANCELLED]
+        error:
+          nullable: true
+          example: null
+
+    TransferWorkspaceOwnershipResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: "OWNER 위임 성공 메시지"
+            previousOwner:
+              $ref: "#/components/schemas/WorkspaceMemberData"
+            newOwner:
+              $ref: "#/components/schemas/WorkspaceMemberData"
+        error:
+          nullable: true
+          example: null
+
+    TransferChannelOwnershipResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+              description: "OWNER 위임 성공 메시지"
+            previousOwner:
+              $ref: "#/components/schemas/ChannelMemberData"
+            newOwner:
+              $ref: "#/components/schemas/ChannelMemberData"
         error:
           nullable: true
           example: null

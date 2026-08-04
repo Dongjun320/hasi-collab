@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 // import { api } from '.../api/client'
+import { SERVICE_BASE_URL } from '../api/urls'
 
 interface Mail {
     id: number
@@ -24,7 +25,7 @@ const MailPage = () => {
     const fetchMails = async () => {
         setLoading(true)
         try {
-            const res = await fetch('http://localhost:8080/api/v1/mail/accounts/1/mails?limit=30', {
+            const res = await fetch(`${SERVICE_BASE_URL}/api/v1/mail/accounts/1/mails?limit=30`, {
                 headers: {
                     Authorization: `Bearer ${JSON.parse(localStorage.getItem('hasi-auth') || '{}')?.state?.accessToken}`
                 }

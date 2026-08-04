@@ -1,9 +1,11 @@
 package com.hasi.messenger.channel;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -28,4 +30,12 @@ public interface ChannelMessageRepository extends JpaRepository<ChannelMessage, 
     long countUnread(@Param("channelId") Long channelId,
                      @Param("userId") Long userId,
                      @Param("lastReadId") Long lastReadId);
+
+    /**
+     * 채널이 삭제될 때 해당 채널의 메시지를 지웁니다.
+     * @return 삭제된 record 수
+     */
+    @Modifying
+    @Query("DELETE FROM ChannelMessage m WHERE m.channelId IN :channelIds")
+    long deleteByChannelIdIn(@Param("channelIds") Collection<Long> channelIds);
 }

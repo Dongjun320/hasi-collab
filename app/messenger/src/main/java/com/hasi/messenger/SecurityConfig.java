@@ -1,5 +1,6 @@
 package com.hasi.messenger;
 
+import com.hasi.messenger.security.InternalJwtFilter;
 import com.hasi.messenger.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+    private final InternalJwtFilter internalJwtFilter;
 
     @Value("${app.cors.allowed-origins}")
     private List<String> allowedOrigins;
@@ -27,7 +29,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(allowedOrigins);
+        // setAllowedOrigins는 allowCredentials(true)와 함께 와일드카드를 쓰면 예외가 납니다.
+        configuration.setAllowedOriginPatterns(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
@@ -39,14 +42,15 @@ public class SecurityConfig {
     }
 
     // WebSocket handshake(/ws)는 STOMP CONNECT 프레임 단계(StompAuthChannelInterceptor)에서 인증하므로 permitAll.
-    // REST 히스토리 조회(/messenger-api/**)는 JwtFilter로 보호.
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/messenger-api/internal/**").hasRole("INTERNAL")
                         .requestMatchers("/messenger-api/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(internalJwtFilter, JwtFilter.class)
                 .csrf(AbstractHttpConfigurer::disable);
         return http.build();
     }

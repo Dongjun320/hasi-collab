@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Hash, Plus, X,
   PanelLeftClose, PanelLeftOpen, Settings, UserPlus,
-  ChevronRight, ChevronDown,
+  ChevronRight, ChevronDown, LayoutGrid, Calendar, Megaphone,
 } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
@@ -11,6 +11,7 @@ import Modal from "@/components/Modal.tsx";
 import { api } from '../api/client';
 import { Tooltip } from "./Tooltip";
 import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
+import { useChannelStore } from "../store/channelStore";
 
 
 interface WorkspaceSidebarProps {
@@ -33,6 +34,7 @@ export function WorkspaceSidebar({
     currentWorkspace,
     setWorkspace,
     workspaces,
+    channelsByWorkspace,
     updateWorkspace,
     fetchWorkspaces,
     fetchChannels,
@@ -55,6 +57,8 @@ export function WorkspaceSidebar({
   const [collapsedIds, setCollapsedIds] = useState<number[]>([]);
   const [addingChildOf, setAddingChildOf] = useState<number | null>(null);
   const [childName, setChildName] = useState("");
+  const [defaultChannelId, setDefaultChannelId] = useState<number | null>(null);
+  const unreadByChannel = useChannelStore((s) => s.unreadByChannel);
 
 
   const handleRailMouseDown = (e: React.MouseEvent) => {
@@ -73,7 +77,7 @@ export function WorkspaceSidebar({
           '/api/workspaces/{workspaceId}/members',
           {
             params: {path: {workspaceId: currentWorkspace.id}},
-            body: {nickname: user.nickname, role: "MEMBER"},   // 스펙상 role이 required로 바뀌어 명시
+            body: {nicknames: [user.nickname], role: "MEMBER"},   // 스펙상 nicknames(배열) + role required
           }
       );
 
@@ -103,6 +107,15 @@ export function WorkspaceSidebar({
     setNewChannelName("");
     setShowNewInput(false);
   }
+
+    useEffect(() => {
+        if (!currentWorkspace) { setDefaultChannelId(null); return; }
+        api.GET('/api/workspaces/{workspaceId}', {
+            params: { path: { workspaceId: currentWorkspace.id } },
+        })
+            .then(({ data }) => setDefaultChannelId(data?.data?.defaultChannelId ?? null))
+            .catch(() => setDefaultChannelId(null));
+    }, [currentWorkspace?.id]);
 
   const handleAddWorkspace = async () => {
     const name = newWorkspaceName.trim();
@@ -164,6 +177,8 @@ export function WorkspaceSidebar({
   const renderChannelRow = (ch: { id: number; name: string, parentId?: number | null }, hasKids: boolean, collapsed: boolean) => {
     const active = ch.id === activeChannelId;
     const isRenaming = renamingChannelId === ch.id;
+    const isDefault = ch.id === defaultChannelId;
+    const unread = unreadByChannel[ch.id] ?? 0;
 
     if (isRenaming) {
       return (
@@ -209,6 +224,8 @@ export function WorkspaceSidebar({
                 >
               {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
             </span>
+            ) : isDefault ? (
+                <Megaphone size={14} className="flex-shrink-0" />
             ) : (
                 <Hash size={14} className="flex-shrink-0" />
             )}
@@ -236,7 +253,12 @@ export function WorkspaceSidebar({
           >
             <Settings size={12} className="text-white/70" />
           </button>
-
+            {/* 안읽음 뱃지 — 비활성 채널에만, 호버 시 톱니/＋버튼에 자리 양보 */}
+            {!active && unread > 0 && (
+                <span className="absolute right-1.5 top-1/2 -translate-y-1/2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center pointer-events-none group-hover/channel:opacity-0 transition-opacity">
+                {unread > 99 ? "99+" : unread}
+              </span>
+            )}
           {channelMenuOpenId === ch.id && (
               <div className="absolute right-0 top-8 bg-[#1e3a28] rounded-lg shadow-xl z-50 py-1 w-32">
                 <button
@@ -250,18 +272,15 @@ export function WorkspaceSidebar({
                   이름 변경
                 </button>
                 {/* 백엔드가 CH_004로 거부하는 케이스 — 누르기 전에 이유를 보여줌 */}
-                <button
-                    disabled={hasKids}
-                    title={hasKids ? "하위 채널을 먼저 삭제해야 합니다" : undefined}
-                    onClick={() => {
-                      onDeleteChannel(ch.id);
-                      setChannelMenuOpenId(null);
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-red-400 hover:bg-white/10
-                      disabled:text-white/25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-                >
-                  삭제
-                </button>
+                  <button
+                      disabled={hasKids || isDefault}
+                      title={isDefault ? "기본 채널은 삭제할 수 없습니다"
+                          : hasKids ? "하위 채널을 먼저 삭제해야 합니다" : undefined}
+                      onClick={() => { onDeleteChannel(ch.id); setChannelMenuOpenId(null); }}
+                      className="w-full text-left px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 disabled:text-white/25 disabled:cursor-not-allowed"
+                  >
+                      삭제
+                  </button>
               </div>
           )}
         </div>
@@ -447,9 +466,15 @@ export function WorkspaceSidebar({
                   {active && (
                     <div className="absolute -left-[14px] top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
                   )}
-                  {ws.unread && !active && (
-                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full border-2 border-[#1e3a28]" />
-                  )}
+                    {!active && (() => {
+                        const chs = channelsByWorkspace[ws.id] ?? [];
+                        const total = chs.reduce((sum, c) => sum + (unreadByChannel[c.id] ?? 0), 0);
+                        return total > 0 ? (
+                            <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border border-[#1e3a28]">
+                                {total > 99 ? "99+" : total}
+                            </span>
+                        ) : null;
+                    })()}
                 </button>
               </Tooltip>
             );
@@ -516,6 +541,26 @@ export function WorkspaceSidebar({
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">
+              {/* ── 기능 (고정: 삭제 불가, 이름변경은 추후) ── */}
+              <div className="px-1 mb-1.5">
+                  <span className="text-white/40 text-xs font-semibold uppercase tracking-wide">기능</span>
+              </div>
+              <div className="space-y-0.5 mb-3">
+                  <button
+                      onClick={() => navigate('/workspace/kanban')}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-white/70 hover:bg-white/10 hover:text-white transition-all text-sm"
+                  >
+                      <LayoutGrid size={14} className="text-[#5CC87A] flex-shrink-0" />
+                      <span className="truncate">칸반</span>
+                  </button>
+                  <button
+                      onClick={() => navigate('/workspace/calendar')}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-white/70 hover:bg-white/10 hover:text-white transition-all text-sm"
+                  >
+                      <Calendar size={14} className="text-[#5CC87A] flex-shrink-0" />
+                      <span className="truncate">캘린더</span>
+                  </button>
+              </div>
             <div className="flex items-center justify-between px-1 mb-1.5">
               <span className="text-white/40 text-xs font-semibold uppercase tracking-wide">채널</span>
               <Tooltip label="새 채널" side="bottom" align="end">

@@ -40,4 +40,8 @@ public class ChannelMember {
     public enum Role {
         OWNER, ADMIN, MEMBER
     }
+
+    public void updateRole(Role role) {
+        this.role = role;
+    }
 }

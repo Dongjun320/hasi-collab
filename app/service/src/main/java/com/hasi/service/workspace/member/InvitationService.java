@@ -5,11 +5,17 @@ import com.hasi.service.auth.entity.User;
 import com.hasi.service.auth.repository.UserRepository;
 import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
+import com.hasi.service.workspace.channel.entity.Channel;
+import com.hasi.service.workspace.channel.repository.ChannelRepository;
+import com.hasi.service.workspace.member.entity.ChannelMember;
 import com.hasi.service.workspace.member.entity.Invitation;
 import com.hasi.service.workspace.member.entity.WorkspaceMember;
+import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.InvitationRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
 import com.hasi.service.workspace.workspace.entity.Workspace;
+import com.hasi.service.workspace.workspace.entity.WorkspacePermission;
+import com.hasi.service.workspace.workspace.repository.WorkspacePermissionRepository;
 import com.hasi.service.workspace.workspace.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
@@ -18,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,43 +36,124 @@ public class InvitationService {
     private final UserRepository userRepository;
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final ChannelRepository channelRepository;
+    private final ChannelMemberRepository channelMemberRepository;
+    private final WorkspacePermissionRepository workspacePermissionRepository;
 
-    public WorkspaceMemberInviteResponseData createInvitation(Long workspaceId, WorkspaceMemberInviteRequest request) {
-
+    @Transactional
+    public WorkspaceMemberInviteResponseData createInviteWorkspace(Long workspaceId, WorkspaceMemberInviteRequest request) {
         Long inviterId = getCurrentUserId();
+        List<Long> invitationIds = new ArrayList<>();
+
+        // inviterId가 워크스페이스 멤버인지 확인
+        WorkspaceMember inviterMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, inviterId)
+                .orElseThrow(() -> new ApiException(ErrorCode.MBR_008));
+
+        // permission에 따른 확인
+        if(!hasPermission(workspaceId, inviterMember, WorkspacePermission.Permission.INVITE_WORKSPACE_MEMBER)) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
 
         // nickname으로 uid 찾기
-        User user = userRepository.findByNickname(request.getNickname())
-                .orElseThrow(() -> new ApiException(ErrorCode.MBR_001)); // 추후 커스텀 에러 작성 및 교체
-
-        // 이미 워크스페이스에 속한 멤버인지 체크
-        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, user.getUid())) {
-            throw new ApiException(ErrorCode.MBR_002);
+        List<User> users = userRepository.findAllByNicknameIn(request.getNicknames());
+        if(users.size() != request.getNicknames().size()) {
+            throw new ApiException(ErrorCode.USER_003);
         }
 
-        if (inviterId.equals(user.getUid())) {
-            throw new ApiException(ErrorCode.MBR_004);
+        for(User user : users) {
+            // 이미 워크스페이스에 속한 멤버인지 체크
+            if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, user.getUid())) {
+                throw new ApiException(ErrorCode.MBR_002);
+            }
+
+            // 초대를 받는 사람이 자신인지 체크
+            if (inviterId.equals(user.getUid())) {
+                throw new ApiException(ErrorCode.MBR_004);
+            }
+
+            // 이미 보낸 초대가 PENDING일 경우 다시 보낼 수 없음
+            if (invitationRepository.existsByWorkspaceIdAndChannelIdIsNullAndInviteeIdAndStatus(workspaceId, user.getUid(), Invitation.Status.PENDING)) {
+                throw new ApiException(ErrorCode.MBR_007);
+            }
+
+            // invitation 레코드 생성
+            Invitation invitation = Invitation.builder()
+                    .workspaceId(workspaceId)
+                    .channelId(null)
+                    .inviterId(inviterId)
+                    .inviteeId(user.getUid())
+                    .status(Invitation.Status.PENDING)
+                    .build();
+
+            invitationRepository.save(invitation);
+            invitationIds.add(invitation.getId());
         }
-
-        // 이미 보낸 초대가 PENDING일 경우 다시 보낼 수 없음
-        if (invitationRepository.existsByWorkspaceIdAndInviteeIdAndStatus(workspaceId, user.getUid(), Invitation.Status.PENDING)) {
-            throw new ApiException(ErrorCode.MBR_007);
-        }
-
-        // invitation 레코드 생성
-        Invitation invitation = Invitation.builder()
-                .workspaceId(workspaceId)
-                .inviterId(inviterId)
-                .inviteeId(user.getUid())
-                .status(Invitation.Status.PENDING)
-                .build();
-
-        invitationRepository.save(invitation);
 
         // response 리턴
         WorkspaceMemberInviteResponseData data = new WorkspaceMemberInviteResponseData();
-        data.setUserId(user.getUid());
-        data.setRole(WorkspaceMemberInviteResponseData.RoleEnum.fromValue(request.getRole().name().toLowerCase()));
+        data.setInvitationIds(invitationIds);
+        data.setRole(WorkspaceMemberInviteResponseData.RoleEnum.fromValue(request.getRole().name()));
+        data.setMessage("초대 완료");
+
+        return data;
+    }
+
+    @Transactional
+    public ChannelMemberInviteResponseData createInviteChannel(Long workspaceId, Long channelId, ChannelMemberInviteRequest request) {
+        Long inviterId = getCurrentUserId();
+        List<Long> invitationIds = new ArrayList<>();
+
+        ChannelMember inviterMember = channelMemberRepository.findByChannelIdAndUserId(channelId, inviterId)
+                .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
+
+        // permission에 따른 확인
+        if(!hasPermission(workspaceId, inviterMember, WorkspacePermission.Permission.INVITE_CHANNEL_MEMBER)) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
+
+        // nickname으로 uid 찾기
+        List<User> users = userRepository.findAllById(request.getInviteeIds());
+        if(users.size() != request.getInviteeIds().size()) {
+            throw new ApiException(ErrorCode.USER_003);
+        }
+
+        for(User user : users) {
+            // 이미 워크스페이스에 속한 멤버인지 체크
+            if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, user.getUid())) {
+                throw new ApiException(ErrorCode.MBR_008);
+            }
+
+            // 이미 채널에 속한 멤버인지 체크
+            if (channelMemberRepository.existsByChannelIdAndUserId(channelId, user.getUid())) {
+                throw new ApiException(ErrorCode.CH_005);
+            }
+
+            // 초대를 받는 사람이 자신인지 체크
+            if (inviterId.equals(user.getUid())) {
+                throw new ApiException(ErrorCode.MBR_004);
+            }
+
+            // 이미 보낸 초대가 PENDING일 경우 다시 보낼 수 없음
+            if (invitationRepository.existsByChannelIdAndInviteeIdAndStatus(channelId, user.getUid(), Invitation.Status.PENDING)) {
+                throw new ApiException(ErrorCode.MBR_007);
+            }
+
+            // invitation 레코드 생성
+            Invitation invitation = Invitation.builder()
+                    .workspaceId(workspaceId)
+                    .channelId(channelId)
+                    .inviterId(inviterId)
+                    .inviteeId(user.getUid())
+                    .status(Invitation.Status.PENDING)
+                    .build();
+
+            invitationRepository.save(invitation);
+            invitationIds.add(invitation.getId());
+        }
+
+        // response 리턴
+        ChannelMemberInviteResponseData data = new ChannelMemberInviteResponseData();
+        data.setInvitationIds(invitationIds);
         data.setMessage("초대 완료");
 
         return data;
@@ -80,6 +168,7 @@ public class InvitationService {
         // InvitationType(SENT, RECEIVED)에 따른 DB 검색(inviter, invitee) 변경
         Long inviteId = getCurrentUserId();
         List<Invitation> invites;
+
         if (type == InvitationType.SENT) {
             invites = invitationRepository.findByInviterIdAndStatus(inviteId, Invitation.Status.PENDING);
         } else {
@@ -89,17 +178,24 @@ public class InvitationService {
         // InviteMemberData가 들어간 list 반환
         List<InviteMemberData> data = new ArrayList<>();
         for (Invitation invite : invites) {
+            Channel channel = null;
             User inviter = userRepository.findById(invite.getInviterId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
+                    .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
             User invitee = userRepository.findById(invite.getInviteeId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.MBR_003));
+                    .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
             Workspace workspace = workspaceRepository.findById(invite.getWorkspaceId())
                     .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+            if(invite.getChannelId() != null) {
+                channel = channelRepository.findById(invite.getChannelId())
+                        .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
+            }
 
             InviteMemberData item = new InviteMemberData();
             item.setInvitationId(invite.getId());
             item.setWorkspaceId(invite.getWorkspaceId());
             item.setWorkspaceName(workspace.getName());
+            item.setChannelId(JsonNullable.of(invite.getChannelId()));
+            item.setChannelName(JsonNullable.of(channel != null ? channel.getName() : null));
             item.setInviterId(invite.getInviterId());
             item.setInviterNickname(inviter.getNickname());
             item.setInviteeId(invite.getInviteeId());
@@ -124,6 +220,7 @@ public class InvitationService {
     @Transactional
     public MemberInviteResponseData patchResponseInvitation(Long invitationId, MemberInvitePatchRequest request) {
 
+        // 초대를 받은 유저
         Long userId = getCurrentUserId();
 
         Invitation invitation = invitationRepository.findById(invitationId)
@@ -131,6 +228,14 @@ public class InvitationService {
 
         if(request.getAction() == null) {
             throw new ApiException(ErrorCode.MBR_004);
+        }
+
+        if (invitation.getStatus() != Invitation.Status.PENDING) {
+            throw new ApiException(ErrorCode.MBR_006);
+        }
+
+        if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new ApiException(ErrorCode.MBR_009);
         }
 
         // 초대 수락/거절/취소에 따른 switch문
@@ -143,14 +248,36 @@ public class InvitationService {
                     throw new ApiException(ErrorCode.AUTH_004);
                 }
                 invitation.accept();
-                // workspaceMember 레코드 생성
-                workspaceMemberRepository.save(
-                        WorkspaceMember.builder()
-                                .workspaceId(invitation.getWorkspaceId())
-                                .userId(userId)
-                                .role(WorkspaceMember.Role.MEMBER)
-                                .build()
-                );
+                if(invitation.getChannelId() == null) {
+                    // workspaceMember 레코드 생성
+                    workspaceMemberRepository.save(
+                            WorkspaceMember.builder()
+                                    .workspaceId(invitation.getWorkspaceId())
+                                    .userId(userId)
+                                    .role(WorkspaceMember.Role.MEMBER)
+                                    .build()
+
+                    );
+                    Workspace workspace = workspaceRepository.findById(invitation.getWorkspaceId())
+                            .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+                    // channelMember 레코드 생성
+                    channelMemberRepository.save(
+                            ChannelMember.builder()
+                                    .channelId(workspace.getDefaultChannelId())
+                                    .userId(userId)
+                                    .role(ChannelMember.Role.MEMBER)
+                                    .build()
+                    );
+                } else {
+                    // channelMember 레코드 생성
+                    channelMemberRepository.save(
+                            ChannelMember.builder()
+                                    .channelId(invitation.getChannelId())
+                                    .userId(userId)
+                                    .role(ChannelMember.Role.MEMBER)
+                                    .build()
+                    );
+                }
                 message = "초대 수락 완료";
                 break;
             case "DECLINED":
@@ -187,6 +314,24 @@ public class InvitationService {
             throw new ApiException(ErrorCode.AUTH_003);
         }
         return Long.valueOf(authentication.getName());
+    }
+
+    private boolean hasPermission(Long workspaceId, WorkspaceMember member, WorkspacePermission.Permission permission) {
+        if (member.getRole() == WorkspaceMember.Role.OWNER) return true;
+        if (member.getRole() == WorkspaceMember.Role.MEMBER) return false;
+
+        // ADMIN이면 워크스페이스별 권한 테이블 조회
+        return workspacePermissionRepository
+                .existsByWorkspaceIdAndPermissionAndAdminAllowed(workspaceId, permission, true);
+    }
+
+    private boolean hasPermission(Long workspaceId, ChannelMember member, WorkspacePermission.Permission permission) {
+        if (member.getRole() == ChannelMember.Role.OWNER) return true;
+        if (member.getRole() == ChannelMember.Role.MEMBER) return false;
+
+        // ADMIN이면 워크스페이스별 권한 테이블 조회
+        return workspacePermissionRepository
+                .existsByWorkspaceIdAndPermissionAndAdminAllowed(workspaceId, permission, true);
     }
 }
 

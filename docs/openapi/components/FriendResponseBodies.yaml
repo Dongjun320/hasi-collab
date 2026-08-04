@@ -7,15 +7,15 @@ components:
         id:
           type: integer
           format: int64
-          description: "친구 유저 ID"
+          description: "friends 테이블의 관계 id (accept/reject/remove 시 사용)"
+        uid:
+          type: integer
+          format: int64
+          description: "친구(상대방)의 유저 id"
         name:
           type: string
           maxLength: 50
           description: "친구 닉네임"
-        status:
-          type: string
-          enum: [ ONLINE, AWAY, BUSY, OFFLINE ]
-          description: "상태 코드"
         statusMessage:
           type: string
           nullable: true

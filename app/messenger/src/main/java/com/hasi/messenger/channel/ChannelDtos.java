@@ -21,5 +21,9 @@ public final class ChannelDtos {
 
     public record ReadState(String userId, Long lastReadMessageId, LocalDateTime updatedAt) {
     }
+
+    // 채널 삭제 정리 결과 (Service -> Messenger 내부 호출용)
+    public record DeletedCounts(long messages, long readStates) {
+    }
 }
 

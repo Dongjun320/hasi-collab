@@ -1,24 +1,21 @@
 package com.hasi.service.auth;
 
 import com.hasi.collab.model.*;
-import com.hasi.service.auth.entity.SocialAccount;
 import com.hasi.service.auth.entity.User;
 import com.hasi.service.auth.repository.UserRepository;
 import com.hasi.service.auth.repository.SocialAccountRepository;
 import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
 import com.hasi.service.jwt.JwtProvider;
+import com.hasi.service.user.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+
 import java.time.ZoneOffset;
 
 import java.time.Duration;
@@ -36,6 +33,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final RedisTemplate<String, String> redisTemplate;
     private final JavaMailSender javaMailSender;
+    private final FileStorageService fileStorageService;
 
     // 회원가입
     @Transactional
@@ -45,11 +43,11 @@ public class AuthService {
 
         // 이메일 인증 없이 가입 시도
         if (!isVerified) {
-            throw new ApiException(ErrorCode.VERIFY_002); // 이메일 인증 안 하고 가입 시도
+            throw new ApiException(ErrorCode.VERIFY_002);
         }
         // 이메일 중복 체크
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ApiException(ErrorCode.AUTH_005);  // 나중에 커스텀 예외로 교체
+            throw new ApiException(ErrorCode.AUTH_005);
         }
 
         // 유저 저장 (isEmailVerified = false)
@@ -60,7 +58,6 @@ public class AuthService {
                 .isEmailVerified(true)
                 .isActive(true)
                 .isAdmin(false)
-                .statusCode(User.StatusCode.ONLINE)
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -99,6 +96,10 @@ public class AuthService {
             throw new ApiException(ErrorCode.AUTH_001);
         }
 
+        if (!user.isActive()) {
+            throw new ApiException(ErrorCode.AUTH_011); // 탈퇴한 계정 (신규 코드)
+        }
+
         // 이메일 인증 여부 확인
         if (!user.isEmailVerified()) {
             throw new ApiException(ErrorCode.AUTH_002);
@@ -115,20 +116,39 @@ public class AuthService {
         UserData userData = new UserData()
                 .uid(user.getUid())
                 .nickname(user.getNickname())
-                .createdAt(user.getCreatedAt().atOffset(ZoneOffset.UTC))   // ← 변환
-                .updatedAt(user.getUpdatedAt().atOffset(ZoneOffset.UTC));  // ← 변환
+                .createdAt(user.getCreatedAt().atOffset(ZoneOffset.UTC))
+                .updatedAt(user.getUpdatedAt().atOffset(ZoneOffset.UTC));
         return new LogInResponse()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .user(userData);
     }
 
+    public LogInResponse extendSession(Long userId) {
+        // 이메일로 유저 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        String newAccessToken = jwtProvider.generateToken(String.valueOf(user.getUid()));
+
+        UserData userData = new UserData()
+                .uid(user.getUid())
+                .nickname(user.getNickname())
+                .createdAt(user.getCreatedAt().atOffset(ZoneOffset.UTC))
+                .updatedAt(user.getUpdatedAt().atOffset(ZoneOffset.UTC));
+        return new LogInResponse()
+                .accessToken(newAccessToken)
+                .refreshToken(null)
+                .user(userData);
+    }
+
+
     // 6자리 랜덤 코드 생성
     private String generateCode() {
         return String.format("%06d", new Random().nextInt(999999));
     }
 
-    // emailSend() - 인증코드 재발송
+    // emailSend() - 인증코드 발송
     public void emailSend(EmailSendRequest request) {
         String code = generateCode();
 
@@ -141,7 +161,20 @@ public class AuthService {
         javaMailSender.send(message);
     }
 
-    // 비밀번호 재설정용 인증코드 발송
+    // 비밀번호 변경
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new ApiException(ErrorCode.AUTH_001);
+        }
+
+        user.updatePassword(passwordEncoder.encode(newPassword));
+    }
+
+    // 비밀번호 찾기용 인증코드 발송
     public void emailSendForPasswordReset(EmailSendRequest request) {
         String code = generateCode();
         redisTemplate.opsForValue()
@@ -153,8 +186,11 @@ public class AuthService {
         javaMailSender.send(message);
     }
 
-    // logout() - refreshToken 블랙리스트 등록
-    public void logout(LogOutRequest request) {
+    // logout() - accesstoken, refreshToken 블랙리스트 등록
+    public void logout(String accessToken, LogOutRequest request) {
+        long remainingTime = jwtProvider.getRemainingExpiration(accessToken);
+        redisTemplate.opsForValue()
+                .set("BL:" + accessToken, "logout", Duration.ofMillis(remainingTime));
         redisTemplate.opsForValue()
                 .set("BL:" + request.getRefreshToken(), "logout", Duration.ofDays(7));
     }
@@ -189,6 +225,23 @@ public class AuthService {
 
         // Redis 코드 삭제
         redisTemplate.delete("email:reset:" + email);
+    }
+
+    //회원탈퇴
+    @Transactional
+    public void withdraw(Long userId, String currentPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new ApiException(ErrorCode.AUTH_001);
+        }
+
+        if (user.getAvatarUrl() != null) {
+            fileStorageService.deleteAvatar(user.getAvatarUrl());
+        }
+
+        user.withdraw();
     }
 
 }

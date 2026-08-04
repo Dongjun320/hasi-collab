@@ -2,91 +2,106 @@ package com.hasi.service.auth;
 
 import com.hasi.collab.api.AuthApi;
 import com.hasi.collab.model.*;
+import com.hasi.service.jwt.JwtProvider;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @RestController
-@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController implements AuthApi {
 
     private final AuthService authService;
     private final SocialAccountService socialAccountService;
+    private final JwtProvider jwtProvider;
 
     // 회원가입 (선 이메일 인증 필요)
-    @PostMapping("/register")
-    public ResponseEntity<RegisterResponse> register(
-            @Valid @RequestBody RegisterRequest request) {
-        RegisterResponse response = authService.register(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(response);
+    @Override
+    public ResponseEntity<RegisterResponse> register(RegisterRequest registerRequest) {
+        RegisterResponse response = authService.register(registerRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     // 이메일 인증코드 발송
-    @PostMapping("/email/send")
-    public ResponseEntity<Void> emailSend(
-            @Valid @RequestBody EmailSendRequest request) {
-        authService.emailSend(request);
+    @Override
+    public ResponseEntity<Void> emailSend(EmailSendRequest emailSendRequest) {
+        authService.emailSend(emailSendRequest);
         return ResponseEntity.ok().build();
     }
 
     // 비밀번호 찾기 전용 인증코드 발송
-    @PostMapping("/password/send")
-    public ResponseEntity<Void> emailSendForPasswordReset(
-            @Valid @RequestBody EmailSendRequest request) {
-        authService.emailSendForPasswordReset(request);
+    @Override
+    public ResponseEntity<Void> passwordSend(EmailSendRequest emailSendRequest) {
+        authService.emailSendForPasswordReset(emailSendRequest);
         return ResponseEntity.ok().build();
     }
 
     // 이메일 인증코드 확인
-    @PostMapping("/email/verify")
-    public ResponseEntity<Void> emailVerify(
-            @Valid @RequestBody EmailVerifyRequest request) {
-        authService.emailVerify(request);
+    public ResponseEntity<Void> emailVerify(EmailVerifyRequest emailVerifyRequest) {
+        authService.emailVerify(emailVerifyRequest);
         return ResponseEntity.ok().build();
     }
 
     // 비밀번호 재설정 코드 확인
-    @PostMapping("/password/verify")
-    public ResponseEntity<Void> emailVerifyForPWReset(
-            @Valid @RequestBody EmailVerifyRequest request) {
-        authService.emailVerifyForPWReset(request.getEmail(), request.getCode());
+    @Override
+    public ResponseEntity<Void> passwordVerify(EmailVerifyRequest emailVerifyRequest) {
+        authService.emailVerifyForPWReset(emailVerifyRequest.getEmail(), emailVerifyRequest.getCode());
         return ResponseEntity.ok().build();
     }
 
     // 로그인
-    @PostMapping("/login")
-    public ResponseEntity<LogInResponse> login(
-            @Valid @RequestBody LogInRequest request) {
-        LogInResponse response = authService.login(request);
+    @Override
+    public ResponseEntity<LogInResponse> login(LogInRequest logInRequest) {
+        LogInResponse response = authService.login(logInRequest);
         return ResponseEntity.ok(response);
     }
 
     // 로그아웃
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
-            @Valid @RequestBody LogOutRequest request) {
-        authService.logout(request);
+    @Override
+    public ResponseEntity<Void> logout(LogOutRequest logOutRequest) {
+        HttpServletRequest httpRequest =
+                ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes())
+                        .getRequest();
+
+        String accessToken = jwtProvider.resolveToken(httpRequest);
+
+        HttpSession session = httpRequest.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+
+        authService.logout(accessToken, logOutRequest);
+        return ResponseEntity.ok().build();
+    }
+
+    // 로그인 중인 사용자의 패스워드 변경
+    @Override
+    public ResponseEntity<Void> changePassword(PasswordChangeRequest passwordChangeRequest) {
+        Long userId = getCurrentUserId();
+        authService.changePassword(userId, passwordChangeRequest.getCurrentPassword(),
+                passwordChangeRequest.getNewPassword());
         return ResponseEntity.ok().build();
     }
 
     // 비밀번호 찾기 이메일 인증코드 확인 및 패스워드 변경
-    @PostMapping("/password/reset")
-    public ResponseEntity<Void> resetPassword(
-            @Valid @RequestBody PasswordResetRequest request) {
-        authService.resetPassword(
-                request.getEmail(),
-                request.getNewPassword()
-        );
+    @Override
+    public ResponseEntity<Void> resetPassword(PasswordResetRequest passwordResetRequest) {
+        authService.resetPassword(passwordResetRequest.getEmail(), passwordResetRequest.getNewPassword());
         return ResponseEntity.ok().build();
     }
 
     @Override
-    @GetMapping("/social")
     public ResponseEntity<GetSocialAccount200Response> getSocialAccount() {
         GetSocialAccount200Response body = new GetSocialAccount200Response()
                 .success(true)
@@ -95,16 +110,32 @@ public class AuthController implements AuthApi {
     }
 
     @Override
-    @DeleteMapping("/social")
     public ResponseEntity<Void> unlinkSocialAccount() {
         socialAccountService.unlinkSocialAccount();
         return ResponseEntity.ok().build();
     }
 
     @Override
-    @PostMapping("/social/link")
-    public ResponseEntity<Void> linkSocialAccount(@RequestBody SocialLinkRequest request) {
-        socialAccountService.linkByCode(request.getCode());
+    public ResponseEntity<Void> linkSocialAccount(SocialLinkRequest socialLinkRequest) {
+        socialAccountService.linkByCode(socialLinkRequest.getCode());
+        return ResponseEntity.ok().build();
+    }
+
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return Long.valueOf((String) authentication.getPrincipal());
+    }
+
+    @PostMapping("/api/auth/extend")
+    public ResponseEntity<LogInResponse> extendSession(Authentication authentication) {
+        Long userId = Long.valueOf((String) authentication.getPrincipal());
+        return ResponseEntity.ok(authService.extendSession(userId));
+    }
+
+    @Override
+    public ResponseEntity<Void> withdraw(WithdrawRequest withdrawRequest) {
+        Long userId = getCurrentUserId();
+        authService.withdraw(userId, withdrawRequest.getCurrentPassword());
         return ResponseEntity.ok().build();
     }
 }

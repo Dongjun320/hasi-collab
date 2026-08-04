@@ -1,0 +1,101 @@
+components:
+  schemas:
+    NotificationCreateRequest:
+      type: object
+      required: [recipientId, type, dedupKey]
+      properties:
+        recipientId:
+          description: "알림을 받을 사용자(users.uid)"
+          type: integer
+          format: int64
+          example: 7
+        type:
+          description: >
+            클라이언트 notificationStore.ts의 NotificationType과 같은 값입니다.
+            message는 messenger가 만들지 않습니다. 안 읽은 개수는 읽음 커서에서 세고
+            DM은 이미 /user/queue/dm으로 가기 때문에, 메시지마다 알림 행을 남기지 않습니다.
+          type: string
+          enum: [mention, invite, friend, system]
+          example: invite
+        actorId:
+          description: "알림을 일으킨 사용자. system 알림이면 비웁니다"
+          type: integer
+          format: int64
+          example: 3
+        subjectId:
+          description: >
+            원본 레코드의 id. 무엇을 가리키는지는 type이 정합니다.
+            invite -> invitations.id, friend -> friends.id, mention -> channel_messages.id.
+            클라이언트가 수락/거절을 호출할 때 이 값을 씁니다.
+          type: integer
+          format: int64
+          example: 42
+        workspaceId:
+          type: integer
+          format: int64
+          example: 1
+        payload:
+          description: >
+            표시용 스냅샷(닉네임, 워크스페이스 이름 등).
+            렌더링된 문장을 보내지 마세요. 문구가 굳어 i18n이 막히고,
+            닉네임이 바뀌면 과거 알림이 거짓말을 합니다. 문장은 클라이언트가 조립합니다.
+          type: object
+          additionalProperties: true
+          example:
+            inviterNickname: "동준"
+            workspaceName: "하시"
+        dedupKey:
+          description: >
+            멱등성 키. 원본 레코드에서 결정적으로 만들어야 재시도가 안전합니다.
+            수신자마다 달라야 합니다. 예: "INVITE:42", "FRIEND:17", "MENTION:1052:7"
+          type: string
+          maxLength: 128
+          example: "INVITE:42"
+
+    NotificationCreateResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: "#/components/schemas/NotificationCreateData"
+        error:
+          description: "성공 시 null"
+          example: null
+
+    NotificationCreateData:
+      type: object
+      properties:
+        id:
+          description: "저장된 알림 id"
+          type: integer
+          format: int64
+          example: 91
+        created:
+          description: "false면 dedupKey 중복이라 기존 알림을 그대로 반환한 것입니다. 푸시도 하지 않았습니다"
+          type: boolean
+          example: true
+
+    NotificationResolveResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: "#/components/schemas/NotificationResolveData"
+        error:
+          description: "성공 시 null"
+          example: null
+
+    NotificationResolveData:
+      type: object
+      properties:
+        resolved:
+          description: "resolved로 바뀐 row 수. 이미 처리됐거나 없는 키는 세지 않습니다"
+          type: integer
+          format: int64
+          example: 1

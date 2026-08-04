@@ -7,6 +7,7 @@ import com.hasi.service.jwt.JwtProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -22,6 +23,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final SocialAccountRepository socialAccountRepository;
     private final JwtProvider jwtProvider;
     private final SocialAccountService socialAccountService;
+
+    // @RequiredArgsConstructor는 final 필드만 생성자에 넣으므로,
+    // 이 필드는 final이 아니어야 @Value 주입이 동작합니다.
+    // 개발은 application.yml의 기본값(localhost:5173), 배포는 application-prod.yml.
+    @Value("${app.frontend.base-url}")
+    private String frontendBaseUrl;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
@@ -41,7 +49,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             String accessToken  = jwtProvider.generateToken(String.valueOf(uid));
             String refreshToken = jwtProvider.generateRefreshToken(String.valueOf(uid));
 
-            String redirectUrl = "http://localhost:5173/oauth2/redirect"
+            String redirectUrl = frontendBaseUrl + "/oauth2/redirect"
                     + "?token=" + accessToken
                     + "&refreshToken=" + refreshToken;
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
@@ -51,7 +59,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             // 로그인 화면에서 온 것인지 설정창에서 온 것인지 서버는 알 수 없으므로,
             // 프론트가 JWT 보유 여부로 판단해 처리 (있으면 연동, 없으면 안내)
             String linkCode = socialAccountService.issueLinkCode(provider, providerId);
-            String redirectUrl = "http://localhost:5173/oauth2/redirect?social=unlinked"
+            String redirectUrl = frontendBaseUrl + "/oauth2/redirect?social=unlinked"
                     + "&provider=" + provider
                     + "&linkCode=" + linkCode;
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);

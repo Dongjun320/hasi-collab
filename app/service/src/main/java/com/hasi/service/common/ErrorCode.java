@@ -17,6 +17,7 @@ public enum ErrorCode {
     AUTH_008(HttpStatus.CONFLICT, "AUTH_008", "이미 연동된 소셜 계정이 있습니다. 해제 후 다시 시도해주세요"),
     AUTH_009(HttpStatus.NOT_FOUND, "AUTH_009", "연동된 소셜 계정이 없습니다"),
     AUTH_010(HttpStatus.BAD_REQUEST, "AUTH_010", "연동 코드가 유효하지 않거나 만료되었습니다"),
+    AUTH_011(HttpStatus.FORBIDDEN, "AUTH_011", "탈퇴한 계정입니다"),
 
 
     // VERIFY
@@ -40,6 +41,7 @@ public enum ErrorCode {
     CH_003(HttpStatus.BAD_REQUEST, "CH_003", "채널 입력값이 유효하지 않습니다"),
     CH_004(HttpStatus.CONFLICT, "CH_004", "하위 채널이 있어 삭제할 수 없습니다"),
     CH_005(HttpStatus.CONFLICT, "CH_005", "이미 채널에 참가한 멤버입니다"),
+    CH_006(HttpStatus.CONFLICT, "CH_006", "삭제할 수 없는 채널입니다"),
 
     // MEMBER
     MBR_001(HttpStatus.NOT_FOUND, "MBR_001", "해당 닉네임의 사용자를 찾을 수 없습니다"),
@@ -49,6 +51,15 @@ public enum ErrorCode {
     MBR_005(HttpStatus.NOT_FOUND, "MBR_005", "워크스페이스 또는 채널 또는 멤버를 찾을 수 없습니다"),
     MBR_006(HttpStatus.NOT_FOUND, "MBR_006", "초대를 찾을 수 없습니다"),
     MBR_007(HttpStatus.CONFLICT, "MBR_007", "초대 대기 중인 사용자입니다"),
+    MBR_008(HttpStatus.FORBIDDEN, "MBR_008", "워크스페이스 멤버가 아닌 사용자입니다"),
+    MBR_009(HttpStatus.GONE, "MBR_009", "만료된 초대입니다"),
+
+    // BOARD
+    BRD_001(HttpStatus.NOT_FOUND, "BRD_001", "보드를 찾을 수 없습니다"),
+    BRD_002(HttpStatus.BAD_REQUEST, "BRD_002", "보드 입력값이 유효하지 않습니다"),
+    BRD_003(HttpStatus.CONFLICT, "BRD_003", "이미 보드에 속한 멤버입니다"),
+    BRD_004(HttpStatus.NOT_FOUND, "BRD_004", "태스크를 찾을 수 없습니다"),
+    BRD_005(HttpStatus.NOT_FOUND, "BRD_005", "보드 멤버를 찾을 수 없습니다"),
 
     // FRIEND
     FRIEND_001(HttpStatus.BAD_REQUEST, "FRIEND_001", "자기 자신에게 친구 요청을 보낼 수 없습니다"),
@@ -57,7 +68,10 @@ public enum ErrorCode {
     FRIEND_004(HttpStatus.FORBIDDEN,  "FRIEND_004", "본인에게 온 요청이 아닙니다"),
 
     // USER
-    USER_001(HttpStatus.NOT_FOUND, "USER_001", "해당 닉네임의 사용자를 찾을 수 없습니다");
+    USER_001(HttpStatus.NOT_FOUND, "USER_001", "해당 닉네임의 사용자를 찾을 수 없습니다"),
+    USER_002(HttpStatus.CONFLICT, "USER_002", "이미 사용 중인 닉네임입니다"),
+    USER_003(HttpStatus.NOT_FOUND, "USER_003", "사용자를 찾을 수 없습니다"),
+    USER_004(HttpStatus.BAD_REQUEST, "USER_004", "자기 자신에게 메모를 남길 수 없습니다");
 
     private final HttpStatus status;
     private final String code;

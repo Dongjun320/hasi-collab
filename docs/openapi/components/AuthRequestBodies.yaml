@@ -71,6 +71,20 @@ components:
           type: string
           description: "발송된 인증코드"
 
+    PasswordChangeRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      description: "로그인 상태에서 비밀번호 변경 요청"
+      properties:
+        currentPassword:
+          type: string
+          description: "현재 비밀번호"
+        newPassword:
+          type: string
+          description: "새 비밀번호"
+
     PasswordResetRequest:
       type: object
       required:
@@ -110,3 +124,13 @@ components:
         code:
           type: string
           description: "linkCode (5분 유효, 1회용)"
+
+    WithdrawRequest:
+      type: object
+      required:
+        - currentPassword
+      description: "회원 탈퇴 요청 (비밀번호 재확인)"
+      properties:
+        currentPassword:
+          type: string
+          description: "현재 비밀번호"

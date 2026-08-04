@@ -20,6 +20,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Value("${app.broker.login}")      private String login;
     @Value("${app.broker.passcode}")   private String passcode;
 
+    // 공용 VPS에서 다른 프로젝트와 RabbitMQ를 공유하므로 vhost로 격리합니다.
+    @Value("${app.broker.virtual-host}") private String virtualHost;
+
+    @Value("${app.cors.allowed-origins}") private String[] allowedOrigins;
+
     private final StompAuthChannelInterceptor stompAuthChannelInterceptor;
 
     @Override
@@ -35,6 +40,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         config.enableStompBrokerRelay("/topic", "/queue")
                 .setRelayHost(relayHost)
                 .setRelayPort(relayPort)
+                // relay가 보내는 STOMP CONNECT 프레임의 host 헤더가 되고,
+                // RabbitMQ STOMP 어댑터가 이를 vhost로 mapping.
+                .setVirtualHost(virtualHost)
                 .setClientLogin(login)
                 .setClientPasscode(passcode)
                 .setSystemLogin(login)
@@ -43,7 +51,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws")               // ws://localhost:8081/ws
-                .setAllowedOrigins("http://localhost:5173");
+        // setAllowedOrigins는 와일드카드를 받지 않으므로 패턴 방식을 사용합니다.
+        // (Cloudflare Pages의 프리뷰 배포는 브랜치마다 오리진이 달라짐)
+        registry.addEndpoint("/ws")               // 개발: ws://localhost:8081/ws
+                .setAllowedOriginPatterns(allowedOrigins);
     }
 }

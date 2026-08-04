@@ -23,6 +23,9 @@ paths:
   /api/auth/password/verify:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1password~1verify"
 
+  /api/auth/password/change:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1password~1change"
+
   /api/auth/login:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1login"
 
@@ -43,6 +46,9 @@ paths:
 
   /api/workspaces/search:
     $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces~1search"
+
+  /api/workspaces/{workspaceId}/permissions:
+    $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1permissions"
 
   /api/workspaces/{workspaceId}/channels:
     $ref: "./paths/channelEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels"
@@ -71,11 +77,23 @@ paths:
   /api/workspaces/{workspaceId}/boards:
     $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards"
 
+  /api/workspaces/{workspaceId}/boards/{boardId}:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}"
+
+  /api/workspaces/{workspaceId}/boards/{boardId}/members:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1members"
+
+  /api/workspaces/{workspaceId}/boards/{boardId}/members/{userId}:
+    $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1members~1{userId}"
+
   /api/workspaces/{workspaceId}/boards/{boardId}/tasks:
     $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1tasks"
 
   /api/workspaces/{workspaceId}/boards/{boardId}/tasks/{taskId}:
     $ref: "./paths/boardEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1boards~1{boardId}~1tasks~1{taskId}"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/invitations:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}~1invitations"
 
   /api/invitations/sent:
     $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1invitations~1sent"
@@ -85,6 +103,12 @@ paths:
 
   /api/invitations/{invitationId}:
     $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1invitations~1{invitationId}"
+
+  /api/workspaces/{workspaceId}/transfer-ownership:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1transfer-ownership"
+
+  /api/workspaces/{workspaceId}/channels/{channelId}/transfer-ownership:
+    $ref: "./paths/memberEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels~1{channelId}~1transfer-ownership"
 
   /api/friends:
     $ref: "./paths/friendEndpoints.yaml#/paths/~1api~1friends"
@@ -113,11 +137,24 @@ paths:
   /api/users/me:
     $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me"
 
+  /api/users/me/nickname:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me~1nickname"
+
+  /api/users/me/status-message:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1me~1status-message"
+
   /api/auth/social:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1social"
 
   /api/auth/social/link:
     $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1social~1link"
+
+  /api/auth/withdraw:
+    $ref: "./paths/authEndpoints.yaml#/paths/~1api~1auth~1withdraw"
+
+  /api/users/{targetId}/memo:
+    $ref: "./paths/userEndpoints.yaml#/paths/~1api~1users~1{targetId}~1memo"
+
 
 
 
