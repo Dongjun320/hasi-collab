@@ -8,6 +8,7 @@ import com.hasi.service.workspace.board.repository.BoardMemberRepository;
 import com.hasi.service.workspace.board.repository.BoardRepository;
 import com.hasi.service.workspace.board.repository.TaskRepository;
 import com.hasi.service.workspace.channel.entity.Channel;
+import com.hasi.service.workspace.channel.event.ChannelMessagesPurgeEvent;
 import com.hasi.service.workspace.channel.repository.ChannelRepository;
 import com.hasi.service.workspace.member.entity.ChannelMember;
 import com.hasi.service.workspace.member.entity.WorkspaceMember;
@@ -19,6 +20,7 @@ import com.hasi.service.workspace.workspace.repository.WorkspacePermissionReposi
 import com.hasi.service.workspace.workspace.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,7 @@ public class WorkspaceService {
     private final BoardMemberRepository boardMemberRepository;
     private final TaskRepository taskRepository;
     private final WorkspacePermissionRepository workspacePermissionRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public WorkspaceData createWorkspace(WorkspaceCreateRequest request) {
@@ -238,6 +241,10 @@ public class WorkspaceService {
             channelMemberRepository.deleteByChannelId(channel.getId());
         }
 
+        List<Long> channelIds = channels.stream()
+                .map(Channel::getId)
+                .toList();
+
         // 채널 삭제
         channelRepository.deleteAll(channels);
 
@@ -259,6 +266,9 @@ public class WorkspaceService {
 
         // 워크스페이스 삭제
         workspaceRepository.delete(workspace);
+
+        // 커밋 후 messenger의 메시지, 읽음상태를 지움
+        eventPublisher.publishEvent(new ChannelMessagesPurgeEvent(channelIds));
         
         WorkspaceDeleteResponseData data = new WorkspaceDeleteResponseData();
         data.setMessage("워크스페이스 삭제 완료");

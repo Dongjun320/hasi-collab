@@ -4,6 +4,7 @@ import com.hasi.collab.model.*;
 import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
 import com.hasi.service.workspace.channel.entity.Channel;
+import com.hasi.service.workspace.channel.event.ChannelMessagesPurgeEvent;
 import com.hasi.service.workspace.channel.repository.ChannelRepository;
 import com.hasi.service.workspace.member.entity.ChannelMember;
 import com.hasi.service.workspace.member.entity.WorkspaceMember;
@@ -15,6 +16,7 @@ import com.hasi.service.workspace.workspace.repository.WorkspacePermissionReposi
 import com.hasi.service.workspace.workspace.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ public class ChannelService {
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final WorkspacePermissionRepository workspacePermissionRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ChannelData createWorkspaceChannel(Long workspaceId, ChannelCreateRequest request) {
@@ -183,6 +186,9 @@ public class ChannelService {
 
         channelMemberRepository.deleteByChannelId(channel.getId());
         channelRepository.delete(channel);
+
+        // 커밋 후 messenger의 메시지, 읽음상태 지움
+        eventPublisher.publishEvent(new ChannelMessagesPurgeEvent(List.of(channelId)));
 
         ChannelDeleteResponseData data = new ChannelDeleteResponseData();
         data.setMessage("채널 삭제 완료");

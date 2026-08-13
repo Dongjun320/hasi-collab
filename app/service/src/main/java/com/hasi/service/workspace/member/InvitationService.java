@@ -10,6 +10,8 @@ import com.hasi.service.workspace.channel.repository.ChannelRepository;
 import com.hasi.service.workspace.member.entity.ChannelMember;
 import com.hasi.service.workspace.member.entity.Invitation;
 import com.hasi.service.workspace.member.entity.WorkspaceMember;
+import com.hasi.service.workspace.member.event.InvitationResolvedEvent;
+import com.hasi.service.workspace.member.event.MemberInvitedEvent;
 import com.hasi.service.workspace.member.repository.ChannelMemberRepository;
 import com.hasi.service.workspace.member.repository.InvitationRepository;
 import com.hasi.service.workspace.member.repository.WorkspaceMemberRepository;
@@ -19,6 +21,7 @@ import com.hasi.service.workspace.workspace.repository.WorkspacePermissionReposi
 import com.hasi.service.workspace.workspace.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -39,6 +42,7 @@ public class InvitationService {
     private final ChannelRepository channelRepository;
     private final ChannelMemberRepository channelMemberRepository;
     private final WorkspacePermissionRepository workspacePermissionRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public WorkspaceMemberInviteResponseData createInviteWorkspace(Long workspaceId, WorkspaceMemberInviteRequest request) {
@@ -59,6 +63,12 @@ public class InvitationService {
         if(users.size() != request.getNicknames().size()) {
             throw new ApiException(ErrorCode.USER_003);
         }
+
+        // 알림 payload에 쓸 표시용 이름
+        User inviter = userRepository.findById(inviterId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
 
         for(User user : users) {
             // 이미 워크스페이스에 속한 멤버인지 체크
@@ -87,6 +97,17 @@ public class InvitationService {
 
             invitationRepository.save(invitation);
             invitationIds.add(invitation.getId());
+
+            eventPublisher.publishEvent(new MemberInvitedEvent(
+                    invitation.getId(),
+                    user.getUid(),
+                    inviterId,
+                    workspaceId,
+                    null,
+                    inviter.getNickname(),
+                    workspace.getName(),
+                    null
+            ));
         }
 
         // response 리턴
@@ -111,11 +132,18 @@ public class InvitationService {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
-        // nickname으로 uid 찾기
+        // id로 유저 찾기
         List<User> users = userRepository.findAllById(request.getInviteeIds());
         if(users.size() != request.getInviteeIds().size()) {
             throw new ApiException(ErrorCode.USER_003);
         }
+
+        User inviter = userRepository.findById(inviterId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_003));
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+        Channel channel = channelRepository.findById(channelId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CH_002));
 
         for(User user : users) {
             // 이미 워크스페이스에 속한 멤버인지 체크
@@ -149,6 +177,17 @@ public class InvitationService {
 
             invitationRepository.save(invitation);
             invitationIds.add(invitation.getId());
+
+            eventPublisher.publishEvent(new MemberInvitedEvent(
+                    invitation.getId(),
+                    user.getUid(),
+                    inviterId,
+                    workspaceId,
+                    channelId,
+                    inviter.getNickname(),
+                    workspace.getName(),
+                    channel.getName()
+            ));
         }
 
         // response 리턴
@@ -297,6 +336,8 @@ public class InvitationService {
             default:
                 throw new ApiException(ErrorCode.MBR_004);
         }
+
+        eventPublisher.publishEvent(new InvitationResolvedEvent(invitationId));
 
         // Response 리턴
         MemberInviteResponseData data = new MemberInviteResponseData();

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 메일 클라이언트 다크모드가 색을 임의로 반전시키는 것을 줄입니다 -->
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>HASI 이메일 인증</title>
+</head>
+<!--
+  메일 HTML 주의사항 (수정 시 지켜주세요)
+   - 스타일은 반드시 inline. <style> 태그는 Gmail이 상당 부분 제거합니다.
+   - 레이아웃은 flex/grid 대신 <table>. Outlook이 flex/grid를 지원하지 않습니다.
+   - 배경색은 style과 bgcolor 속성을 함께 지정 (Outlook은 bgcolor만 봅니다).
+   - {{CODE}} 자리에 인증번호를 치환해서 발송합니다.
+-->
+<body style="margin:0; padding:0; background-color:#F8FDF9;">
+
+<!-- 바깥 배경 -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       bgcolor="#F8FDF9" style="background-color:#F8FDF9; margin:0; padding:0;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+
+      <!-- 본문 카드 (600px 고정) -->
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+             style="width:600px; max-width:100%; background-color:#FFFFFF;
+                    border:1px solid #E8F8ED; border-radius:16px; overflow:hidden;">
+
+        <!-- 헤더 : 그라디언트(미지원 클라이언트는 bgcolor로 폴백) -->
+        <tr>
+          <td align="center" bgcolor="#5CC87A"
+              style="background-color:#5CC87A;
+                     background-image:linear-gradient(135deg, #A8E6B8 0%, #5CC87A 55%, #2E8B4F 100%);
+                     padding:32px 24px;">
+            <img src="https://hasi-collab.com/favicon.png" width="56" height="56" alt="HASI"
+                 style="display:block; width:56px; height:56px; border:0; border-radius:14px;">
+            <div style="height:12px; line-height:12px; font-size:12px;">&nbsp;</div>
+            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+                        font-size:22px; font-weight:700; color:#FFFFFF; letter-spacing:1px;">
+              hasi-collab
+            </div>
+          </td>
+        </tr>
+
+        <!-- 본문 -->
+        <tr>
+          <td style="padding:36px 40px 8px 40px;
+                     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;">
+
+            <div style="font-size:20px; font-weight:700; color:#2C3E50; line-height:1.5;">
+              이메일 인증
+            </div>
+
+            <div style="height:12px; line-height:12px; font-size:12px;">&nbsp;</div>
+
+            <div style="font-size:14px; color:#5a6b7b; line-height:1.7;">
+              안녕하세요.<br>
+              아래 인증번호를 입력하면 이메일 인증이 완료됩니다.
+            </div>
+
+            <div style="height:24px; line-height:24px; font-size:24px;">&nbsp;</div>
+
+            <!-- 인증번호 박스 -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center" bgcolor="#F0F9F4"
+                    style="background-color:#F0F9F4; border:2px solid #A8E6B8;
+                           border-radius:12px; padding:26px 16px;">
+                  <div style="font-size:12px; font-weight:600; color:#2E8B4F; letter-spacing:2px;">
+                    인증번호
+                  </div>
+                  <div style="height:10px; line-height:10px; font-size:10px;">&nbsp;</div>
+                  <div style="font-family:'Courier New',Consolas,monospace;
+                              font-size:38px; font-weight:700; color:#1E3A28;
+                              letter-spacing:10px; line-height:1.2;">
+                    {{CODE}}
+                  </div>
+                </td>
+              </tr>
+            </table>
+
+            <div style="height:20px; line-height:20px; font-size:20px;">&nbsp;</div>
+
+            <!-- 만료 안내 -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td bgcolor="#FFFBEB" style="background-color:#FFFBEB; border-left:4px solid #FFE66D;
+                                             border-radius:6px; padding:12px 16px;
+                                             font-size:13px; color:#7a6a2f; line-height:1.6;">
+                  이 인증번호는 <strong style="color:#5a4c1a;">10분간</strong> 유효합니다.
+                </td>
+              </tr>
+            </table>
+
+            <div style="height:24px; line-height:24px; font-size:24px;">&nbsp;</div>
+
+            <div style="font-size:13px; color:#94a3a9; line-height:1.7;">
+              본인이 요청하지 않은 메일이라면 이 메일을 무시하셔도 됩니다.<br>
+              계정에는 아무런 변경이 발생하지 않습니다.
+            </div>
+
+            <div style="height:32px; line-height:32px; font-size:32px;">&nbsp;</div>
+          </td>
+        </tr>
+
+        <!-- 푸터 -->
+        <tr>
+          <td align="center" bgcolor="#F8FDF9"
+              style="background-color:#F8FDF9; border-top:1px solid #E8F8ED; padding:20px 40px;
+                     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+                     font-size:12px; color:#a9b6bd; line-height:1.6;">
+            본 메일은 발신 전용입니다.<br>
+            &copy; hasi-collab
+          </td>
+        </tr>
+
+      </table>
+      <!-- /본문 카드 -->
+
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>
