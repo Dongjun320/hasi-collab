@@ -5,12 +5,16 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { useNotificationStore, NOTIFICATION_TYPE, type Notification } from "../store/notificationStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
+import { useNotification } from "../hooks/useNotification";
 
 export function NotificationSidebar() {
     const { activeRightPanel, closeRightPanel } = useUiStore();
-    const { notifications, markRead, markAllRead, addNotifications, removeNotification } = useNotificationStore();
+    const { notifications, addNotifications, removeNotification } = useNotificationStore();
     const [busyId, setBusyId] = useState<string | null>(null);
     const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
+
+    // messenger 알림 구독(실시간) + 초기 목록. 읽음 처리도 서버에 함께 반영됨
+    const { readNotification, readAllNotifications } = useNotification();
 
     useEffect(() => {
         // 마운트 시에도 로드 → 패널 안 열어도 종 뱃지에 반영
@@ -124,7 +128,7 @@ export function NotificationSidebar() {
                 {notifications.map((n) => (
                     <div key={n.id} className={`rounded-lg transition-all ${n.unread ? "bg-[#f0f9f4]" : ""}`}>
                         <button
-                            onClick={() => markRead(n.id)}
+                            onClick={() => readNotification(n.id)}
                             className="w-full flex items-start gap-2.5 px-2 py-2.5 text-left hover:bg-[#e8f8ed] rounded-lg transition-all"
                         >
                             <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${NOTIFICATION_TYPE[n.type].dot}`} />
@@ -163,7 +167,7 @@ export function NotificationSidebar() {
             {unreadCount > 0 && (
                 <div className="px-4 py-3 border-t border-[#e8f8ed] text-center flex-shrink-0">
                     <button
-                        onClick={markAllRead}
+                        onClick={readAllNotifications}
                         className="text-xs text-[#5CC87A] font-medium hover:underline"
                     >
                         모두 읽음 처리
