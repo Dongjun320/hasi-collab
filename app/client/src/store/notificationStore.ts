@@ -29,7 +29,11 @@ export function fromMessengerNotification(n: MessengerNotification): Notificatio
         return typeof value === 'string' ? value : undefined;
     };
 
-    const actor = text('inviterNickname') ?? text('actorNickname') ?? '알 수 없는 사용자';
+    // 닉네임 키가 알림 종류마다 다릅니다 (초대=inviterNickname, 친구요청=senderNickname)
+    const actor = text('inviterNickname')
+        ?? text('senderNickname')
+        ?? text('actorNickname')
+        ?? '알 수 없는 사용자';
     const workspaceName = text('workspaceName');
     const channelName = text('channelName');
 
@@ -53,16 +57,23 @@ export function fromMessengerNotification(n: MessengerNotification): Notificatio
             message = text('message') ?? '새 알림이 있습니다';
     }
 
+    // subjectId는 알림 종류에 따라 초대 id 또는 친구관계 id입니다.
+    // (백엔드가 dedupKey를 "INVITE:{초대id}" / "FRIEND:{관계id}"로 잡는 것과 같은 값)
+    //
+    // REST 조회로 만든 알림과 id 규칙을 맞춰야 같은 건이 두 개로 보이지 않고,
+    // 수락·거절 버튼이 쓰는 invitationId/requestId도 여기서 채워줘야 합니다.
+    const subjectId = n.subjectId ?? undefined;
+
     return {
-        // 초대는 REST와 키를 맞추고, 그 외에는 messenger PK를 그대로 사용
-        id: n.type === 'invite' && n.subjectId != null
-            ? `invite-${n.subjectId}`
+        id: subjectId != null && (n.type === 'invite' || n.type === 'friend')
+            ? `${n.type}-${subjectId}`
             : `msg-${n.id}`,
         type: n.type,
         text: message,
         time: n.createdAt ? new Date(n.createdAt).toLocaleDateString() : '',
         unread: n.unread,
-        invitationId: n.type === 'invite' && n.subjectId != null ? n.subjectId : undefined,
+        invitationId: n.type === 'invite' ? subjectId : undefined,
+        requestId: n.type === 'friend' ? subjectId : undefined,
         messengerId: n.id,
     };
 }

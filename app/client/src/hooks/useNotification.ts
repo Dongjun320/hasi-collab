@@ -14,7 +14,9 @@ import { connectStomp, subscribeToNotifications } from '../api/stomp'
 import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from '../api/messenger'
 
 export const useNotification = () => {
-  const { notifications, addNotifications, markRead, markAllRead } = useNotificationStore()
+  const {
+    notifications, addNotifications, removeNotification, markRead, markAllRead,
+  } = useNotificationStore()
 
   useEffect(() => {
     const token = useAuthStore.getState().accessToken
@@ -37,8 +39,15 @@ export const useNotification = () => {
     connectStomp(token)
       .then(() => {
         unsub = subscribeToNotifications((n) => {
-          if (n.resolved) return
-          addNotifications([fromMessengerNotification(n)])
+          const item = fromMessengerNotification(n)
+
+          // 수락·거절이 끝난 알림(resolved)은 목록에서 치웁니다.
+          // 다른 기기에서 처리했거나, 상대가 요청을 취소한 경우가 여기에 해당합니다.
+          if (n.resolved) {
+            removeNotification(item.id)
+            return
+          }
+          addNotifications([item])
         })
       })
       .catch(console.error)
