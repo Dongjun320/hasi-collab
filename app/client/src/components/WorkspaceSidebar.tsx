@@ -12,6 +12,7 @@ import { api } from '../api/client';
 import { Tooltip } from "./Tooltip";
 import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
 import { useChannelStore } from "../store/channelStore";
+import { WorkspacePermissionsModal } from "./WorkspacePermissionsModal";
 
 
 interface WorkspaceSidebarProps {
@@ -49,6 +50,7 @@ export function WorkspaceSidebar({
   const [renamingChannelId, setRenamingChannelId] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
+  const [showPermissions, setShowPermissions] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [invitedList, setInvitedList] = useState<SearchedUser[]>([]);
@@ -356,7 +358,14 @@ export function WorkspaceSidebar({
           </div>
 
           <div className="border-t border-gray-100 pt-3">
-            <p className="text-xs text-gray-400">서버원 권한 설정은 준비 중입니다.</p>
+            {currentWorkspace?.role === "OWNER"
+                ? <button
+                    onClick={() => setShowPermissions(true)}
+                    className="w-full px-4 py-2 border border-gray-200 hover:bg-gray-50 text-[#2C3E50] font-medium rounded-lg transition-all text-sm"
+                  >
+                    권한 설정
+                  </button>
+                : <p className="text-xs text-gray-400">권한 설정은 오너만 변경할 수 있습니다.</p>}
           </div>
 
           <div className="flex gap-2 pt-2">
@@ -377,13 +386,24 @@ export function WorkspaceSidebar({
                   onDeleteWorkspace(currentWorkspace.id);
                   setShowWorkspaceSettings(false);
                 }}
-                className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-all"
+                disabled={currentWorkspace?.role !== "OWNER"}
+                title={currentWorkspace?.role !== "OWNER" ? "오너만 서버를 삭제할 수 있습니다" : undefined}
+                className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-50"
             >
               서버 삭제
             </button>
           </div>
         </div>
       </Modal>
+
+      {/* ── 권한 설정 모달 ── */}
+      {currentWorkspace && (
+          <WorkspacePermissionsModal
+              isOpen={showPermissions}
+              onClose={() => setShowPermissions(false)}
+              workspaceId={currentWorkspace.id}
+          />
+      )}
 
       {/* ── 인원 추가 모달 ── */}
       <Modal
