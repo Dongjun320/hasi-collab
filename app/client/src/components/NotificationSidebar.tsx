@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { useNotificationStore, NOTIFICATION_TYPE, type Notification } from "../store/notificationStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
+import { useFriendStore } from "../store/friendStore";
 import { useNotification } from "../hooks/useNotification";
 
 export function NotificationSidebar() {
@@ -12,6 +13,7 @@ export function NotificationSidebar() {
     const { notifications, addNotifications, removeNotification } = useNotificationStore();
     const [busyId, setBusyId] = useState<string | null>(null);
     const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
+    const fetchFriends = useFriendStore((s) => s.fetchFriends);
 
     // messenger 알림 구독(실시간) + 초기 목록. 읽음 처리도 서버에 함께 반영됨
     const { readNotification, readAllNotifications } = useNotification();
@@ -36,7 +38,10 @@ export function NotificationSidebar() {
                 console.error('초대 조회 실패:', e);
             }
 
-            // 받은 친구 요청도 알림으로 (통합 알림 API가 없어 직접 조회 — 임시)
+            // 받은 친구 요청도 REST로 함께 조회 (초대와 동일한 폴백).
+            // 친구 요청은 messenger 실시간 알림으로도 오지만, MessengerNotifier가 전송 실패 시
+            // 로그만 남기고 넘어가 유실될 수 있어 REST 조회를 함께 둔다.
+            // 양쪽 다 id가 "friend-{관계id}"라 addNotifications에서 자동 병합된다.
             try {
                 // 친구 엔드포인트는 초대와 달리 배열을 직접 반환 (success 봉투 없음)
                 const { data: fr, error: frErr } = await api.GET('/api/friends/requests/received');
@@ -90,6 +95,8 @@ export function NotificationSidebar() {
                 });
             if (error) return;
             removeNotification(n.id);
+            // 수락하면 친구가 되므로 목록을 다시 불러옴 → 홈의 온라인 친구 수도 즉시 반영
+            if (accept) await fetchFriends();
         } catch (e) {
             console.error('친구 요청 응답 실패:', e);
         } finally {

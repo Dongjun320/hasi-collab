@@ -21,7 +21,7 @@ export function WorkspaceHome() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user } = useAuthStore();
 
-  const { friends } = useFriendStore();
+  const { friends, fetchFriends } = useFriendStore();
   const onlineUserIds = usePresenceStore((s) => s.onlineUserIds);
   const isOnline = (id: number | string) => onlineUserIds.has(String(id));
   useFriendPresence(friends.map((f) => f.uid));
@@ -43,6 +43,8 @@ export function WorkspaceHome() {
   // (기존에는 WorkspaceSidebar에서만 호출해서, /workspace를 한 번 다녀와야 목록이 채워졌음)
   useEffect(() => {
     fetchWorkspaces();
+    // 친구 목록도 홈 진입 시 로드 → 친구 패널을 열지 않아도 온라인 친구 수가 채워짐
+    fetchFriends();
   }, []);
 
   // friendStore에서 가져옴 (오프라인 제외 = 온라인 친구)
