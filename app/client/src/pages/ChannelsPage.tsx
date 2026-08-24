@@ -1,5 +1,5 @@
 import { useParams } from "react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Hash, Users, X } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { useChannelMessage } from "../hooks/useChannelMessage";
@@ -17,6 +17,21 @@ const AVATAR_COLORS = [
 ];
 
 const colorOf = (uid: number) => AVATAR_COLORS[uid % AVATAR_COLORS.length];
+
+// 날짜 구분선용 — 같은 날인지 비교할 키(연-월-일)와 사람이 읽는 라벨
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+const dayKeyOf = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+};
+const dateLabelOf = (iso: string) => {
+  const d = new Date(iso);
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOf(new Date()) - startOf(d)) / 86_400_000);
+  if (diffDays === 0) return "오늘";
+  if (diffDays === 1) return "어제";
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`;
+};
 
 export function ChannelsPage() {
   const { channelId: channelIdParam } = useParams();
@@ -136,15 +151,26 @@ export function ChannelsPage() {
 
       {/* 메시지 영역 */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4 relative" ref={messagesContainerRef} onScroll={handleScroll}>
-        {messages.map((msg) => {
+        {messages.map((msg, idx) => {
           const senderUid = Number(msg.sender);
           const isMine = senderUid === myUid;
           const name = nicknameOf(senderUid);
           const time = new Date(msg.createdAt).toLocaleTimeString("ko-KR", {
             hour: "numeric", minute: "2-digit",
           });
+          // 첫 메시지이거나, 이전 메시지와 날짜가 바뀌면 구분선을 먼저 그린다
+          const prev = messages[idx - 1];
+          const showDivider = !prev || dayKeyOf(prev.createdAt) !== dayKeyOf(msg.createdAt);
           return (
-              <div key={msg.id} className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`}>
+            <Fragment key={msg.id}>
+              {showDivider && (
+                <div className="flex items-center gap-3 my-2 select-none">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs font-medium text-gray-400 px-2">{dateLabelOf(msg.createdAt)}</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+              )}
+              <div className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`}>
                 <div className={`w-10 h-10 rounded-full ${colorOf(senderUid)} flex items-center justify-center text-white font-bold flex-shrink-0`}>
                   {name.charAt(0)}
                 </div>
@@ -158,6 +184,7 @@ export function ChannelsPage() {
                       : <p className="text-[#2C3E50]">{msg.content}</p>}
                 </div>
               </div>
+            </Fragment>
           );
         })}
         <div ref={messagesEndRef} />
