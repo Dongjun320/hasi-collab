@@ -51,6 +51,7 @@ public class UserService {
         return new UserData()
                 .uid(user.getUid())
                 .nickname(user.getNickname())
+                .email(user.getEmail())
                 .avatarUrl(user.getAvatarUrl())
                 .statusMessage(user.getStatusMessage())
                 .createdAt(user.getCreatedAt().atOffset(ZoneOffset.UTC))

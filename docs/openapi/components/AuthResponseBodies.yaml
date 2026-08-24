@@ -44,6 +44,10 @@ components:
         nickname:
           type: string
           description: "유저 닉네임"
+        email:
+          type: string
+          nullable: true
+          description: "로그인 계정 이메일(아이디)"
         avatarUrl:
           type: string
           nullable: true

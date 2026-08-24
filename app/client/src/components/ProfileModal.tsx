@@ -20,12 +20,6 @@ export function ProfileModal() {
     const [dept, setDept] = useState("");
     const [position, setPosition] = useState("");
 
-    const activities = [
-        { text: "#일반 채널에 메시지 작성", time: "5분 전", color: "bg-green-400" },
-        { text: "김동준님과 대화 시작", time: "1시간 전", color: "bg-yellow-400" },
-        { text: "프로필 정보 업데이트", time: "어제", color: "bg-orange-400" },
-    ];
-
     useEffect(() => {
         if (!open) return;
         (async () => {
@@ -129,7 +123,27 @@ export function ProfileModal() {
         <BigModal open={open} onClose={closeModal} title="내 프로필">
             <div className="max-w-xl mx-auto">
                 {/* 고정: 프로필 보기 (스크롤해도 상단에 고정) */}
-                <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-4 border-b border-gray-100">
+                <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-4 border-b border-gray-100 relative">
+                    {/* 사진 변경 — 상단 우측 고정 영역 */}
+                    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                    <div className="absolute top-5 right-6 flex gap-2">
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={avatarBusy}
+                            className="px-3 py-1.5 text-xs bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-all"
+                        >
+                            {avatarBusy ? "처리 중…" : "사진 변경"}
+                        </button>
+                        {me?.avatarUrl && (
+                            <button
+                                onClick={handleAvatarDelete}
+                                disabled={avatarBusy}
+                                className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-600 rounded-lg transition-all"
+                            >
+                                삭제
+                            </button>
+                        )}
+                    </div>
                     <div className="flex items-center gap-5">
                         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-3xl font-bold flex-shrink-0 overflow-hidden">
                             {me?.avatarUrl
@@ -155,51 +169,11 @@ export function ProfileModal() {
                     </div>
                 </div>
 
-                {/* 스크롤: 최근활동 + 편집 */}
+                {/* 스크롤: 프로필 설정 */}
                 <div className="px-6 py-6 space-y-6">
-                    {/* ── 최근 활동 (목업 유지) ── */}
-                    <div>
-                        <h3 className="font-bold text-[#2C3E50] mb-3">최근 활동</h3>
-                        <div className="space-y-2">
-                            {activities.map((a, idx) => (
-                                <div key={idx} className="flex gap-3 p-3 bg-white border border-gray-100 rounded-lg">
-                                    <div className={`w-2 h-2 rounded-full ${a.color} mt-2 flex-shrink-0`} />
-                                    <div className="flex-1">
-                                        <p className="text-[#2C3E50] font-medium text-sm">{a.text}</p>
-                                        <p className="text-xs text-gray-500 mt-0.5">{a.time}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* ── 하단: 프로필 설정 (편집) ── */}
-                    <div className="border-t border-gray-100 pt-6 space-y-4">
+                    {/* ── 프로필 설정 (편집) ── */}
+                    <div className="space-y-4">
                         <h3 className="font-bold text-[#2C3E50]">프로필 설정</h3>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">프로필 사진</label>
-                            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={avatarBusy}
-                                    className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white rounded-lg text-sm"
-                                >
-                                    {avatarBusy ? "처리 중…" : "사진 변경"}
-                                </button>
-                                {me?.avatarUrl && (
-                                    <button
-                                        onClick={handleAvatarDelete}
-                                        disabled={avatarBusy}
-                                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-600 rounded-lg text-sm"
-                                    >
-                                        삭제
-                                    </button>
-                                )}
-                            </div>
-                            <p className="text-xs text-gray-400 mt-1">JPG·PNG, 5MB 이하</p>
-                        </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">닉네임</label>
