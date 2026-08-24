@@ -6,6 +6,8 @@ import com.hasi.service.messenger.model.NotificationCreateRequest;
 import com.hasi.service.workspace.channel.event.ChannelMessagesPurgeEvent;
 import com.hasi.service.workspace.member.event.InvitationResolvedEvent;
 import com.hasi.service.workspace.member.event.MemberInvitedEvent;
+import com.hasi.service.friend.event.FriendRequestedEvent;
+import com.hasi.service.friend.event.FriendResolvedEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +71,39 @@ public class MessengerNotifier {
         }
     }
 
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onFriendRequested(FriendRequestedEvent event) {
+        NotificationCreateRequest request = new NotificationCreateRequest()
+                .recipientId(event.receiverId())
+                .type(NotificationCreateRequest.TypeEnum.FRIEND)
+                .actorId(event.senderId())
+                .subjectId(event.friendRelationId())
+                .payload(payloadOf(event))
+                .dedupKey("FRIEND:" + event.friendRelationId());
+
+        try {
+            notificationApi.createNotification(request);
+        } catch (RestClientException e) {
+            log.warn("친구 요청 알림 전송 실패. friendRelationId={}, receiverId={}",
+                    event.friendRelationId(), event.receiverId(), e);
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onFriendResolved(FriendResolvedEvent event) {
+        try {
+            notificationApi.resolveNotifications(List.of("FRIEND:" + event.friendRelationId()));
+        } catch (RestClientException e) {
+            log.warn("친구 요청 알림 resolve 실패. friendRelationId={}", event.friendRelationId(), e);
+        }
+    }
+
+    private Map<String, Object> payloadOf(FriendRequestedEvent event) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("senderNickname", event.senderNickname());
+        return payload;
+    }
+
     private Map<String, Object> payloadOf(MemberInvitedEvent event) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("inviterNickname", event.inviterNickname());
@@ -78,4 +113,6 @@ public class MessengerNotifier {
         }
         return payload;
     }
+
+
 }

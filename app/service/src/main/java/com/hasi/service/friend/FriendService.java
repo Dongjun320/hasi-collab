@@ -7,7 +7,10 @@ import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
 import com.hasi.service.friend.entity.Friend;
 import com.hasi.service.friend.repository.FriendRepository;
+import com.hasi.service.friend.event.FriendRequestedEvent;
+import com.hasi.service.friend.event.FriendResolvedEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,18 +25,21 @@ public class FriendService {
 
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     // 친구 요청 보내기
     @Transactional
     public void sendRequest(Long senderId, Long receiverId) {
 
         if (senderId.equals(receiverId)) {
-            throw new ApiException(ErrorCode.FRIEND_001); // 자기 자신 요청 불가
+            throw new ApiException(ErrorCode.FRIEND_001);
         }
 
-        // 상대 유저 존재 확인
-        userRepository.findById(receiverId)
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_001)); // 상대 유저 존재하지 않음
+        User receiver = userRepository.findById(receiverId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_001));
+
+        User sender = userRepository.findById(senderId)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_001));
 
         Optional<Friend> existing = friendRepository
                 .findBySenderIdAndReceiverIdOrReceiverIdAndSenderId(
@@ -46,19 +52,25 @@ public class FriendService {
             if (friend.getStatus() == Friend.Status.REJECTED) {
                 // 예전에 거절당했으면 재요청 가능하게 새로 세팅
                 friend.resendAsSender(senderId, receiverId);
+                eventPublisher.publishEvent(
+                        new FriendRequestedEvent(friend.getId(), receiverId, senderId, sender.getNickname())
+                );
                 return;
             }
-
             // PENDING이거나 ACCEPTED면 막기
             throw new ApiException(ErrorCode.FRIEND_002);
         }
 
-        friendRepository.save(
+        Friend saved = friendRepository.save(
                 Friend.builder()
                         .senderId(senderId)
                         .receiverId(receiverId)
                         .status(Friend.Status.PENDING)
                         .build()
+        );
+
+        eventPublisher.publishEvent(
+                new FriendRequestedEvent(saved.getId(), receiverId, senderId, sender.getNickname())
         );
     }
 
@@ -73,6 +85,7 @@ public class FriendService {
         }
 
         friend.accept();
+        eventPublisher.publishEvent(new FriendResolvedEvent(friend.getId()));
     }
 
     // 친구 요청 거절
@@ -86,6 +99,7 @@ public class FriendService {
         }
 
         friend.reject();
+        eventPublisher.publishEvent(new FriendResolvedEvent(friend.getId()));
     }
 
     // 친구 삭제
