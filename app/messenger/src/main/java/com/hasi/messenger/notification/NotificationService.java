@@ -81,7 +81,16 @@ public class NotificationService {
         if (dedupKeys == null || dedupKeys.isEmpty()) {
             return 0;
         }
-        return notificationRepository.resolveByDedupKeys(dedupKeys, LocalDateTime.now());
+
+        List<Notification> targets =
+                notificationRepository.findByDedupKeyInAndResolvedAtIsNull(dedupKeys);
+
+        LocalDateTime now = LocalDateTime.now();
+        for (Notification notification : targets) {
+            notification.setResolvedAt(now);
+            push(notification.getRecipientId(), toOutbound(notification));
+        }
+        return targets.size();
     }
 
     @Transactional(readOnly = true)

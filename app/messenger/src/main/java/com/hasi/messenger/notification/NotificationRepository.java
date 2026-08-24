@@ -47,18 +47,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     long countByRecipientIdAndReadAtIsNullAndResolvedAtIsNull(Long recipientId);
 
     /**
-     *
-     * @return resolved로 바뀐 record 수
+     * resolve 대상 조회. dedup_key가 unique라 키당 최대 1건
      */
-    @Modifying
-    @Query("""
-            UPDATE Notification n
-               SET n.resolvedAt = :now
-             WHERE n.dedupKey IN :dedupKeys
-               AND n.resolvedAt IS NULL
-            """)
-    int resolveByDedupKeys(@Param("dedupKeys") Collection<String> dedupKeys,
-                           @Param("now") LocalDateTime now);
+    List<Notification> findByDedupKeyInAndResolvedAtIsNull(Collection<String> dedupKeys);
 
     @Modifying
     @Query("""
