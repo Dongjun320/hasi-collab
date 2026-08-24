@@ -13,6 +13,7 @@ import { Tooltip } from "./Tooltip";
 import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
 import { useChannelStore } from "../store/channelStore";
 import { WorkspacePermissionsModal } from "./WorkspacePermissionsModal";
+import { toast } from "../store/toastStore";
 
 
 interface WorkspaceSidebarProps {
@@ -58,6 +59,13 @@ export function WorkspaceSidebar({
   const dragState = useRef({dragging: false, startY: 0, startScroll: 0});
   const [collapsedIds, setCollapsedIds] = useState<number[]>([]);
   const [addingChildOf, setAddingChildOf] = useState<number | null>(null);
+  // 채널 초대 모달 (워크스페이스 멤버를 채널에 초대)
+  const [channelInviteFor, setChannelInviteFor] = useState<number | null>(null);
+  const [wsMembers, setWsMembers] = useState<{ userId: number; nickname: string }[]>([]);
+  const [channelMemberIds, setChannelMemberIds] = useState<Set<number>>(new Set());
+  const [channelInvitedIds, setChannelInvitedIds] = useState<Set<number>>(new Set());
+  const [channelInviteBusy, setChannelInviteBusy] = useState<number | null>(null);
+  const [channelInviteSearch, setChannelInviteSearch] = useState("");
   const [childName, setChildName] = useState("");
   const [defaultChannelId, setDefaultChannelId] = useState<number | null>(null);
   const unreadByChannel = useChannelStore((s) => s.unreadByChannel);
@@ -97,6 +105,45 @@ export function WorkspaceSidebar({
     }
   }
 
+  // 채널 초대 모달 열릴 때: 워크스페이스 멤버 + 이미 채널에 있는 멤버 로드
+  useEffect(() => {
+    if (channelInviteFor == null || !currentWorkspace) return;
+    const wsId = currentWorkspace.id;
+    const channelId = channelInviteFor;
+    setChannelInvitedIds(new Set());
+    setChannelInviteSearch("");
+    (async () => {
+      try {
+        const [mRes, cRes] = await Promise.all([
+          api.GET('/api/workspaces/{workspaceId}/members', { params: { path: { workspaceId: wsId } } }),
+          api.GET('/api/workspaces/{workspaceId}/channels/{channelId}/members', { params: { path: { workspaceId: wsId, channelId } } }),
+        ]);
+        setWsMembers(((mRes.data?.data ?? []) as any[]).map((m) => ({ userId: m.userId, nickname: m.nickname ?? '' })));
+        setChannelMemberIds(new Set(((cRes.data?.data ?? []) as any[]).map((m) => m.userId)));
+      } catch (e) {
+        console.error('채널 초대 멤버 로드 실패:', e);
+      }
+    })();
+  }, [channelInviteFor, currentWorkspace?.id]);
+
+  const handleChannelInvite = async (userId: number) => {
+    if (channelInviteFor == null || !currentWorkspace) return;
+    setChannelInviteBusy(userId);
+    try {
+      const { error } = await api.POST('/api/workspaces/{workspaceId}/channels/{channelId}/invitations', {
+        params: { path: { workspaceId: currentWorkspace.id, channelId: channelInviteFor } },
+        body: { inviteeIds: [userId] },
+      });
+      if (error) { toast.error((error as any)?.error?.message ?? '초대에 실패했습니다'); return; }
+      setChannelInvitedIds((prev) => new Set(prev).add(userId));
+      toast.success('초대를 보냈습니다');
+    } catch (e) {
+      toast.error('서버에 연결할 수 없습니다');
+    } finally {
+      setChannelInviteBusy(null);
+    }
+  };
+
   const stopRailDrag = () => {
     dragState.current.dragging = false;
   };
@@ -105,6 +152,9 @@ export function WorkspaceSidebar({
   const handleAddChannel = () => {
     const name = newChannelName.trim();
     if (!name) return;
+    // 같은 레벨(최상위) 채널 이름 중복 차단 (대소문자·공백 무시)
+    const dup = channels.some((c) => !c.parentId && c.name.trim().toLowerCase() === name.toLowerCase());
+    if (dup) { toast.error("같은 이름의 채널이 이미 있습니다"); return; }
     onAddChannel(name);
     setNewChannelName("");
     setShowNewInput(false);
@@ -158,6 +208,9 @@ export function WorkspaceSidebar({
   const handleAddChild = (parentId: number) => {
     const name = childName.trim();
     if (!name) return;
+    // 같은 부모 아래 하위 채널 이름 중복 차단 (대소문자·공백 무시)
+    const dup = childrenOf(parentId).some((c) => c.name.trim().toLowerCase() === name.toLowerCase());
+    if (dup) { toast.error("같은 이름의 하위 채널이 이미 있습니다"); return; }
     onAddChannel(name, parentId);
     setChildName("");
     setAddingChildOf(null);
@@ -237,17 +290,36 @@ export function WorkspaceSidebar({
             {isRoot && (
                 <button
                     onClick={() => {
+                        // 다시 누르면 취소 (상위 채널 + 버튼과 동일한 토글)
+                        if (addingChildOf === ch.id) {
+                            setAddingChildOf(null);
+                            setChildName("");
+                            return;
+                        }
                         setAddingChildOf(ch.id);
                         setChildName("");
                         setCollapsedIds((prev) => prev.filter((x) => x !== ch.id));
                         setChannelMenuOpenId(null);
                     }}
-                    title="하위 채널 추가"
-                    className="absolute right-7 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20"
+                    title={addingChildOf === ch.id ? "하위 채널 추가 취소" : "하위 채널 추가"}
+                    className={`absolute ${isDefault ? "right-7" : "right-[3.25rem]"} top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20`}
                 >
                     <Plus size={12} className="text-white/70" />
                 </button>
             )}
+
+          {/* 초대는 루트 + 공지사항(기본) 아닌 채널에만.
+              - 공지사항: 워크스페이스 전원 고정 채널이라 초대/입퇴장 개념 없음
+              - 하위 채널: 진입 시 self-join 되므로 별도 초대 불필요 */}
+          {isRoot && !isDefault && (
+              <button
+                  onClick={() => setChannelInviteFor(ch.id)}
+                  title="멤버 초대"
+                  className="absolute right-7 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20"
+              >
+                <UserPlus size={12} className="text-white/70" />
+              </button>
+          )}
 
           <button
               onClick={() => setChannelMenuOpenId(channelMenuOpenId === ch.id ? null : ch.id)}
@@ -370,10 +442,19 @@ export function WorkspaceSidebar({
 
           <div className="flex gap-2 pt-2">
             <button
-                onClick={() => {
+                onClick={async () => {
                   if (!currentWorkspace) return;
                   const name = editName.trim();
-                  if (name) updateWorkspace({ ...currentWorkspace, name, avatar: name.charAt(0) });
+                  // 이름 변경이 없으면 그냥 닫기 (색상은 로컬 전용이라 백엔드 저장 불필요)
+                  if (!name || name === currentWorkspace.name) { setShowWorkspaceSettings(false); return; }
+                  // 실제 백엔드에 반영 (기존에는 로컬 상태만 바꿔 새로고침 시 원복됐음)
+                  const { error } = await api.PATCH('/api/workspaces/{workspaceId}', {
+                    params: { path: { workspaceId: currentWorkspace.id } },
+                    body: { name },
+                  });
+                  if (error) { toast.error((error as any)?.error?.message ?? '서버 설정 저장에 실패했습니다'); return; }
+                  updateWorkspace({ ...currentWorkspace, name, avatar: name.charAt(0) });
+                  toast.success('서버 설정을 저장했습니다');
                   setShowWorkspaceSettings(false);
                 }}
                 className="flex-1 px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] text-white font-medium rounded-lg transition-all"
@@ -404,6 +485,60 @@ export function WorkspaceSidebar({
               workspaceId={currentWorkspace.id}
           />
       )}
+
+      {/* ── 채널 멤버 초대 모달 ── */}
+      <Modal
+          isOpen={channelInviteFor != null}
+          onClose={() => setChannelInviteFor(null)}
+          title="채널에 멤버 초대"
+      >
+        <div className="flex flex-col gap-2">
+          <input
+              type="text"
+              value={channelInviteSearch}
+              onChange={(e) => setChannelInviteSearch(e.target.value)}
+              placeholder="멤버 검색"
+              autoFocus
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A] text-sm"
+          />
+          <div className="flex flex-col gap-1 max-h-72 overflow-y-auto">
+          {wsMembers.length === 0 && (
+              <p className="text-xs text-gray-400 text-center py-4">초대할 멤버가 없습니다</p>
+          )}
+          {wsMembers.length > 0
+            && wsMembers.filter((m) => m.nickname.toLowerCase().includes(channelInviteSearch.trim().toLowerCase())).length === 0 && (
+              <p className="text-xs text-gray-400 text-center py-4">검색 결과가 없습니다</p>
+          )}
+          {wsMembers
+            .filter((m) => m.nickname.toLowerCase().includes(channelInviteSearch.trim().toLowerCase()))
+            .map((m) => {
+            const inChannel = channelMemberIds.has(m.userId);
+            const invited = channelInvitedIds.has(m.userId);
+            return (
+                <div key={m.userId} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#f8fdf9]">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {m.nickname.charAt(0)}
+                  </div>
+                  <span className="flex-1 text-sm text-[#2C3E50] truncate">{m.nickname}</span>
+                  {inChannel ? (
+                      <span className="text-xs text-gray-400 flex-shrink-0">참여 중</span>
+                  ) : invited ? (
+                      <span className="text-xs text-[#5CC87A] flex-shrink-0">초대함</span>
+                  ) : (
+                      <button
+                          onClick={() => handleChannelInvite(m.userId)}
+                          disabled={channelInviteBusy === m.userId}
+                          className="px-3 py-1 text-xs bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:opacity-50 text-white rounded-lg flex-shrink-0"
+                      >
+                        초대
+                      </button>
+                  )}
+                </div>
+            );
+          })}
+          </div>
+        </div>
+      </Modal>
 
       {/* ── 인원 추가 모달 ── */}
       <Modal
