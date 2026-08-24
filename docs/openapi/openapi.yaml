@@ -50,6 +50,9 @@ paths:
   /api/workspaces/{workspaceId}/permissions:
     $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1permissions"
 
+  /api/workspaces/{workspaceId}/members/me/permissions:
+    $ref: "./paths/workspaceEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1members~1me~1permissions"
+
   /api/workspaces/{workspaceId}/channels:
     $ref: "./paths/channelEndpoints.yaml#/paths/~1api~1workspaces~1{workspaceId}~1channels"
 
