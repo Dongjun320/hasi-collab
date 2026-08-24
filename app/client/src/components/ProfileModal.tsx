@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BigModal } from "./BigModal";
 import { useUiStore } from "../store/uiStore";
 import { api } from "../api/client";
 import { useAuthStore } from "../store/authStore";
 import { useMemberStore } from "../store/memberStore";
+import { toast } from "../store/toastStore";
+
+// 아바타 업로드/삭제는 openapi 스펙에 없어 타입드 api 대신 plain fetch 사용
+// (messenger.ts와 동일 패턴). 개발은 vite 프록시(/api→service), 배포는 VITE_API_BASE_URL.
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export function ProfileModal() {
     const { activeModal, closeModal } = useUiStore();
@@ -33,6 +38,58 @@ export function ProfileModal() {
 
     const myUid = useAuthStore((s) => s.user?.uid);
     const [nicknameError, setNicknameError] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [avatarBusy, setAvatarBusy] = useState(false);
+
+    // 프로필 사진 업로드 (multipart) — 성공 시 me.avatarUrl 갱신
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";   // 같은 파일 재선택 가능하도록 초기화
+        if (!file) return;
+        if (!file.type.startsWith("image/")) { toast.error("이미지 파일만 업로드할 수 있습니다"); return; }
+        if (file.size > 5 * 1024 * 1024) { toast.error("5MB 이하 이미지만 업로드할 수 있습니다"); return; }
+
+        setAvatarBusy(true);
+        try {
+            const token = useAuthStore.getState().accessToken;
+            const form = new FormData();
+            form.append("file", file);
+            const res = await fetch(`${API_BASE}/api/users/me/avatar`, {
+                method: "POST",
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                body: form,
+            });
+            if (!res.ok) throw new Error(String(res.status));
+            const url = (await res.text()).trim();
+            setMe((p: any) => ({ ...p, avatarUrl: url }));
+            toast.success("프로필 사진을 변경했습니다");
+        } catch (err) {
+            console.error("아바타 업로드 실패:", err);
+            toast.error("프로필 사진 변경에 실패했습니다");
+        } finally {
+            setAvatarBusy(false);
+        }
+    };
+
+    // 프로필 사진 삭제
+    const handleAvatarDelete = async () => {
+        setAvatarBusy(true);
+        try {
+            const token = useAuthStore.getState().accessToken;
+            const res = await fetch(`${API_BASE}/api/users/me/avatar/delete`, {
+                method: "DELETE",
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            });
+            if (!res.ok) throw new Error(String(res.status));
+            setMe((p: any) => ({ ...p, avatarUrl: null }));
+            toast.success("프로필 사진을 삭제했습니다");
+        } catch (err) {
+            console.error("아바타 삭제 실패:", err);
+            toast.error("프로필 사진 삭제에 실패했습니다");
+        } finally {
+            setAvatarBusy(false);
+        }
+    };
 
     const saveNickname = async () => {
         const trimmed = nickname.trim();
@@ -74,8 +131,10 @@ export function ProfileModal() {
                 {/* 고정: 프로필 보기 (스크롤해도 상단에 고정) */}
                 <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-4 border-b border-gray-100">
                     <div className="flex items-center gap-5">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-3xl font-bold flex-shrink-0">
-                            {me?.nickname?.charAt(0) || "나"}
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-3xl font-bold flex-shrink-0 overflow-hidden">
+                            {me?.avatarUrl
+                                ? <img src={me.avatarUrl} alt="프로필 사진" className="w-full h-full object-cover" />
+                                : (me?.nickname?.charAt(0) || "나")}
                         </div>
                         <div className="min-w-0">
                             <h2 className="text-xl font-bold text-[#2C3E50]">{me?.nickname || "-"}</h2>
@@ -120,7 +179,26 @@ export function ProfileModal() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">프로필 사진</label>
-                            <button disabled className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed text-sm">사진 변경 (준비 중)</button>
+                            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={avatarBusy}
+                                    className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white rounded-lg text-sm"
+                                >
+                                    {avatarBusy ? "처리 중…" : "사진 변경"}
+                                </button>
+                                {me?.avatarUrl && (
+                                    <button
+                                        onClick={handleAvatarDelete}
+                                        disabled={avatarBusy}
+                                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-600 rounded-lg text-sm"
+                                    >
+                                        삭제
+                                    </button>
+                                )}
+                            </div>
+                            <p className="text-xs text-gray-400 mt-1">JPG·PNG, 5MB 이하</p>
                         </div>
 
                         <div>
