@@ -7,11 +7,15 @@ import com.hasi.service.auth.repository.SocialAccountRepository;
 import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
 import com.hasi.service.jwt.JwtProvider;
+import com.hasi.service.mail.MailTemplateService;
 import com.hasi.service.user.FileStorageService;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +38,7 @@ public class AuthService {
     private final RedisTemplate<String, String> redisTemplate;
     private final JavaMailSender javaMailSender;
     private final FileStorageService fileStorageService;
+    private final MailTemplateService mailTemplateService;
 
     // 회원가입
     @Transactional
@@ -154,11 +159,20 @@ public class AuthService {
 
         redisTemplate.opsForValue()
                 .set("email:verify:" + request.getEmail(), code, Duration.ofMinutes(10));
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(request.getEmail());
-        message.setSubject("[HASI] 이메일 인증 코드");
-        message.setText("인증 코드: " + code + "\n\n10분 안에 입력해주세요.");
-        javaMailSender.send(message);
+        try{
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+
+            String html = mailTemplateService.load("email-verification-ko.html", code);
+
+            helper.setTo(request.getEmail());
+            helper.setSubject("[HASI] 이메일 인증 코드");
+            helper.setText(html, true);
+
+            javaMailSender.send(message);
+        } catch (MessagingException e){
+            throw new RuntimeException("메일 발송 실패", e);
+        }
     }
 
     // 비밀번호 변경
@@ -179,11 +193,20 @@ public class AuthService {
         String code = generateCode();
         redisTemplate.opsForValue()
                 .set("email:reset:" + request.getEmail(), code, Duration.ofMinutes(10));
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(request.getEmail());
-        message.setSubject("[HASI] 비밀번호 재설정 코드");
-        message.setText("비밀번호 재설정 코드: " + code + "\n\n10분 안에 입력해주세요.");
-        javaMailSender.send(message);
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+
+            String html = mailTemplateService.load("password-reset-ko.html", code);
+
+            helper.setTo(request.getEmail());
+            helper.setSubject("[HASI] 비밀번호 재설정 코드");
+            helper.setText(html, true);
+
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("메일 발송 실패", e);
+        }
     }
 
     // logout() - accesstoken, refreshToken 블랙리스트 등록
