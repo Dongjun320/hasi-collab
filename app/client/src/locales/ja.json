@@ -278,7 +278,15 @@
     "kanban": "カンバン",
     "newChannel": "新しいチャンネル",
     "channelNamePlaceholder": "チャンネル名",
-    "childChannelNamePlaceholder": "サブチャンネル名"
+    "childChannelNamePlaceholder": "サブチャンネル名",
+    "serverIcon": "サーバー画像",
+    "iconChange": "画像を変更",
+    "iconRemove": "画像を削除",
+    "iconProcessing": "処理中…",
+    "toastIconChanged": "サーバー画像を変更しました",
+    "toastIconChangeFailed": "画像の変更に失敗しました",
+    "toastIconRemoved": "サーバー画像を削除しました",
+    "toastIconRemoveFailed": "画像の削除に失敗しました"
   },
   "kanban": {
     "colTodo": "未着手",

@@ -15,6 +15,10 @@ import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
 import { useChannelStore } from "../store/channelStore";
 import { WorkspacePermissionsModal } from "./WorkspacePermissionsModal";
 import { toast } from "../store/toastStore";
+import { useAuthStore } from "../store/authStore";
+
+// 아바타와 동일 패턴: 개발은 vite 프록시(/api→service), 배포는 VITE_API_BASE_URL
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 
 interface WorkspaceSidebarProps {
@@ -193,6 +197,57 @@ export function WorkspaceSidebar({
     dragState.current.dragging = false;
   };
   const [editName, setEditName] = useState("");
+
+  // ── 서버(워크스페이스) 이미지 업로드/삭제 — 프로필 아바타와 동일 패턴 ──
+  const [iconBusy, setIconBusy] = useState(false);
+
+  const handleIconChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";   // 같은 파일 재선택 가능하도록
+    if (!file || !currentWorkspace) return;
+    if (!file.type.startsWith("image/")) { toast.error(t("profile.toastImageOnly")); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(t("profile.toastMaxSize")); return; }
+    setIconBusy(true);
+    try {
+      const token = useAuthStore.getState().accessToken;
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`${API_BASE}/api/workspaces/${currentWorkspace.id}/icon`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: form,
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const url = (await res.text()).trim();
+      updateWorkspace({ ...currentWorkspace, iconUrl: url });
+      toast.success(t("workspace.toastIconChanged"));
+    } catch (err) {
+      console.error("서버 이미지 업로드 실패:", err);
+      toast.error(t("workspace.toastIconChangeFailed"));
+    } finally {
+      setIconBusy(false);
+    }
+  };
+
+  const handleIconDelete = async () => {
+    if (!currentWorkspace) return;
+    setIconBusy(true);
+    try {
+      const token = useAuthStore.getState().accessToken;
+      const res = await fetch(`${API_BASE}/api/workspaces/${currentWorkspace.id}/icon/delete`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      updateWorkspace({ ...currentWorkspace, iconUrl: null });
+      toast.success(t("workspace.toastIconRemoved"));
+    } catch (err) {
+      console.error("서버 이미지 삭제 실패:", err);
+      toast.error(t("workspace.toastIconRemoveFailed"));
+    } finally {
+      setIconBusy(false);
+    }
+  };
 
   const handleAddChannel = () => {
     const name = newChannelName.trim();
@@ -457,6 +512,35 @@ export function WorkspaceSidebar({
           title={t("workspace.serverSettings")}
       >
         <div className="flex flex-col gap-4">
+          {/* 서버 이미지 (오너만) */}
+          {currentWorkspace?.role === "OWNER" && (
+            <div>
+              <label className="text-xs text-gray-500 font-medium mb-1 block">{t("workspace.serverIcon")}</label>
+              <div className="flex items-center gap-3">
+                <div
+                    className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center text-white font-bold text-xl flex-shrink-0"
+                    style={currentWorkspace?.iconUrl ? undefined : { background: `linear-gradient(to bottom right, ${currentWorkspace?.colors?.[0] ?? "#A8E6B8"}, ${currentWorkspace?.colors?.[1] ?? "#5CC87A"})` }}
+                >
+                  {currentWorkspace?.iconUrl
+                      ? <img src={currentWorkspace.iconUrl} alt="" className="w-full h-full object-cover" />
+                      : (currentWorkspace?.avatar ?? "?")}
+                </div>
+                <div className="flex gap-2">
+                  <label className={`px-3 py-1.5 text-sm rounded-lg cursor-pointer transition-all ${iconBusy ? "bg-gray-100 text-gray-400 cursor-default" : "bg-[#5CC87A] hover:bg-[#2E8B4F] text-white"}`}>
+                    {iconBusy ? t("workspace.iconProcessing") : t("workspace.iconChange")}
+                    <input type="file" accept="image/*" className="hidden" disabled={iconBusy} onChange={handleIconChange} />
+                  </label>
+                  {currentWorkspace?.iconUrl && (
+                      <button onClick={handleIconDelete} disabled={iconBusy}
+                              className="px-3 py-1.5 text-sm border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50 rounded-lg transition-all">
+                        {t("workspace.iconRemove")}
+                      </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="text-xs text-gray-500 font-medium">{t("workspace.serverName")}</label>
             <input
@@ -737,11 +821,13 @@ export function WorkspaceSidebar({
                   className="relative group flex-shrink-0"
                 >
                   <div
-                    className={`w-11 h-11 flex items-center justify-center text-white font-bold text-base shadow-md transition-all duration-200
+                    className={`w-11 h-11 flex items-center justify-center text-white font-bold text-base shadow-md overflow-hidden transition-all duration-200
                       ${active ? "rounded-xl" : "rounded-[22px] group-hover:rounded-xl"}`}
-                    style={{ background: `linear-gradient(to bottom right, ${ws.colors[0]}, ${ws.colors[1]})` }}
+                    style={ws.iconUrl ? undefined : { background: `linear-gradient(to bottom right, ${ws.colors[0]}, ${ws.colors[1]})` }}
                   >
-                    {ws.avatar}
+                    {ws.iconUrl
+                      ? <img src={ws.iconUrl} alt="" className="w-full h-full object-cover" />
+                      : ws.avatar}
                   </div>
                   {active && (
                     <div className="absolute -left-[14px] top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
