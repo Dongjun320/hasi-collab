@@ -278,7 +278,15 @@
     "kanban": "칸반",
     "newChannel": "새 채널",
     "channelNamePlaceholder": "채널 이름",
-    "childChannelNamePlaceholder": "하위 채널 이름"
+    "childChannelNamePlaceholder": "하위 채널 이름",
+    "serverIcon": "서버 이미지",
+    "iconChange": "이미지 변경",
+    "iconRemove": "이미지 제거",
+    "iconProcessing": "처리 중…",
+    "toastIconChanged": "서버 이미지를 변경했습니다",
+    "toastIconChangeFailed": "이미지 변경에 실패했습니다",
+    "toastIconRemoved": "서버 이미지를 제거했습니다",
+    "toastIconRemoveFailed": "이미지 제거에 실패했습니다"
   },
   "kanban": {
     "colTodo": "할 일",

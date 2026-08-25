@@ -45,6 +45,38 @@ public class FileStorageService {
         return endpoint + "/" + bucket + "/" + key;   // 공개 접근 URL
     }
 
+    public String uploadWorkspaceIcon(Long workspaceId, MultipartFile file) {
+        String extension = getExtension(file.getOriginalFilename());
+        String key = "workspace/" + workspaceId + "_" + UUID.randomUUID() + extension;
+
+        try {
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(bucket)
+                            .key(key)
+                            .contentType(file.getContentType())
+                            .acl("public-read")
+                            .build(),
+                    RequestBody.fromInputStream(file.getInputStream(), file.getSize())
+            );
+        } catch (IOException e) {
+            throw new RuntimeException("파일 업로드 실패", e);
+        }
+
+        return endpoint + "/" + bucket + "/" + key;   // 공개 접근 URL
+    }
+
+    // URL로 저장소 객체 삭제 (아바타/워크스페이스 아이콘 공용)
+    public void deleteByUrl(String url) {
+        String key = extractKeyFromUrl(url);
+        s3Client.deleteObject(
+                DeleteObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(key)
+                        .build()
+        );
+    }
+
     private String extractKeyFromUrl(String url) {
         // endpoint + "/" + bucket + "/" 부분을 제거하면 key만 남음
         String prefix = endpoint + "/" + bucket + "/";

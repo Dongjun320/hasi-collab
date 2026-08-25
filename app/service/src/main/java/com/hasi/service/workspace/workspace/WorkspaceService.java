@@ -3,6 +3,8 @@ package com.hasi.service.workspace.workspace;
 import com.hasi.collab.model.*;
 import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
+import com.hasi.service.user.FileStorageService;
+import org.springframework.web.multipart.MultipartFile;
 import com.hasi.service.workspace.board.entity.Board;
 import com.hasi.service.workspace.board.repository.BoardMemberRepository;
 import com.hasi.service.workspace.board.repository.BoardRepository;
@@ -43,6 +45,7 @@ public class WorkspaceService {
     private final TaskRepository taskRepository;
     private final WorkspacePermissionRepository workspacePermissionRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final FileStorageService fileStorageService;
 
     @Transactional
     public WorkspaceData createWorkspace(WorkspaceCreateRequest request) {
@@ -369,5 +372,37 @@ public class WorkspaceService {
         }
 
         return data;
+    }
+
+    // ── 워크스페이스 아이콘(이미지) 업로드/삭제 — 오너만 ──
+    @Transactional
+    public String updateIcon(Long workspaceId, MultipartFile file) {
+        Long uid = getCurrentUserId();
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+        if (!uid.equals(workspace.getOwnerId())) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
+        // 기존 아이콘이 있으면 교체 전 삭제 (저장소 잔여물 방지)
+        if (workspace.getIconUrl() != null) {
+            try { fileStorageService.deleteByUrl(workspace.getIconUrl()); } catch (Exception ignore) {}
+        }
+        String url = fileStorageService.uploadWorkspaceIcon(workspaceId, file);
+        workspace.updateIconUrl(url);
+        return url;
+    }
+
+    @Transactional
+    public void deleteIcon(Long workspaceId) {
+        Long uid = getCurrentUserId();
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+        if (!uid.equals(workspace.getOwnerId())) {
+            throw new ApiException(ErrorCode.AUTH_004);
+        }
+        if (workspace.getIconUrl() != null) {
+            try { fileStorageService.deleteByUrl(workspace.getIconUrl()); } catch (Exception ignore) {}
+        }
+        workspace.updateIconUrl(null);
     }
 }

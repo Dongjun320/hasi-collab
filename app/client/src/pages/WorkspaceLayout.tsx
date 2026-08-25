@@ -248,12 +248,14 @@ export function WorkspaceLayout() {
           {currentWorkspace && (
               <div className="flex items-center gap-2.5">
                 <div
-                    className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-sm"
-                    style={{
+                    className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center text-white text-sm font-bold shadow-sm"
+                    style={currentWorkspace.iconUrl ? undefined : {
                       background: `linear-gradient(to bottom right, ${currentWorkspace.colors[0]}, ${currentWorkspace.colors[1]})`,
                     }}
                 >
-                  {currentWorkspace.avatar}
+                  {currentWorkspace.iconUrl
+                    ? <img src={currentWorkspace.iconUrl} alt="" className="w-full h-full object-cover" />
+                    : currentWorkspace.avatar}
                 </div>
                 <h1 className="font-bold text-[#2C3E50] text-base">{currentWorkspace.name}</h1>
               </div>
