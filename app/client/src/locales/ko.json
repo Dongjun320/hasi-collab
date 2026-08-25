@@ -200,6 +200,7 @@
     "messagePlaceholder": "# {{channel}}에 메시지 보내기...",
     "notMember": "이 채널에 참여하지 않았습니다",
     "notMemberDesc": "채널에 참여하려면 초대를 받아야 합니다.",
+    "readUpToHere": "여기까지 읽음",
     "today": "오늘",
     "yesterday": "어제",
     "dateFull": "{{y}}년 {{m}}월 {{d}}일 ({{wd}})",

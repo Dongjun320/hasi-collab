@@ -12,6 +12,7 @@ import { useMemberStore, type WorkspaceMember } from "../store/memberStore";
 import { usePresenceStore } from "../store/presenceStore";
 import { useWorkspacePresence } from "../hooks/usePresence";
 import { toast } from "../store/toastStore";
+import { fetchChannelReadStates } from "../api/messenger";
 
 // uid로 색을 고정 배정 (서버에 색 개념이 없어 화면용으로만 사용)
 const AVATAR_COLORS = [
@@ -49,6 +50,13 @@ export function ChannelsPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  // ── 진입 시 마지막 읽은 위치 복원 + '여기까지 읽음' 구분선 ──
+  const [firstUnreadId, setFirstUnreadId] = useState<number | null>(null); // 구분선/스크롤 앵커 (진입 시 스냅샷 후 고정)
+  const [hasScrolled, setHasScrolled] = useState(false);                   // 사용자가 스크롤하면 구분선 숨김(일시적)
+  const positionedRef = useRef(false);                                     // 채널당 최초 위치지정 1회
+  const prevLenRef = useRef(0);                                            // 새 메시지 추가 감지 (최초 로드와 구분)
+  const programmaticRef = useRef(false);                                   // 프로그램 스크롤을 사용자 스크롤과 구분
+  const [membersLoaded, setMembersLoaded] = useState(false);              // 멤버 로드 전 '사용자N' 폴백 방지
   const myUid = useAuthStore((s) => s.user?.uid);
   const { currentWorkspace } = useWorkspaceStore();
   const { members, setMembers } = useMemberStore();
@@ -75,13 +83,24 @@ export function ChannelsPage() {
       })));
     } catch (e) {
       console.error('멤버 조회 실패:', e);
+    } finally {
+      // 성공/실패 무관하게 로드 시도 완료 → 이 시점부터는 폴백('사용자N')을 표시해도 됨
+      setMembersLoaded(true);
     }
   };
 
-  useEffect(() => { loadMembers(); }, [currentWorkspace?.id]);
+  // 워크스페이스가 바뀌면 멤버를 다시 불러온다. 로드 완료 전에는 폴백을 감춰 '사용자N' 깜빡임/잔존을 막는다.
+  useEffect(() => {
+    setMembersLoaded(false);
+    loadMembers();
+  }, [currentWorkspace?.id]);
 
-  const nicknameOf = (uid: number) =>
-      members.find((m) => m.userId === uid)?.nickname ?? t("channel.userFallback", { uid });
+  const nicknameOf = (uid: number) => {
+    const found = members.find((m) => m.userId === uid);
+    if (found) return found.nickname;
+    // 아직 멤버 목록이 로드되기 전이면 폴백('사용자N') 대신 공백 → 로드되면 자동 재렌더로 실명 표시
+    return membersLoaded ? t("channel.userFallback", { uid }) : "";
+  };
 
 
   const getSortedMembers = () => {
@@ -174,17 +193,77 @@ export function ChannelsPage() {
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
     setIsAtBottom(atBottom);
     if (atBottom) setUnreadCount(0);
+    // 사용자가 실제로 스크롤하면 '여기까지 읽음' 구분선을 숨긴다(일시적).
+    // 진입 시 프로그램 스크롤(scrollIntoView)로 인한 onScroll은 제외.
+    if (!programmaticRef.current) setHasScrolled(true);
   };
 
   const scrollToBottom = (smooth = true) =>        // ← 기본값 smooth
       messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
 
+  // 채널 전환 시 위치지정/구분선 상태 초기화
   useEffect(() => {
-    if (messages.length === 0) return;
-    const last = messages[messages.length - 1];
-    const isMine = Number(last.sender) === myUid; // 기존 isMine 판별과 동일한 기준
+    positionedRef.current = false;
+    prevLenRef.current = 0;
+    setHasScrolled(false);
+    setFirstUnreadId(null);
+    setIsAtBottom(true);
+  }, [channelId]);
 
-    if (isMine || isAtBottom) scrollToBottom();     // isAtBottom 기본 true → smooth 스크롤
+  // ── 진입 시 최초 위치지정: 마지막 읽은 지점(첫 미읽음 메시지)으로 이동 + 구분선 스냅샷 ──
+  useEffect(() => {
+    if (positionedRef.current) return;
+    if (messages.length === 0) return;
+    positionedRef.current = true;
+
+    let cancelled = false;
+    (async () => {
+      const token = useAuthStore.getState().accessToken;
+      let lastReadId = 0;
+      if (token) {
+        try {
+          // hook이 진입 시 '전부 읽음'으로 커서를 올리기 전에 조회 → 진입 전 마지막 읽은 지점을 확보
+          const states = await fetchChannelReadStates(channelId, token);
+          const mine = states.find((s) => s.userId === String(myUid));
+          lastReadId = mine?.lastReadMessageId ?? 0;
+        } catch { /* 조회 실패 시 전부 읽은 것으로 간주 → 하단으로 */ }
+      }
+      if (cancelled) return;
+
+      const firstUnread = messages.find((m) => m.id > lastReadId);
+      // 구분선은 첫 미읽음 앞에, 단 그 앞에 읽은 메시지가 있을 때만(맨 위면 표시 안 함)
+      setFirstUnreadId(firstUnread && firstUnread.id !== messages[0].id ? firstUnread.id : null);
+
+      requestAnimationFrame(() => {
+        const el = messagesContainerRef.current;
+        if (!el) return;
+        const node = firstUnread
+            ? el.querySelector<HTMLElement>(`[data-msgid="${firstUnread.id}"]`)
+            : null;
+        programmaticRef.current = true;
+        if (node) {
+          node.scrollIntoView({ block: "start", behavior: "auto" });
+          setIsAtBottom(false);
+        } else {
+          scrollToBottom(false);       // 미읽음 없음 → 즉시 하단
+          setIsAtBottom(true);
+        }
+        // 프로그램 스크롤로 인한 onScroll이 구분선을 지우지 않도록 잠깐 유지
+        setTimeout(() => { programmaticRef.current = false; }, 200);
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [messages, channelId, myUid]);
+
+  // 최초 로드 이후 '새 메시지'가 추가될 때만 하단 자동 스크롤 (최초 히스토리 로드는 위 위치지정이 담당)
+  useEffect(() => {
+    const prev = prevLenRef.current;
+    prevLenRef.current = messages.length;
+    if (prev === 0) return;                 // 최초 히스토리 로드 → 건너뜀
+    if (messages.length <= prev) return;    // 새로 추가된 경우만
+    const last = messages[messages.length - 1];
+    const isMine = Number(last.sender) === myUid;
+    if (isMine || isAtBottom) scrollToBottom();
   }, [messages]);
 
   return (
@@ -228,7 +307,14 @@ export function ChannelsPage() {
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>
               )}
-              <div className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`}>
+              {firstUnreadId === msg.id && !hasScrolled && (
+                <div className="flex items-center gap-3 my-2 select-none" data-readmarker>
+                  <div className="flex-1 h-px bg-[#5CC87A]/50" />
+                  <span className="text-[11px] font-semibold text-[#5CC87A] px-2 whitespace-nowrap">{t("channel.readUpToHere")}</span>
+                  <div className="flex-1 h-px bg-[#5CC87A]/50" />
+                </div>
+              )}
+              <div data-msgid={msg.id} className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`}>
                 <div className={`w-10 h-10 rounded-full ${colorOf(senderUid)} flex items-center justify-center text-white font-bold flex-shrink-0`}>
                   {name.charAt(0)}
                 </div>

@@ -200,6 +200,7 @@
     "messagePlaceholder": "# {{channel}}にメッセージを送信...",
     "notMember": "このチャンネルに参加していません",
     "notMemberDesc": "チャンネルに参加するには招待を受ける必要があります。",
+    "readUpToHere": "ここまで既読",
     "today": "今日",
     "yesterday": "昨日",
     "dateFull": "{{y}}年{{m}}月{{d}}日 ({{wd}})",
