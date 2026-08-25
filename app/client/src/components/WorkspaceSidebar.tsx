@@ -730,7 +730,9 @@ export function WorkspaceSidebar({
                 <button
                   onClick={() => {
                     setWorkspace(ws);
-                    navigate(`/workspace/channels/${getDefaultChannelId(ws.id)}`);
+                    // 채널이 아직 로드 안 됐으면 null → /workspace/channels/null(=NaN) 진입 방지
+                    const ch = getDefaultChannelId(ws.id);
+                    navigate(ch ? `/workspace/channels/${ch}` : "/workspace");
                   }}
                   className="relative group flex-shrink-0"
                 >
