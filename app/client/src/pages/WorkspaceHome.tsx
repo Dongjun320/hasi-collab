@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from '../store/authStore';
 import {
@@ -20,6 +21,7 @@ import hasiClean from "./HasiClean.png";
 
 export function WorkspaceHome() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user } = useAuthStore();
 
@@ -63,15 +65,15 @@ export function WorkspaceHome() {
     return new Date(utc + offset * 3600000);
   };
   const fmt  = (d: Date) => d.toTimeString().slice(0, 8);
-  const fmtD = (d: Date) => `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  const fmtD = (d: Date) => t("home.monthDay", { m: d.getMonth() + 1, d: d.getDate() });
   const clocks = [
-    { label: "KR", city: "서울", offset: 9  },
-    { label: "JP", city: "도쿄", offset: 9  },
-    { label: "US", city: "뉴욕", offset: -4 },
+    { label: "KR", city: t("home.citySeoul"),   offset: 9  },
+    { label: "JP", city: t("home.cityTokyo"),   offset: 9  },
+    { label: "US", city: t("home.cityNewyork"), offset: -4 },
   ];
 
-  const today     = new Date();
-  const weekDayKo = ["일", "월", "화", "수", "목", "금", "토"];
+  const today    = new Date();
+  const weekdays = t("home.weekdays", { returnObjects: true }) as string[];
 
 
   return (
@@ -87,10 +89,10 @@ export function WorkspaceHome() {
           <div className="px-6 pt-5 pb-3 flex items-center justify-between flex-shrink-0 border-b border-[#e8f8ed]">
             <div>
               <h1 className="text-lg font-bold text-[#2C3E50]">
-                안녕하세요, {user?.nickname ?? "게스트"}님 👋
+                {t("home.greeting", { name: user?.nickname ?? t("home.guest") })}
               </h1>
               <p className="text-xs text-gray-400">
-                {today.getFullYear()}년 {today.getMonth() + 1}월 {today.getDate()}일 {weekDayKo[today.getDay()]}요일
+                {t("home.dateLine", { y: today.getFullYear(), m: today.getMonth() + 1, d: today.getDate(), wd: weekdays[today.getDay()] })}
               </p>
             </div>
           </div>
@@ -102,14 +104,14 @@ export function WorkspaceHome() {
               <div className="flex items-center gap-2 mb-3">
                 <LayoutGrid size={15} className="text-[#5CC87A]"/>
                 <h2 className="text-sm font-bold text-[#2C3E50]">
-                  워크스페이스 · {wsLoading ? "불러오는 중" : `${workspaces.length}개`}
+                  {t("home.workspaces")} · {wsLoading ? t("home.loading") : t("home.wsCount", { count: workspaces.length })}
                 </h2>
                 {!wsLoading && workspaces.length === 0 && (
                     <button
                         onClick={() => navigate("/workspace")}
                         className="ml-auto px-3 py-1 text-xs font-medium bg-[#5CC87A] hover:bg-[#2E8B4F] text-white rounded-lg transition-all"
                     >
-                      워크스페이스 시작하기
+                      {t("home.startWorkspace")}
                     </button>
                 )}
               </div>
@@ -138,17 +140,17 @@ export function WorkspaceHome() {
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#e8f8ed]">
               <div className="flex items-center gap-2 mb-3">
                 <Globe size={15} className="text-[#5CC87A]" />
-                <h2 className="text-sm font-bold text-[#2C3E50]">세계 시계</h2>
+                <h2 className="text-sm font-bold text-[#2C3E50]">{t("home.worldClock")}</h2>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {clocks.map((tz) => {
-                  const t = getZoneTime(tz.offset);
+                  const zt = getZoneTime(tz.offset);
                   return (
                     <div key={tz.label} className="bg-[#f8fdf9] rounded-xl p-3 text-center border border-[#e8f8ed]">
                       <p className="text-xs font-bold text-[#5CC87A]">{tz.label}</p>
                       <p className="text-[10px] text-gray-400 mb-1">{tz.city}</p>
-                      <p className="text-base font-bold text-[#2C3E50] font-mono tracking-tight">{fmt(t)}</p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">{fmtD(t)}</p>
+                      <p className="text-base font-bold text-[#2C3E50] font-mono tracking-tight">{fmt(zt)}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{fmtD(zt)}</p>
                     </div>
                   );
                 })}
@@ -159,7 +161,7 @@ export function WorkspaceHome() {
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#e8f8ed]">
               <div className="flex items-center gap-2 mb-3">
                 <Users size={15} className="text-[#5CC87A]" />
-                <h2 className="text-sm font-bold text-[#2C3E50]">온라인 친구 · {onlineFriends.length}명</h2>
+                <h2 className="text-sm font-bold text-[#2C3E50]">{t("home.onlineFriends", { count: onlineFriends.length })}</h2>
               </div>
               <div className="flex flex-wrap gap-2">
                 {onlineFriends.map((f) => (
@@ -183,11 +185,11 @@ export function WorkspaceHome() {
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#e8f8ed]">
               <div className="flex items-center gap-2 mb-3">
                 <MessageCircle size={15} className="text-[#5CC87A]" />
-                <h2 className="text-sm font-bold text-[#2C3E50]">최근 활동</h2>
+                <h2 className="text-sm font-bold text-[#2C3E50]">{t("home.recentActivity")}</h2>
               </div>
               <div className="space-y-2">
                 {recentNotifications.length === 0 ? (
-                  <p className="text-xs text-gray-400 text-center py-6">최근 소식이 없습니다</p>
+                  <p className="text-xs text-gray-400 text-center py-6">{t("home.noNews")}</p>
                 ) : (
                   recentNotifications.map((n) => (
                     <div

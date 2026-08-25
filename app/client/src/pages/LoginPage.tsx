@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/Button'
 import Input from '../components/Input'
@@ -13,6 +14,7 @@ import { oauthAuthorizeUrl } from '../api/urls'
 
 const LoginPage = () => {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { setAuth } = useAuthStore()
 
   // ── 1. 상태 관리 (State) ──
@@ -51,7 +53,7 @@ const LoginPage = () => {
   const handleLogin = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      toast.error("有効なE-mail形式で入力してください。")
+      toast.error(t('login.toastInvalidEmail'))
       return
     }
 
@@ -61,16 +63,16 @@ const LoginPage = () => {
       setLoadingOpen(false)
       const errorCode = (error as any)?.error?.code
       if (errorCode === 'AUTH_001') {
-        toast.error("アカウント情報が一致しません。")
+        toast.error(t('login.toastAccountMismatch'))
       } else {
-        toast.error("ログインに失敗しました。メールとパスワードをご確認ください。")
+        toast.error(t('login.toastLoginFailed'))
       }
       return
     }
     if (data && data.accessToken) {
       setAuth(data.user as any, data.accessToken, data.refreshToken)
       connectStomp(data.accessToken)   // 로그인 즉시 STOMP 연결 = online
-      toast.success("ログインが完了しました。")
+      toast.success(t('login.toastLoginSuccess'))
       setTimeout(() => navigate('/WorkspaceHome'), 1200)
     }
   }
@@ -78,45 +80,45 @@ const LoginPage = () => {
   // 회원가입 이메일 발송
   const handleSendEmail = async () => {
     if (!signUpEmail.trim()) {
-      toast.warning("E-mailを入力してください。")
+      toast.warning(t('login.toastEnterEmail'))
       return
     }
     const { error } = await api.POST('/api/auth/email/send', { body: { email: signUpEmail } })
     if (error) {
-      toast.error("メール送信に失敗しました。")
+      toast.error(t('login.toastMailSendFailed'))
       return
     }
     setIsCodeSent(true)
-    toast.success("メールの送信が完了しました。")
+    toast.success(t('login.toastMailSent'))
   }
 
   // 회원가입 인증코드 확인
   const handleVerifyCode = async () => {
     if (!signUpCode.trim()) {
-      toast.warning("認証コードを入力してください。")
+      toast.warning(t('login.toastEnterCode'))
       return
     }
     const { error } = await api.POST('/api/auth/email/verify', { body: { email: signUpEmail, code: signUpCode } })
     if (error) {
-      toast.error("認証に失敗しました。コードをご確認ください。")
+      toast.error(t('login.toastVerifyFailed'))
       return
     }
     setIsVerified(true)
-    toast.success("認証が完了しました。")
+    toast.success(t('login.toastVerifySuccess'))
   }
 
   // 회원가입 제출 (완료 시 모달 닫기 및 메인 폼에 정보 채우기)
   const handleSignUpSubmit = async () => {
     if (!signUpEmail.trim() || !signUpPw.trim() || !signUpPwConfirm.trim()) {
-      toast.warning("すべての情報を入力してください。")
+      toast.warning(t('login.toastEnterAll'))
       return
     }
     if (!isVerified) {
-      toast.warning("E-mail認証を完了してください。")
+      toast.warning(t('login.toastCompleteEmailVerify'))
       return
     }
     if (signUpPw !== signUpPwConfirm) {
-      toast.error("パスワードが一致しません。")
+      toast.error(t('login.toastPasswordMismatch'))
       return
     }
 
@@ -125,11 +127,11 @@ const LoginPage = () => {
     })
 
     if (error) {
-      toast.error("会員登録に失敗しました。")
+      toast.error(t('login.toastSignupFailed'))
       return
     }
 
-    toast.success("会員登録が完了しました。ログインしてください。")
+    toast.success(t('login.toastSignupSuccess'))
 
     // 사용자가 바로 로그인할 수 있도록 메인 폼에 이메일/비밀번호 자동 입력
     setEmail(signUpEmail)
@@ -146,47 +148,47 @@ const LoginPage = () => {
   // 비밀번호 재설정 이메일 발송
   const handleFindSendEmail = async () => {
     if (!findEmail.trim()) {
-      toast.warning("E-mailを入力してください。")
+      toast.warning(t('login.toastEnterEmail'))
       return
     }
     const { error } = await api.POST('/api/auth/password/send', {
       body: { email: findEmail } as any
     })
     if (error) {
-      toast.error("メール送信に失敗しました。")
+      toast.error(t('login.toastMailSendFailed'))
       return
     }
     setIsFindCodeSent(true)
-    toast.success("メールの送信が完了しました。")
+    toast.success(t('login.toastMailSent'))
   }
 
   // 비밀번호 재설정 코드 확인
   const handleFindVerifyCode = async () => {
     if (!findCode.trim()) {
-      toast.warning("認証コードを入力してください。")
+      toast.warning(t('login.toastEnterCode'))
       return
     }
     const { error } = await api.POST('/api/auth/password/verify', { body: { email: findEmail, code: findCode } })
     if (error) {
-      toast.error("認証に失敗しました。コードをご確認ください。")
+      toast.error(t('login.toastVerifyFailed'))
       return
     }
     setIsFindVerified(true)
-    toast.success("認証が完了しました。")
+    toast.success(t('login.toastVerifySuccess'))
   }
 
   // 비밀번호 재설정 제출 (완료 시 모달 닫기 및 메인 폼에 정보 채우기)
   const handleResetPasswordSubmit = async () => {
     if (!findEmail.trim() || !newPw.trim() || !newPwConfirm.trim()) {
-      toast.warning("すべての情報を入力してください。")
+      toast.warning(t('login.toastEnterAll'))
       return
     }
     if (!isFindVerified) {
-      toast.warning("E-mail認証を完了してください。")
+      toast.warning(t('login.toastCompleteEmailVerify'))
       return
     }
     if (newPw !== newPwConfirm) {
-      toast.error("パスワードが一致しません。")
+      toast.error(t('login.toastPasswordMismatch'))
       return
     }
 
@@ -195,11 +197,11 @@ const LoginPage = () => {
     })
 
     if (error) {
-      toast.error("パスワードの変更に失敗しました。")
+      toast.error(t('login.toastResetFailed'))
       return
     }
 
-    toast.success("パスワードが変更されました。新しいパスワードでログインしてください。")
+    toast.success(t('login.toastResetSuccess'))
 
     // 사용자가 바로 로그인할 수 있도록 메인 폼에 이메일/비밀번호 자동 입력
     setEmail(findEmail)
@@ -219,20 +221,20 @@ const LoginPage = () => {
 
           {/* 왼쪽: 로그인 폼 영역 */}
           <div className="flex-1 flex flex-col justify-center p-8">
-            <h2 className="text-2xl font-bold text-gray-800 text-center mb-8 tracking-wider">LOGIN</h2>
+            <h2 className="text-2xl font-bold text-gray-800 text-center mb-8 tracking-wider">{t('login.loginTitle')}</h2>
 
             <div className="flex flex-col gap-4 mb-6" onKeyDown={handleKeyDown}>
               <Input
                   label="E-mail"
                   type="email"
-                  placeholder="メールアドレスを入力してください"
+                  placeholder={t('login.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
               />
               <Input
-                  label="パスワード"
+                  label={t('login.password')}
                   type="password"
-                  placeholder="パスワードを入力してください"
+                  placeholder={t('login.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
               />
@@ -240,23 +242,23 @@ const LoginPage = () => {
 
             <div className="flex justify-between items-center text-xs text-gray-500 font-medium mb-6">
               <button className="hover:text-emerald-600 hover:underline transition" onClick={() => setSignUpOpen(true)}>
-                新規会員登録
+                {t('login.signup')}
               </button>
               <button className="hover:text-emerald-600 hover:underline transition" onClick={() => setFindOpen(true)}>
-                パスワード再設定
+                {t('login.resetPassword')}
               </button>
             </div>
 
-            <Button onClick={handleLogin}>ログイン</Button>
+            <Button onClick={handleLogin}>{t('login.loginButton')}</Button>
           </div>
 
           {/* 오른쪽: 브랜드 및 소셜 로그인 영역 */}
           <div className="w-full md:w-[320px] bg-emerald-50/80 flex flex-col items-center p-8 border-t md:border-t-0 md:border-l border-emerald-100/50">
             <div className="flex flex-col items-center mb-6 mt-2">
               <img src={hasiImg} alt="Hasi Brand Badge" className="w-[95px] h-auto mb-4 drop-shadow-md rounded-full" />
-              <h3 className="text-xl font-bold text-gray-950 mb-1.5 tracking-wide">Hasi Brand</h3>
+              <h3 className="text-xl font-bold text-gray-950 mb-1.5 tracking-wide">{t('login.brandName')}</h3>
               <p className="text-xs text-gray-600 text-center leading-relaxed break-keep">
-                チームプロジェクトで進行中の<br />Hasiブランドです。
+                {t('login.brandDesc1')}<br />{t('login.brandDesc2')}
               </p>
             </div>
 
@@ -320,14 +322,14 @@ const LoginPage = () => {
         {/* ── 3. 모달 영역 ── */}
 
         {/* 회원가입 모달 */}
-        <Modal isOpen={signUpOpen} onClose={() => setSignUpOpen(false)} title="新規会員登録">
+        <Modal isOpen={signUpOpen} onClose={() => setSignUpOpen(false)} title={t('login.signup')}>
           <div className="flex flex-col gap-4">
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Input
                     label="E-mail"
                     type="email"
-                    placeholder="メールアドレスを入力"
+                    placeholder={t('login.emailPlaceholderShort')}
                     value={signUpEmail}
                     onChange={(e) => setSignUpEmail(e.target.value)}
                     disabled={isVerified}
@@ -335,7 +337,7 @@ const LoginPage = () => {
               </div>
               <div className="mb-[2px]">
                 <Button onClick={handleSendEmail} disabled={isVerified} variant={isCodeSent ? "ghost" : "primary"}>
-                  {isCodeSent ? "再送信" : "メール送信"}
+                  {isCodeSent ? t('login.resend') : t('login.sendMail')}
                 </Button>
               </div>
             </div>
@@ -343,9 +345,9 @@ const LoginPage = () => {
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Input
-                    label="認証コード"
+                    label={t('login.codeLabel')}
                     type="text"
-                    placeholder="認証コードを入力"
+                    placeholder={t('login.codePlaceholder')}
                     value={signUpCode}
                     onChange={(e) => setSignUpCode(e.target.value)}
                     disabled={isVerified}
@@ -353,37 +355,37 @@ const LoginPage = () => {
               </div>
               <div className="mb-[2px]">
                 <Button onClick={handleVerifyCode} disabled={isVerified}>
-                  {isVerified ? "認証完了" : "認証確認"}
+                  {isVerified ? t('login.verified') : t('login.verify')}
                 </Button>
               </div>
             </div>
 
             <Input
-                label="ニックネーム"
+                label={t('login.nickname')}
                 type="text"
-                placeholder="ニックネームを入力"
+                placeholder={t('login.nicknamePlaceholder')}
                 value={signUpNickname}
                 onChange={(e) => setSignUpNickname(e.target.value)}
             />
 
             <Input
-                label="パスワード"
+                label={t('login.password')}
                 type="password"
-                placeholder="パスワードを入力"
+                placeholder={t('login.passwordPlaceholderShort')}
                 value={signUpPw}
                 onChange={(e) => setSignUpPw(e.target.value)}
             />
             <Input
-                label="パスワード再記入"
+                label={t('login.passwordConfirm')}
                 type="password"
-                placeholder="パスワードを再入力"
+                placeholder={t('login.passwordConfirmPlaceholder')}
                 value={signUpPwConfirm}
                 onChange={(e) => setSignUpPwConfirm(e.target.value)}
             />
 
             <div className="flex gap-2 justify-end mt-4">
-              <Button variant="ghost" onClick={() => setSignUpOpen(false)}>キャンセル</Button>
-              <Button onClick={handleSignUpSubmit}>登録する</Button>
+              <Button variant="ghost" onClick={() => setSignUpOpen(false)}>{t('common.cancel')}</Button>
+              <Button onClick={handleSignUpSubmit}>{t('login.register')}</Button>
             </div>
           </div>
         </Modal>
@@ -393,14 +395,14 @@ const LoginPage = () => {
           setFindOpen(false);
           setFindEmail(''); setFindCode(''); setNewPw(''); setNewPwConfirm('');
           setIsFindCodeSent(false); setIsFindVerified(false);
-        }} title="パスワード再設定">
+        }} title={t('login.resetPassword')}>
           <div className="flex flex-col gap-4">
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Input
                     label="E-mail"
                     type="email"
-                    placeholder="登録したE-mailを入力"
+                    placeholder={t('login.emailPlaceholderRegistered')}
                     value={findEmail}
                     onChange={(e) => setFindEmail(e.target.value)}
                     disabled={isFindVerified}
@@ -408,7 +410,7 @@ const LoginPage = () => {
               </div>
               <div className="mb-[2px]">
                 <Button onClick={handleFindSendEmail} disabled={isFindVerified} variant={isFindCodeSent ? "ghost" : "primary"}>
-                  {isFindCodeSent ? "再送信" : "メール送信"}
+                  {isFindCodeSent ? t('login.resend') : t('login.sendMail')}
                 </Button>
               </div>
             </div>
@@ -416,9 +418,9 @@ const LoginPage = () => {
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Input
-                    label="認証コード"
+                    label={t('login.codeLabel')}
                     type="text"
-                    placeholder="認証コードを入力"
+                    placeholder={t('login.codePlaceholder')}
                     value={findCode}
                     onChange={(e) => setFindCode(e.target.value)}
                     disabled={isFindVerified}
@@ -426,29 +428,29 @@ const LoginPage = () => {
               </div>
               <div className="mb-[2px]">
                 <Button onClick={handleFindVerifyCode} disabled={isFindVerified}>
-                  {isFindVerified ? "認証完了" : "認証確認"}
+                  {isFindVerified ? t('login.verified') : t('login.verify')}
                 </Button>
               </div>
             </div>
 
             <Input
-                label="新しいパスワード"
+                label={t('login.newPassword')}
                 type="password"
-                placeholder="新しいパスワードを入力"
+                placeholder={t('login.newPasswordPlaceholder')}
                 value={newPw}
                 onChange={(e) => setNewPw(e.target.value)}
             />
             <Input
-                label="新しいパスワード(確認)"
+                label={t('login.newPasswordConfirm')}
                 type="password"
-                placeholder="新しいパスワードを再入力"
+                placeholder={t('login.newPasswordConfirmPlaceholder')}
                 value={newPwConfirm}
                 onChange={(e) => setNewPwConfirm(e.target.value)}
             />
 
             <div className="flex gap-2 justify-end mt-4">
-              <Button variant="ghost" onClick={() => setFindOpen(false)}>キャンセル</Button>
-              <Button onClick={handleResetPasswordSubmit}>変更する</Button>
+              <Button variant="ghost" onClick={() => setFindOpen(false)}>{t('common.cancel')}</Button>
+              <Button onClick={handleResetPasswordSubmit}>{t('login.change')}</Button>
             </div>
           </div>
         </Modal>

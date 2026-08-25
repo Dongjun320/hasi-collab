@@ -1,4 +1,5 @@
 import { X, Check, XCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useUiStore } from "../store/uiStore";
 import { Tooltip } from "./Tooltip";
 import { useEffect, useState } from "react";
@@ -10,6 +11,7 @@ import { useNotification } from "../hooks/useNotification";
 
 export function NotificationSidebar() {
     const { activeRightPanel, closeRightPanel } = useUiStore();
+    const { t } = useTranslation();
     const { notifications, addNotifications, removeNotification } = useNotificationStore();
     const [busyId, setBusyId] = useState<string | null>(null);
     const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
@@ -29,7 +31,7 @@ export function NotificationSidebar() {
                 addNotifications(pending.map((v) => ({
                     id: `invite-${v.invitationId}`,   // 소스별 네임스페이스 (친구요청과 id 충돌 방지)
                     type: 'invite' as const,
-                    text: `${v.inviterNickname}님이 ${v.workspaceName}에 초대했습니다`,
+                    text: t('notification.inviteWorkspace', { actor: v.inviterNickname, workspace: v.workspaceName }),
                     time: v.createdAt ? new Date(v.createdAt).toLocaleDateString() : '',
                     unread: true,
                     invitationId: v.invitationId,
@@ -51,7 +53,7 @@ export function NotificationSidebar() {
                         .map((r) => ({
                             id: `friend-${r.id}`,
                             type: 'friend' as const,
-                            text: `${r.name}님이 친구 요청을 보냈습니다`,
+                            text: t('notification.friendRequest', { actor: r.name }),
                             time: '',
                             unread: true,
                             requestId: r.id!,   // 요청(관계) id — 수락/거절에 사용
@@ -114,9 +116,9 @@ export function NotificationSidebar() {
             {/* 헤더 */}
             <div className="h-14 px-4 flex items-center justify-between border-b border-[#e8f8ed] flex-shrink-0">
                 <h2 className="font-bold text-[#2C3E50] text-sm">
-                    알림 {unreadCount > 0 && <span className="text-[#5CC87A]">· {unreadCount}</span>}
+                    {t('notification.title')} {unreadCount > 0 && <span className="text-[#5CC87A]">· {unreadCount}</span>}
                 </h2>
-                <Tooltip label="알림 닫기" side="bottom" align="end">
+                <Tooltip label={t('notification.close')} side="bottom" align="end">
                     <button
                         onClick={closeRightPanel}
                         className="p-1 hover:bg-[#f0f9f4] rounded-md transition-all"
@@ -130,7 +132,7 @@ export function NotificationSidebar() {
             {/* 알림 목록 */}
             <div className="flex-1 overflow-y-auto p-2">
                 {notifications.length === 0 && (
-                    <p className="text-xs text-gray-400 text-center mt-6">알림이 없습니다</p>
+                    <p className="text-xs text-gray-400 text-center mt-6">{t('notification.empty')}</p>
                 )}
                 {notifications.map((n) => (
                     <div key={n.id} className={`rounded-lg transition-all ${n.unread ? "bg-[#f0f9f4]" : ""}`}>
@@ -155,14 +157,14 @@ export function NotificationSidebar() {
                                     disabled={busyId === n.id}
                                     className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[11px] font-semibold bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 text-white rounded-md transition-all"
                                 >
-                                    <Check size={12} /> 수락
+                                    <Check size={12} /> {t('notification.accept')}
                                 </button>
                                 <button
                                     onClick={() => n.type === 'invite' ? respondInvite(n, 'DECLINED') : respondFriend(n, false)}
                                     disabled={busyId === n.id}
                                     className="flex-1 flex items-center justify-center gap-1 py-1.5 text-[11px] font-semibold bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-600 rounded-md transition-all"
                                 >
-                                    <XCircle size={12} /> 거절
+                                    <XCircle size={12} /> {t('notification.reject')}
                                 </button>
                             </div>
                         )}
@@ -177,7 +179,7 @@ export function NotificationSidebar() {
                         onClick={readAllNotifications}
                         className="text-xs text-[#5CC87A] font-medium hover:underline"
                     >
-                        모두 읽음 처리
+                        {t('notification.readAll')}
                     </button>
                 </div>
             )}

@@ -1,5 +1,7 @@
 import { useParams } from "react-router";
 import { useState, useEffect, useRef, Fragment } from "react";
+import { useTranslation } from "react-i18next";
+import i18n, { tError } from "../i18n";
 import { Hash, Users, X } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { useChannelMessage } from "../hooks/useChannelMessage";
@@ -20,7 +22,6 @@ const AVATAR_COLORS = [
 const colorOf = (uid: number) => AVATAR_COLORS[uid % AVATAR_COLORS.length];
 
 // 날짜 구분선용 — 같은 날인지 비교할 키(연-월-일)와 사람이 읽는 라벨
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const dayKeyOf = (iso: string) => {
   const d = new Date(iso);
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -29,12 +30,14 @@ const dateLabelOf = (iso: string) => {
   const d = new Date(iso);
   const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diffDays = Math.round((startOf(new Date()) - startOf(d)) / 86_400_000);
-  if (diffDays === 0) return "오늘";
-  if (diffDays === 1) return "어제";
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`;
+  if (diffDays === 0) return i18n.t("channel.today");
+  if (diffDays === 1) return i18n.t("channel.yesterday");
+  const weekdays = i18n.t("home.weekdays", { returnObjects: true }) as string[];
+  return i18n.t("channel.dateFull", { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate(), wd: weekdays[d.getDay()] });
 };
 
 export function ChannelsPage() {
+  const { t } = useTranslation();
   const { channelId: channelIdParam } = useParams();
   const channelId = Number(channelIdParam);
   const [isMemberListOpen, setIsMemberListOpen] = useState(false);
@@ -78,7 +81,7 @@ export function ChannelsPage() {
   useEffect(() => { loadMembers(); }, [currentWorkspace?.id]);
 
   const nicknameOf = (uid: number) =>
-      members.find((m) => m.userId === uid)?.nickname ?? `사용자 ${uid}`;
+      members.find((m) => m.userId === uid)?.nickname ?? t("channel.userFallback", { uid });
 
 
   const getSortedMembers = () => {
@@ -92,7 +95,7 @@ export function ChannelsPage() {
 
   // 역할별 보기용 그룹 (owner → admin → member 순)
   const ROLE_LABEL: Record<string, string> = {
-    OWNER: "소유자", ADMIN: "관리자", MEMBER: "멤버",
+    OWNER: t("channel.roleOwner"), ADMIN: t("channel.roleAdmin"), MEMBER: t("channel.roleMember"),
   };
   const ROLE_ORDER = ["OWNER", "ADMIN", "MEMBER"];
 
@@ -119,9 +122,9 @@ export function ChannelsPage() {
       params: { path: { workspaceId: currentWorkspace.id, userId: m.userId } },
       body: { role: newRole },
     });
-    if (error) { toast.error((error as any)?.error?.message ?? "역할 변경에 실패했습니다"); return; }
+    if (error) { toast.error(tError((error as any)?.error?.code, t("channel.toastRoleChangeFailed"))); return; }
     setMembers(members.map((x) => x.userId === m.userId ? { ...x, role: newRole } : x));
-    toast.success(newRole === "ADMIN" ? `${m.nickname}님을 관리자로 지정했습니다` : `${m.nickname}님의 관리자를 해제했습니다`);
+    toast.success(newRole === "ADMIN" ? t("channel.toastPromoted", { name: m.nickname }) : t("channel.toastDemoted", { name: m.nickname }));
   };
 
   const kickMember = async (m: WorkspaceMember) => {
@@ -129,9 +132,9 @@ export function ChannelsPage() {
     const { error } = await api.DELETE('/api/workspaces/{workspaceId}/members/{userId}', {
       params: { path: { workspaceId: currentWorkspace.id, userId: m.userId } },
     });
-    if (error) { toast.error((error as any)?.error?.message ?? "내보내기에 실패했습니다"); return; }
+    if (error) { toast.error(tError((error as any)?.error?.code, t("channel.toastKickFailed"))); return; }
     setMembers(members.filter((x) => x.userId !== m.userId));
-    toast.success(`${m.nickname}님을 내보냈습니다`);
+    toast.success(t("channel.toastKicked", { name: m.nickname }));
     setKickTarget(null);
   };
 
@@ -145,14 +148,14 @@ export function ChannelsPage() {
                   onClick={() => changeMemberRole(member)}
                   className="px-2 py-1 text-[11px] rounded-md bg-[#f0f9f4] text-[#2E8B4F] hover:bg-[#d4f4dd] transition-all"
               >
-                {member.role === "ADMIN" ? "관리자 해제" : "관리자 지정"}
+                {member.role === "ADMIN" ? t("channel.demoteAdmin") : t("channel.promoteAdmin")}
               </button>
           )}
           <button
               onClick={() => setKickTarget(member)}
               className="px-2 py-1 text-[11px] rounded-md text-red-500 hover:bg-red-50 transition-all"
           >
-            내보내기
+            {t("channel.kick")}
           </button>
         </div>
     );
@@ -197,8 +200,8 @@ export function ChannelsPage() {
           className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-all text-sm text-gray-600"
         >
           <Users size={16} />
-          <span>멤버 {totalCount}명</span>
-          <span className="text-green-500">• {onlineCount}명 온라인</span>
+          <span>{t("channel.memberCount", { count: totalCount })}</span>
+          <span className="text-green-500">• {t("channel.onlineCount", { count: onlineCount })}</span>
         </button>
       </div>
 
@@ -235,7 +238,7 @@ export function ChannelsPage() {
                     <span className="text-xs text-gray-400">{time}</span>
                   </div>
                   {msg.isDeleted
-                      ? <p className="text-gray-400 italic text-sm">삭제된 메시지입니다</p>
+                      ? <p className="text-gray-400 italic text-sm">{t("channel.deletedMessage")}</p>
                       : <p className="text-[#2C3E50]">{msg.content}</p>}
                 </div>
               </div>
@@ -266,7 +269,7 @@ export function ChannelsPage() {
                 handleSend();
               }
             }}
-            placeholder={`# ${channelName}에 메시지 보내기...`}
+            placeholder={t("channel.messagePlaceholder", { channel: channelName })}
             className="flex-1 px-4 py-3 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A] focus:ring-2 focus:ring-[#A8E6B8]/20 transition-all"
           />
           <button
@@ -285,8 +288,8 @@ export function ChannelsPage() {
           <div className="w-14 h-14 rounded-full bg-[#f0f9f4] flex items-center justify-center mb-4">
             <Hash size={26} className="text-[#5CC87A]" />
           </div>
-          <p className="text-[#2C3E50] font-bold mb-1">이 채널에 참여하지 않았습니다</p>
-          <p className="text-sm text-gray-400">채널에 참여하려면 초대를 받아야 합니다.</p>
+          <p className="text-[#2C3E50] font-bold mb-1">{t("channel.notMember")}</p>
+          <p className="text-sm text-gray-400">{t("channel.notMemberDesc")}</p>
         </div>
       )}
 
@@ -304,7 +307,7 @@ export function ChannelsPage() {
             {/* 헤더 */}
             <div className="p-4 border-b border-[#d4f4dd]">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-[#2C3E50]">멤버</h3>
+                <h3 className="font-bold text-[#2C3E50]">{t("channel.members")}</h3>
                 <button
                   onClick={() => setIsMemberListOpen(false)}
                   className="p-1 hover:bg-[#f0f9f4] rounded transition-all"
@@ -323,7 +326,7 @@ export function ChannelsPage() {
                       : "bg-[#f0f9f4] text-[#5CC87A] hover:bg-[#d4f4dd]"
                   }`}
                 >
-                  전체
+                  {t("channel.sortAll")}
                 </button>
                 <button
                   onClick={() => setMemberSortType("role")}
@@ -333,7 +336,7 @@ export function ChannelsPage() {
                       : "bg-[#f0f9f4] text-[#5CC87A] hover:bg-[#d4f4dd]"
                   }`}
                 >
-                  역할별
+                  {t("channel.sortRole")}
                 </button>
                 <button
                   onClick={() => setMemberSortType("online")}
@@ -343,7 +346,7 @@ export function ChannelsPage() {
                       : "bg-[#f0f9f4] text-[#5CC87A] hover:bg-[#d4f4dd]"
                   }`}
                 >
-                  온라인
+                  {t("channel.sortOnline")}
                 </button>
               </div>
             </div>
@@ -351,7 +354,7 @@ export function ChannelsPage() {
             {/* 멤버 리스트 */}
             <div className="flex-1 overflow-y-auto p-4">
               {members.length === 0 && (
-                  <p className="text-xs text-gray-400 text-center mt-6">멤버가 없습니다</p>
+                  <p className="text-xs text-gray-400 text-center mt-6">{t("channel.noMembers")}</p>
               )}
 
               {memberSortType === "role" && groupedMembers ? (
@@ -376,7 +379,7 @@ export function ChannelsPage() {
                                   <div className="flex-1">
                                     <p className="text-sm font-medium text-[#2C3E50]">{member.nickname}</p>
                                     <p className="text-xs text-gray-500">
-                                      {isOnline(member.userId) ? "온라인" : "오프라인"}
+                                      {isOnline(member.userId) ? t("channel.online") : t("channel.offline")}
                                     </p>
                                   </div>
                                   {renderMemberActions(member)}
@@ -402,7 +405,7 @@ export function ChannelsPage() {
                           <div className="flex-1">
                             <p className="text-sm font-medium text-[#2C3E50]">{member.nickname}</p>
                             <p className="text-xs text-gray-500">
-                              {ROLE_LABEL[member.role] ?? member.role} • {isOnline(member.userId) ? "온라인" : "오프라인"}
+                              {ROLE_LABEL[member.role] ?? member.role} • {isOnline(member.userId) ? t("channel.online") : t("channel.offline")}
                             </p>
                           </div>
                           {renderMemberActions(member)}
@@ -419,13 +422,13 @@ export function ChannelsPage() {
       {kickTarget && (
           <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={() => setKickTarget(null)}>
             <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h4 className="font-bold text-[#2C3E50] mb-2">멤버 내보내기</h4>
+              <h4 className="font-bold text-[#2C3E50] mb-2">{t("channel.kickTitle")}</h4>
               <p className="text-sm text-gray-500 mb-5">
-                <span className="font-semibold text-[#2C3E50]">{kickTarget.nickname}</span>님을 이 워크스페이스에서 내보낼까요?
+                {t("channel.kickConfirm", { name: kickTarget.nickname })}
               </p>
               <div className="flex justify-end gap-2">
-                <button onClick={() => setKickTarget(null)} className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">취소</button>
-                <button onClick={() => kickMember(kickTarget)} className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all">내보내기</button>
+                <button onClick={() => setKickTarget(null)} className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">{t("common.cancel")}</button>
+                <button onClick={() => kickMember(kickTarget)} className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all">{t("channel.kick")}</button>
               </div>
             </div>
           </div>

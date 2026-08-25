@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { BigModal } from "./BigModal";
 import { useUiStore } from "../store/uiStore";
 import { api } from "../api/client";
@@ -12,6 +13,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export function ProfileModal() {
     const { activeModal, closeModal } = useUiStore();
+    const { t } = useTranslation();
     const open = activeModal === "profile";
 
     const [me, setMe] = useState<any>(null);
@@ -40,8 +42,8 @@ export function ProfileModal() {
         const file = e.target.files?.[0];
         e.target.value = "";   // 같은 파일 재선택 가능하도록 초기화
         if (!file) return;
-        if (!file.type.startsWith("image/")) { toast.error("이미지 파일만 업로드할 수 있습니다"); return; }
-        if (file.size > 5 * 1024 * 1024) { toast.error("5MB 이하 이미지만 업로드할 수 있습니다"); return; }
+        if (!file.type.startsWith("image/")) { toast.error(t("profile.toastImageOnly")); return; }
+        if (file.size > 5 * 1024 * 1024) { toast.error(t("profile.toastMaxSize")); return; }
 
         setAvatarBusy(true);
         try {
@@ -56,10 +58,10 @@ export function ProfileModal() {
             if (!res.ok) throw new Error(String(res.status));
             const url = (await res.text()).trim();
             setMe((p: any) => ({ ...p, avatarUrl: url }));
-            toast.success("프로필 사진을 변경했습니다");
+            toast.success(t("profile.toastAvatarChanged"));
         } catch (err) {
             console.error("아바타 업로드 실패:", err);
-            toast.error("프로필 사진 변경에 실패했습니다");
+            toast.error(t("profile.toastAvatarChangeFailed"));
         } finally {
             setAvatarBusy(false);
         }
@@ -76,10 +78,10 @@ export function ProfileModal() {
             });
             if (!res.ok) throw new Error(String(res.status));
             setMe((p: any) => ({ ...p, avatarUrl: null }));
-            toast.success("프로필 사진을 삭제했습니다");
+            toast.success(t("profile.toastAvatarDeleted"));
         } catch (err) {
             console.error("아바타 삭제 실패:", err);
-            toast.error("프로필 사진 삭제에 실패했습니다");
+            toast.error(t("profile.toastAvatarDeleteFailed"));
         } finally {
             setAvatarBusy(false);
         }
@@ -92,7 +94,7 @@ export function ProfileModal() {
         // 저장 시점에 중복검사
         const { data, error: searchErr } = await api.GET("/api/users/search", { params: { query: { nickname: trimmed } } });
         if (!searchErr && data?.uid && data.uid !== myUid && data.nickname === trimmed) {
-            setNicknameError("이미 사용 중인 닉네임입니다");
+            setNicknameError(t("errors.USER_002"));
             return;   // 중복이면 저장 중단
         }
 
@@ -120,7 +122,7 @@ export function ProfileModal() {
     };
 
     return (
-        <BigModal open={open} onClose={closeModal} title="내 프로필">
+        <BigModal open={open} onClose={closeModal} title={t("profile.title")}>
             <div className="max-w-xl mx-auto">
                 {/* 고정: 프로필 보기 (스크롤해도 상단에 고정) */}
                 <div className="sticky top-0 bg-white z-10 px-6 pt-6 pb-4 border-b border-gray-100 relative">
@@ -132,7 +134,7 @@ export function ProfileModal() {
                             disabled={avatarBusy}
                             className="px-3 py-1.5 text-xs bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white rounded-lg transition-all"
                         >
-                            {avatarBusy ? "처리 중…" : "사진 변경"}
+                            {avatarBusy ? t("profile.processing") : t("profile.changePhoto")}
                         </button>
                         {me?.avatarUrl && (
                             <button
@@ -140,30 +142,30 @@ export function ProfileModal() {
                                 disabled={avatarBusy}
                                 className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-600 rounded-lg transition-all"
                             >
-                                삭제
+                                {t("common.delete")}
                             </button>
                         )}
                     </div>
                     <div className="flex items-center gap-5">
                         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-3xl font-bold flex-shrink-0 overflow-hidden">
                             {me?.avatarUrl
-                                ? <img src={me.avatarUrl} alt="프로필 사진" className="w-full h-full object-cover" />
-                                : (me?.nickname?.charAt(0) || "나")}
+                                ? <img src={me.avatarUrl} alt={t("profile.photoAlt")} className="w-full h-full object-cover" />
+                                : (me?.nickname?.charAt(0) || t("profile.meInitial"))}
                         </div>
                         <div className="min-w-0">
                             <h2 className="text-xl font-bold text-[#2C3E50]">{me?.nickname || "-"}</h2>
-                            <p className="text-sm text-gray-500 mt-0.5">{me?.statusMessage || "상태메시지 없음"}</p>
-                            <p className="text-xs text-gray-400 mt-1">{me?.department || "부서 미정"} · {me?.position || "직급 미정"}</p>
+                            <p className="text-sm text-gray-500 mt-0.5">{me?.statusMessage || t("profile.noStatus")}</p>
+                            <p className="text-xs text-gray-400 mt-1">{me?.department || t("profile.noDept")} · {me?.position || t("profile.noPosition")}</p>
                         </div>
                     </div>
 
                     <div className="space-y-2 mt-4">
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">이메일</span>
+                            <span className="text-gray-500">{t("profile.email")}</span>
                             <span className="text-[#2C3E50] font-medium">{me?.email ?? "-"}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">가입일</span>
+                            <span className="text-gray-500">{t("profile.joinDate")}</span>
                             <span className="text-[#2C3E50] font-medium">{me?.createdAt?.slice(0, 10) ?? "-"}</span>
                         </div>
                     </div>
@@ -173,41 +175,41 @@ export function ProfileModal() {
                 <div className="px-6 py-6 space-y-6">
                     {/* ── 프로필 설정 (편집) ── */}
                     <div className="space-y-4">
-                        <h3 className="font-bold text-[#2C3E50]">프로필 설정</h3>
+                        <h3 className="font-bold text-[#2C3E50]">{t("profile.settings")}</h3>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">닉네임</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">{t("profile.nickname")}</label>
                             <div className="flex gap-2">
                                 <input value={nickname} onChange={(e) => { setNickname(e.target.value); setNicknameError(""); }}
                                        className={`flex-1 px-3 py-2 border rounded-lg outline-none focus:border-[#5CC87A] ${nicknameError ? "border-red-400" : "border-gray-200"}`} />
                                 <button onClick={saveNickname} disabled={!!nicknameError}
-                                        className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white rounded-lg text-sm">저장</button>
+                                        className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white rounded-lg text-sm">{t("common.save")}</button>
                             </div>
                             {/* h-4 = 메시지 유무와 무관하게 항상 이 높이 → 아래 개체 안 밀림 */}
                             <p className="text-xs text-red-500 h-4 mt-1">{nicknameError}</p>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">상태메시지</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">{t("profile.statusMessage")}</label>
                             <div className="flex gap-2">
                                 <input value={statusMessage} onChange={(e) => setStatusMessage(e.target.value)} className="flex-1 px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]" />
-                                <button onClick={saveStatus} className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] text-white rounded-lg text-sm">저장</button>
+                                <button onClick={saveStatus} className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] text-white rounded-lg text-sm">{t("common.save")}</button>
                             </div>
                         </div>
 
                         <div className="space-y-2">
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">부서</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">{t("profile.dept")}</label>
                                     <input value={dept} onChange={(e) => setDept(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">직급</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">{t("profile.position")}</label>
                                     <input value={position} onChange={(e) => setPosition(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]" />
                                 </div>
                             </div>
                             <div className="flex justify-end">
-                                <button onClick={saveDeptPosition} className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] text-white rounded-lg text-sm">부서·직급 저장</button>
+                                <button onClick={saveDeptPosition} className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] text-white rounded-lg text-sm">{t("profile.saveDeptPosition")}</button>
                             </div>
                         </div>
                     </div>

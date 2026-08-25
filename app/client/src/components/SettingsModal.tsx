@@ -1,4 +1,6 @@
 import { useEffect, useState, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { setLanguage, tError, type Lang } from "../i18n";
 import { X } from "lucide-react";
 import { BigModal } from "./BigModal";
 import { useUiStore } from "../store/uiStore";
@@ -22,6 +24,7 @@ const providerLabel = (key?: string | null) =>
 
 export function SettingsModal() {
     const { activeModal, closeModal } = useUiStore();
+    const { t, i18n } = useTranslation();
     const open = activeModal === "settings";
 
     // ── ① 소셜 계정 연동 ──
@@ -87,14 +90,14 @@ export function SettingsModal() {
                 const { error } = await api.POST("/api/auth/social/link", { body: { code: e.data.linkCode } });
                 setSocialBusy(false);
                 if (error) {
-                    toast.error((error as any)?.error?.message ?? "연동에 실패했습니다");
+                    toast.error(tError((error as any)?.error?.code, t("settings.toastLinkFailed")));
                 } else {
                     setPickerOpen(false);
                     await loadSocial();
-                    toast.success("소셜 연동이 완료되었습니다");
+                    toast.success(t("settings.toastLinkSuccess"));
                 }
             } else if (e.data?.type === "social-link-error") {
-                toast.error("이미 다른 계정에 연동된 소셜입니다");
+                toast.error(t("settings.toastAlreadyLinked"));
             }
         };
         window.addEventListener("message", onMessage);
@@ -106,10 +109,10 @@ export function SettingsModal() {
         const { error } = await api.DELETE("/api/auth/social", {});
         setSocialBusy(false);
         if (error) {
-            toast.error((error as any)?.error?.message ?? "해제에 실패했습니다");
+            toast.error(tError((error as any)?.error?.code, t("settings.toastUnlinkFailed")));
         } else {
             setSocialProvider(null);
-            toast.info("연동을 해제했습니다");
+            toast.info(t("settings.toastUnlinked"));
         }
     };
 
@@ -122,7 +125,7 @@ export function SettingsModal() {
     const handleChangePassword = async () => {
         if (!currentPassword || !newPassword) return;
         if (newPassword !== confirmPassword) {
-            toast.error("새 비밀번호가 일치하지 않습니다");
+            toast.error(t("settings.toastPwMismatch"));
             return;
         }
         setPwBusy(true);
@@ -131,13 +134,13 @@ export function SettingsModal() {
         });
         setPwBusy(false);
         if (error) {
-            toast.error((error as any)?.error?.message ?? "비밀번호 변경에 실패했습니다");
+            toast.error(tError((error as any)?.error?.code, t("settings.toastPwChangeFailed")));
             return;
         }
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
-        toast.success("비밀번호가 변경되었습니다");
+        toast.success(t("settings.toastPwChanged"));
     };
 
     // ── ③ 알림 설정 (저장 API 없음 — 로컬 상태만) ──
@@ -148,13 +151,13 @@ export function SettingsModal() {
     const [withdrawPassword, setWithdrawPassword] = useState("");
     const [withdrawBusy, setWithdrawBusy] = useState(false);
     const handleWithdraw = async () => {
-        if (!withdrawPassword) { toast.error("현재 비밀번호를 입력하세요"); return; }
+        if (!withdrawPassword) { toast.error(t("settings.toastEnterCurrentPw")); return; }
         setWithdrawBusy(true);
         const { error } = await api.DELETE("/api/auth/withdraw", {
             body: { currentPassword: withdrawPassword },
         });
         setWithdrawBusy(false);
-        if (error) { toast.error((error as any)?.error?.message ?? "회원탈퇴에 실패했습니다"); return; }
+        if (error) { toast.error(tError((error as any)?.error?.code, t("settings.toastWithdrawFailed"))); return; }
         // 탈퇴 성공 → 로컬 세션 정리 후 로그인 화면으로
         setWithdrawOpen(false);
         setWithdrawPassword("");
@@ -166,11 +169,31 @@ export function SettingsModal() {
     };
 
     return (
-        <BigModal open={open} onClose={closeModal} title="설정">
+        <BigModal open={open} onClose={closeModal} title={t("settings.title")}>
             <div className="max-w-xl mx-auto px-6 py-6 space-y-8">
+                {/* ⓪ 언어 */}
+                <section className="space-y-3">
+                    <h3 className="font-bold text-[#2C3E50]">{t("settings.language")}</h3>
+                    <div className="flex gap-2">
+                        {(["ko", "ja"] as Lang[]).map((lng) => (
+                            <button
+                                key={lng}
+                                onClick={() => setLanguage(lng)}
+                                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                                    i18n.language === lng
+                                        ? "bg-[#5CC87A] text-white border-[#5CC87A]"
+                                        : "bg-white text-[#2C3E50] border-gray-200 hover:bg-gray-50"
+                                }`}
+                            >
+                                {lng === "ko" ? t("settings.korean") : t("settings.japanese")}
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
                 {/* ① 계정 연동 */}
                 <section className="space-y-3">
-                    <h3 className="font-bold text-[#2C3E50]">계정 연동</h3>
+                    <h3 className="font-bold text-[#2C3E50]">{t("settings.accountLink")}</h3>
                     {/* 연동 전/후 상태와 무관하게 박스 높이 고정 (h-20, 세로 중앙정렬) */}
                     <div className="border border-gray-100 rounded-xl px-4 h-20 flex items-center">
                         {socialProvider ? (
@@ -179,19 +202,19 @@ export function SettingsModal() {
                                     <span className={`w-10 h-10 rounded-full flex items-center justify-center ${PROVIDERS.find((p) => p.key === socialProvider)?.bg ?? "bg-gray-100"}`}>
                                         {PROVIDER_ICON[socialProvider!]}
                                     </span>
-                                    <span className="text-[#2C3E50] font-medium">{providerLabel(socialProvider)} 연동됨</span>
+                                    <span className="text-[#2C3E50] font-medium">{t("settings.connected", { provider: providerLabel(socialProvider) })}</span>
                                 </div>
                                 <button onClick={handleSocialUnlink} disabled={socialBusy}
                                         className="px-3 py-1.5 text-sm border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50 rounded-lg transition-all">
-                                    연동 해제
+                                    {t("settings.unlink")}
                                 </button>
                             </div>
                         ) : (
                             <div className="flex items-center justify-between w-full">
-                                <p className="text-sm text-gray-500">아직 연동된 소셜 계정이 없습니다</p>
+                                <p className="text-sm text-gray-500">{t("settings.noSocial")}</p>
                                 <button onClick={() => setPickerOpen(true)} disabled={socialBusy}
                                         className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:opacity-50 text-white text-sm rounded-lg transition-all">
-                                    소셜 연동하기
+                                    {t("settings.linkSocial")}
                                 </button>
                             </div>
                         )}
@@ -200,21 +223,21 @@ export function SettingsModal() {
 
                 {/* ② 비밀번호 변경 */}
                 <section className="space-y-3">
-                    <h3 className="font-bold text-[#2C3E50]">비밀번호 변경</h3>
+                    <h3 className="font-bold text-[#2C3E50]">{t("settings.changePassword")}</h3>
                     <div className="space-y-3">
                         <input type="password" autoComplete="new-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
-                               placeholder="현재 비밀번호"
+                               placeholder={t("settings.currentPassword")}
                                className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]" />
                         <input type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                               placeholder="새 비밀번호"
+                               placeholder={t("settings.newPassword")}
                                className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]" />
                         <input type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                               placeholder="새 비밀번호 확인"
+                               placeholder={t("settings.newPasswordConfirm")}
                                className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]" />
                         <div className="flex justify-end">
                             <button onClick={handleChangePassword} disabled={pwBusy || !currentPassword || !newPassword}
                                     className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm rounded-lg transition-all">
-                                변경
+                                {t("settings.changeBtn")}
                             </button>
                         </div>
                     </div>
@@ -222,12 +245,12 @@ export function SettingsModal() {
 
                 {/* ③ 알림 설정 (로컬만) */}
                 <section className="space-y-3">
-                    <h3 className="font-bold text-[#2C3E50]">알림 설정</h3>
+                    <h3 className="font-bold text-[#2C3E50]">{t("settings.notifications")}</h3>
                     <div className="space-y-3">
                         {([
-                            { key: "messages", title: "모든 메시지", desc: "새 메시지를 받으면 알림" },
-                            { key: "mentions", title: "멘션", desc: "나를 언급하면 알림" },
-                            { key: "replies", title: "답글", desc: "내 메시지에 답글이 달리면 알림" },
+                            { key: "messages", title: t("settings.notifMessages"), desc: t("settings.notifMessagesDesc") },
+                            { key: "mentions", title: t("settings.notifMentions"), desc: t("settings.notifMentionsDesc") },
+                            { key: "replies", title: t("settings.notifReplies"), desc: t("settings.notifRepliesDesc") },
                         ] as const).map((row) => (
                             <div key={row.key} className="flex items-center justify-between">
                                 <div>
@@ -249,7 +272,7 @@ export function SettingsModal() {
                 <section className="border-t border-gray-100 pt-6">
                     <button onClick={() => setWithdrawOpen(true)}
                             className="text-sm text-red-500 hover:text-red-600 hover:underline transition-all">
-                        회원탈퇴
+                        {t("settings.withdraw")}
                     </button>
                 </section>
             </div>
@@ -258,11 +281,11 @@ export function SettingsModal() {
             {pickerOpen && (
                 <div className="fixed inset-0 z-[110] bg-black/40 flex items-center justify-center p-4">
                     <div className="relative bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl">
-                        <button onClick={() => setPickerOpen(false)} title="닫기"
+                        <button onClick={() => setPickerOpen(false)} title={t("settings.close")}
                                 className="absolute top-3 right-3 p-1.5 hover:bg-gray-100 rounded-lg transition-all">
                             <X size={18} className="text-gray-400" />
                         </button>
-                        <h4 className="font-bold text-[#2C3E50] text-center mb-5">소셜 계정 연동</h4>
+                        <h4 className="font-bold text-[#2C3E50] text-center mb-5">{t("settings.socialLinkTitle")}</h4>
                         <div className="grid grid-cols-2 gap-3">
                             {PROVIDERS.map((p) => (
                                 <button key={p.key} onClick={() => handleSocialLink(p.key)} disabled={socialBusy}
@@ -284,21 +307,21 @@ export function SettingsModal() {
                      onClick={() => setWithdrawOpen(false)}>
                     <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl"
                          onClick={(e) => e.stopPropagation()}>
-                        <h4 className="font-bold text-[#2C3E50] mb-2">회원탈퇴</h4>
-                        <p className="text-sm text-gray-500 mb-3">정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+                        <h4 className="font-bold text-[#2C3E50] mb-2">{t("settings.withdraw")}</h4>
+                        <p className="text-sm text-gray-500 mb-3">{t("settings.withdrawConfirm")}</p>
                         <input type="password" autoComplete="current-password" value={withdrawPassword}
                                onChange={(e) => setWithdrawPassword(e.target.value)}
                                onKeyDown={(e) => { if (e.key === "Enter") handleWithdraw(); }}
-                               placeholder="현재 비밀번호 확인"
+                               placeholder={t("settings.currentPasswordConfirm")}
                                className="w-full mb-5 px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-red-400 text-sm" />
                         <div className="flex justify-end gap-2">
                             <button onClick={() => { setWithdrawOpen(false); setWithdrawPassword(""); }}
                                     className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">
-                                취소
+                                {t("common.cancel")}
                             </button>
                             <button onClick={handleWithdraw} disabled={withdrawBusy || !withdrawPassword}
                                     className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-lg transition-all">
-                                {withdrawBusy ? "처리 중…" : "탈퇴"}
+                                {withdrawBusy ? t("settings.processing") : t("settings.withdrawBtn")}
                             </button>
                         </div>
                     </div>
