@@ -3,23 +3,25 @@
 // enabled=off 이거나 위치 거부/에러 시 아무것도 안 그림.
 
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWeatherStore } from '../store/weatherStore'
 
-// WMO weather_code → 이모지 + 한글 설명
-const weatherInfo = (code: number): { icon: string; label: string } => {
-  if (code === 0) return { icon: '☀️', label: '快晴' }
-  if (code <= 2) return { icon: '🌤️', label: '晴れ' }
-  if (code === 3) return { icon: '☁️', label: '曇り' }
-  if (code <= 48) return { icon: '🌫️', label: '霧' }
-  if (code <= 57) return { icon: '🌦️', label: '霧雨' }
-  if (code <= 67) return { icon: '🌧️', label: '雨' }
-  if (code <= 77) return { icon: '🌨️', label: '雪' }
-  if (code <= 82) return { icon: '🌦️', label: 'にわか雨' }
-  if (code <= 86) return { icon: '🌨️', label: 'にわか雪' }
-  return { icon: '⛈️', label: '雷雨' }
+// WMO weather_code → 이모지 + 번역 키
+const weatherInfo = (code: number): { icon: string; key: string } => {
+  if (code === 0) return { icon: '☀️', key: 'clear' }
+  if (code <= 2) return { icon: '🌤️', key: 'mostlyClear' }
+  if (code === 3) return { icon: '☁️', key: 'cloudy' }
+  if (code <= 48) return { icon: '🌫️', key: 'fog' }
+  if (code <= 57) return { icon: '🌦️', key: 'drizzle' }
+  if (code <= 67) return { icon: '🌧️', key: 'rain' }
+  if (code <= 77) return { icon: '🌨️', key: 'snow' }
+  if (code <= 82) return { icon: '🌦️', key: 'rainShowers' }
+  if (code <= 86) return { icon: '🌨️', key: 'snowShowers' }
+  return { icon: '⛈️', key: 'thunder' }
 }
 
 export function WeatherWidget() {
+  const { t } = useTranslation()
   const enabled = useWeatherStore((s) => s.enabled)
   const data = useWeatherStore((s) => s.data)
   const status = useWeatherStore((s) => s.status)
@@ -33,10 +35,11 @@ export function WeatherWidget() {
   if (!enabled || status === 'denied' || status === 'error') return null
 
   if (!data) {
-    return <span className="no-drag text-[11px] text-white/40 select-none">天気…</span>
+    return <span className="no-drag text-[11px] text-white/40 select-none">{t('weather.loading')}</span>
   }
 
-  const { icon, label } = weatherInfo(data.code)
+  const { icon, key } = weatherInfo(data.code)
+  const label = t(`weather.${key}`)
   return (
     <div
       className="no-drag flex items-center gap-1.5 text-white/70 text-xs select-none"

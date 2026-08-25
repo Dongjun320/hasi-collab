@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 // import { api } from '.../api/client'
 import { SERVICE_BASE_URL } from '../api/urls'
 
@@ -12,6 +13,7 @@ interface Mail {
 }
 
 const MailPage = () => {
+    const { t } = useTranslation()
     const [mails, setMails] = useState<Mail[]>([])
     const [selectedMail, setSelectedMail] = useState<Mail | null>(null)
     const [loading, setLoading] = useState(false)
@@ -33,7 +35,7 @@ const MailPage = () => {
             const data = await res.json()
                 setMails(data)
         } catch (e) {
-            setError('メールの取得に失敗しました')
+            setError(t('mail.fetchFailed'))
         } finally {
             setLoading(false)
         }
@@ -42,12 +44,12 @@ const MailPage = () => {
         <div className="flex h-full bg-white">
             <div className="w-80 border-r border-gray-200 flex flex-col">
                 <div className="p-4 border-b border-gray-200">
-                    <h2 className="font-bold text-gray-800 text-lg">受信トレイ</h2>
-                    <p className="text-xs text-gray-500 mt-1">{mails.length}件</p>
+                    <h2 className="font-bold text-gray-800 text-lg">{t('mail.inbox')}</h2>
+                    <p className="text-xs text-gray-500 mt-1">{t('mail.count', { count: mails.length })}</p>
                 </div>
                 {loading && (
                     <div className="flex-1 flex item-center justify-center text-gray-400 text-sm">
-                        読み込み中...
+                        {t('mail.loading')}
                     </div>
                 )}
 
@@ -85,11 +87,11 @@ const MailPage = () => {
                 <div className="flex-1 overflow-y-auto p-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">{selectedMail.subject}</h2>
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm text-gray-500">差出人:</span>
+                        <span className="text-sm text-gray-500">{t('mail.from')}</span>
                         <span className="text-sm text-gray-700">{selectedMail.from}</span>
                     </div>
                     <div className="flex item-center gap-2 mb-6">
-                        <span className="text-sm text-gray-500">日時</span>
+                        <span className="text-sm text-gray-500">{t('mail.date')}</span>
                         <span className="text-sm text-gray-700">
                             {new Date(selectedMail.date).toLocaleString('ja-JP')}
                         </span>
@@ -104,7 +106,7 @@ const MailPage = () => {
                 <div className="flex-1 flex items-center justify-center text-gray-400">
                     <div className="text-center">
                         <p className="text-lg mb-2">📧</p>
-                        <p className="text-sm">メールを選択してください</p>
+                        <p className="text-sm">{t('mail.selectMail')}</p>
                     </div>
                 </div>
             )}

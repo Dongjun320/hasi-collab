@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, ChevronDown, Calendar as CalendarIcon, X, Settings, UserPlus, Trash2 } from "lucide-react";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { useAuthStore } from "../store/authStore";
@@ -6,11 +7,11 @@ import { useMemberStore } from "../store/memberStore";
 import { useBoardStore, boardBadgeOf, type Board, type Task, type TaskStatus, type TaskPriority } from "../store/boardStore";
 import Modal from "../components/Modal";
 
-const COLUMNS: { id: TaskStatus; title: string }[] = [
-  { id: "TODO", title: "할 일" },
-  { id: "IN_PROGRESS", title: "진행 중" },
-  { id: "REVIEW", title: "검토 중" },
-  { id: "DONE", title: "완료" },
+const COLUMNS: { id: TaskStatus; titleKey: string }[] = [
+  { id: "TODO", titleKey: "kanban.colTodo" },
+  { id: "IN_PROGRESS", titleKey: "kanban.colInProgress" },
+  { id: "REVIEW", titleKey: "kanban.colReview" },
+  { id: "DONE", titleKey: "kanban.colDone" },
 ];
 
 const PRIORITY_STYLE: Record<TaskPriority, string> = {
@@ -26,6 +27,7 @@ const AVATAR_COLORS = [
 const colorOf = (uid: number) => AVATAR_COLORS[uid % AVATAR_COLORS.length];
 
 export function KanbanPage() {
+  const { t } = useTranslation();
   const { currentWorkspace } = useWorkspaceStore();
   const myUid = useAuthStore((s) => s.user?.uid);
   const { members, fetchMembers } = useMemberStore();
@@ -77,7 +79,7 @@ export function KanbanPage() {
   };
 
   if (!currentWorkspace) {
-    return <div className="flex items-center justify-center h-full text-gray-400 text-sm">워크스페이스를 먼저 선택해주세요</div>;
+    return <div className="flex items-center justify-center h-full text-gray-400 text-sm">{t("ui.selectWorkspaceFirst")}</div>;
   }
 
   return (
@@ -89,12 +91,12 @@ export function KanbanPage() {
             onClick={() => setIsPickerOpen((v) => !v)}
             className="flex items-center gap-2 text-xl font-bold text-[#2C3E50] hover:text-[#5CC87A] transition-colors"
           >
-            {currentBoard?.name ?? (boards.length === 0 ? "보드 없음" : "보드 선택")}
+            {currentBoard?.name ?? (boards.length === 0 ? t("kanban.noBoard") : t("kanban.selectBoard"))}
             <ChevronDown size={18} className={`transition-transform ${isPickerOpen ? "rotate-180" : ""}`} />
           </button>
           {currentBoard && (
             <span className="ml-2 text-xs text-gray-400">
-              {myRole === "OWNER" ? `전체 ${boards.length}개 보드 조회 중` : `소속: ${currentBoard.name}`}
+              {myRole === "OWNER" ? t("kanban.allBoards", { count: boards.length }) : t("kanban.belongsTo", { name: currentBoard.name })}
             </span>
           )}
 
@@ -103,7 +105,7 @@ export function KanbanPage() {
               <div className="fixed inset-0 z-40" onClick={() => setIsPickerOpen(false)} />
               <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
                 {boards.length === 0 && (
-                  <p className="px-4 py-3 text-xs text-gray-400">접근 가능한 보드가 없습니다</p>
+                  <p className="px-4 py-3 text-xs text-gray-400">{t("kanban.noAccessibleBoards")}</p>
                 )}
                 {boards.map((b) => {
                   const badge = boardBadgeOf(b, myUid, myRole);
@@ -128,7 +130,7 @@ export function KanbanPage() {
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-[#5CC87A] hover:bg-[#f0f9f4] transition-colors border-t border-gray-100 mt-1"
                   >
                     <Plus size={14} />
-                    새 보드 만들기
+                    {t("kanban.createBoard")}
                   </button>
                 )}
               </div>
@@ -141,7 +143,7 @@ export function KanbanPage() {
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="p-2 text-gray-400 hover:text-[#5CC87A] hover:bg-[#f0f9f4] rounded-lg transition-all"
-              title="보드 설정"
+              title={t("kanban.boardSettings")}
             >
               <Settings size={18} />
             </button>
@@ -152,7 +154,7 @@ export function KanbanPage() {
               className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] text-white rounded-lg transition-all flex items-center gap-2"
             >
               <Plus size={18} />
-              <span>새 작업</span>
+              <span>{t("kanban.newTask")}</span>
             </button>
           )}
         </div>
@@ -169,7 +171,7 @@ export function KanbanPage() {
               return (
                 <div key={column.id} className="w-80 flex flex-col">
                   <div className="mb-4 flex items-center gap-2">
-                    <h2 className="font-bold text-[#2C3E50]">{column.title}</h2>
+                    <h2 className="font-bold text-[#2C3E50]">{t(column.titleKey)}</h2>
                     <span className="px-2 py-0.5 bg-[#f0f9f4] text-[#5CC87A] text-xs font-medium rounded-full">
                       {columnTasks.length}
                     </span>
@@ -231,7 +233,7 @@ export function KanbanPage() {
                                 className="text-xs border border-gray-200 rounded-md px-1.5 py-0.5 text-gray-600 focus:outline-none focus:border-[#5CC87A]"
                               >
                                 {COLUMNS.map((c) => (
-                                  <option key={c.id} value={c.id}>{c.title}</option>
+                                  <option key={c.id} value={c.id}>{t(c.titleKey)}</option>
                                 ))}
                               </select>
                             ) : null}
@@ -245,7 +247,7 @@ export function KanbanPage() {
                       className="w-full p-3 border-2 border-dashed border-gray-200 hover:border-[#5CC87A] hover:bg-[#f0f9f4] rounded-lg transition-all text-gray-400 hover:text-[#5CC87A] flex items-center justify-center gap-2"
                     >
                       <Plus size={16} />
-                      <span className="text-sm">작업 추가</span>
+                      <span className="text-sm">{t("kanban.addTask")}</span>
                     </button>
                   </div>
                 </div>
@@ -255,7 +257,7 @@ export function KanbanPage() {
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-          {boards.length === 0 ? "접근 가능한 보드가 없습니다" : "보드를 선택해주세요"}
+          {boards.length === 0 ? t("kanban.noAccessibleBoards") : t("kanban.selectBoardPlease")}
         </div>
       )}
 
@@ -331,6 +333,7 @@ function TaskFormModal({
   lockAssigneeTo?: number;
   onSubmit: (body: { title: string; content?: string; startDate?: string; dueDate?: string; assigneeId?: number; priority?: TaskPriority }) => void;
 }) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [content, setContent] = useState(initial?.content ?? "");
   const [startDate, setStartDate] = useState(initial?.startDate ?? "");
@@ -367,19 +370,19 @@ function TaskFormModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={initial ? "작업 수정" : "새 작업"}>
+    <Modal isOpen={isOpen} onClose={onClose} title={initial ? t("kanban.editTask") : t("kanban.newTask")}>
       <div className="flex flex-col gap-3">
         <input
           autoFocus
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="작업 제목"
+          placeholder={t("kanban.taskTitlePlaceholder")}
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]"
         />
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="상세 내용 (선택)"
+          placeholder={t("kanban.taskDescPlaceholder")}
           rows={3}
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:border-[#5CC87A]"
         />
@@ -404,10 +407,10 @@ function TaskFormModal({
           onChange={(e) => setPriority(e.target.value as TaskPriority | "")}
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]"
         >
-          <option value="">우선순위 없음</option>
-          <option value="HIGH">높음</option>
-          <option value="MEDIUM">보통</option>
-          <option value="LOW">낮음</option>
+          <option value="">{t("kanban.noPriority")}</option>
+          <option value="HIGH">{t("kanban.priorityHigh")}</option>
+          <option value="MEDIUM">{t("kanban.priorityMedium")}</option>
+          <option value="LOW">{t("kanban.priorityLow")}</option>
         </select>
         {lockAssigneeTo == null ? (
           <select
@@ -415,21 +418,21 @@ function TaskFormModal({
             onChange={(e) => setAssigneeId(e.target.value ? Number(e.target.value) : "")}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]"
           >
-            <option value="">담당자 없음</option>
+            <option value="">{t("kanban.noAssignee")}</option>
             {boardMembers.map((m) => (
               <option key={m.userId} value={m.userId}>{m.nickname}</option>
             ))}
           </select>
         ) : (
-          <p className="text-xs text-gray-400">담당자: 본인 (내 작업으로 등록됩니다)</p>
+          <p className="text-xs text-gray-400">{t("kanban.assigneeSelf")}</p>
         )}
 
         <div className="flex gap-2 justify-end mt-2">
           <button onClick={onClose} className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
-            취소
+            {t("common.cancel")}
           </button>
           <button onClick={handleSubmit} className="px-3 py-1.5 text-sm bg-[#5CC87A] text-white rounded-lg hover:bg-[#4ab869] transition-colors">
-            {initial ? "저장" : "생성"}
+            {initial ? t("common.save") : t("ui.create")}
           </button>
         </div>
       </div>
@@ -446,6 +449,7 @@ function NewBoardModal({
   managerCandidates: { userId: number; nickname: string; role: string }[];
   onSubmit: (body: { name: string; ownerId?: number }) => void;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [ownerId, setOwnerId] = useState<number | "">("");
 
@@ -461,13 +465,13 @@ function NewBoardModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="새 보드">
+    <Modal isOpen={isOpen} onClose={onClose} title={t("kanban.newBoard")}>
       <div className="flex flex-col gap-3">
         <input
           autoFocus
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="보드 이름"
+          placeholder={t("kanban.boardNamePlaceholder")}
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]"
         />
         <select
@@ -475,7 +479,7 @@ function NewBoardModal({
           onChange={(e) => setOwnerId(e.target.value ? Number(e.target.value) : "")}
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]"
         >
-          <option value="">팀장: 본인</option>
+          <option value="">{t("kanban.leaderSelf")}</option>
           {managerCandidates.map((m) => (
             <option key={m.userId} value={m.userId}>{m.nickname} ({m.role === "OWNER" ? "OWNER" : "ADMIN"})</option>
           ))}
@@ -483,10 +487,10 @@ function NewBoardModal({
 
         <div className="flex gap-2 justify-end mt-2">
           <button onClick={onClose} className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
-            취소
+            {t("common.cancel")}
           </button>
           <button onClick={handleSubmit} className="px-3 py-1.5 text-sm bg-[#5CC87A] text-white rounded-lg hover:bg-[#4ab869] transition-colors">
-            생성
+            {t("ui.create")}
           </button>
         </div>
       </div>
@@ -507,6 +511,7 @@ function BoardSettingsModal({
   onAddMember: (userId: number) => void;
   onRemoveMember: (userId: number) => void;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState(board.name);
   const [addTarget, setAddTarget] = useState<number | "">("");
 
@@ -533,10 +538,10 @@ function BoardSettingsModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="보드 설정">
+    <Modal isOpen={isOpen} onClose={onClose} title={t("kanban.boardSettings")}>
       <div className="flex flex-col gap-4">
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">보드 이름</label>
+          <label className="text-xs text-gray-400 mb-1 block">{t("kanban.boardNamePlaceholder")}</label>
           <div className="flex gap-2">
             <input
               value={name}
@@ -548,20 +553,20 @@ function BoardSettingsModal({
               disabled={!name.trim() || name.trim() === board.name}
               className="px-3 py-2 text-sm bg-[#5CC87A] text-white rounded-lg hover:bg-[#4ab869] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              변경
+              {t("settings.changeBtn")}
             </button>
           </div>
         </div>
 
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">부서원 ({boardMembers.length}명)</label>
+          <label className="text-xs text-gray-400 mb-1 block">{t("kanban.deptMembers", { count: boardMembers.length })}</label>
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {boardMembers.map((m) => (
               <div key={m.userId} className="flex items-center justify-between px-3 py-1.5 bg-[#f8fdf9] rounded-lg">
                 <span className="text-sm text-[#2C3E50]">
                   {m.nickname}
                   {m.userId === board.ownerId && (
-                    <span className="ml-1.5 text-[10px] text-[#5CC87A] font-medium">부서장</span>
+                    <span className="ml-1.5 text-[10px] text-[#5CC87A] font-medium">{t("kanban.deptLead")}</span>
                   )}
                 </span>
                 {m.userId !== board.ownerId && (
@@ -576,14 +581,14 @@ function BoardSettingsModal({
 
         {addableMembers.length > 0 && (
           <div>
-            <label className="text-xs text-gray-400 mb-1 block">부서원 추가</label>
+            <label className="text-xs text-gray-400 mb-1 block">{t("kanban.addDeptMember")}</label>
             <div className="flex gap-2">
               <select
                 value={addTarget}
                 onChange={(e) => setAddTarget(e.target.value ? Number(e.target.value) : "")}
                 className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]"
               >
-                <option value="">멤버 선택</option>
+                <option value="">{t("kanban.selectMember")}</option>
                 {addableMembers.map((m) => (
                   <option key={m.userId} value={m.userId}>{m.nickname}</option>
                 ))}
@@ -601,7 +606,7 @@ function BoardSettingsModal({
 
         <div className="flex justify-end mt-1">
           <button onClick={onClose} className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
-            닫기
+            {t("ui.close")}
           </button>
         </div>
       </div>
