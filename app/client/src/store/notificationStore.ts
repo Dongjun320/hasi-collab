@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { MessengerNotification } from "../api/stomp";
+import i18n from "../i18n";
 
 export type NotificationType = 'message' | 'mention' | 'invite' | 'friend' | 'system';
 
@@ -33,28 +34,29 @@ export function fromMessengerNotification(n: MessengerNotification): Notificatio
     const actor = text('inviterNickname')
         ?? text('senderNickname')
         ?? text('actorNickname')
-        ?? '알 수 없는 사용자';
+        ?? i18n.t('notification.unknownUser');
     const workspaceName = text('workspaceName');
     const channelName = text('channelName');
+    const workspace = workspaceName ?? i18n.t('notification.workspaceFallback');
 
     let message: string;
     switch (n.type) {
         case 'invite':
             message = channelName
-                ? `${actor}님이 ${workspaceName ?? '워크스페이스'}의 ${channelName} 채널에 초대했습니다`
-                : `${actor}님이 ${workspaceName ?? '워크스페이스'}에 초대했습니다`;
+                ? i18n.t('notification.inviteChannel', { actor, workspace, channel: channelName })
+                : i18n.t('notification.inviteWorkspace', { actor, workspace });
             break;
         case 'friend':
-            message = `${actor}님이 친구 요청을 보냈습니다`;
+            message = i18n.t('notification.friendRequest', { actor });
             break;
         case 'mention':
-            message = `${actor}님이 회원님을 언급했습니다`;
+            message = i18n.t('notification.mention', { actor });
             break;
         case 'message':
-            message = text('preview') ?? `${actor}님이 메시지를 보냈습니다`;
+            message = text('preview') ?? i18n.t('notification.message', { actor });
             break;
         default:
-            message = text('message') ?? '새 알림이 있습니다';
+            message = text('message') ?? i18n.t('notification.generic');
     }
 
     // subjectId는 알림 종류에 따라 초대 id 또는 친구관계 id입니다.
