@@ -23,6 +23,7 @@ export function FriendSidebar() {
     const [memoText, setMemoText] = useState("");
     const [showAddModal, setShowAddModal] = useState(false);
     const [addedIds, setAddedIds] = useState<number[]>([]);
+    const [sentRequestUids, setSentRequestUids] = useState<number[]>([]);  // 내가 보낸 친구요청(PENDING) 상대 uid
     const [loadError, setLoadError] = useState("");
     const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
@@ -105,6 +106,18 @@ export function FriendSidebar() {
             } catch (e) {
                 setLoadError('서버에 연결할 수 없습니다');
             }
+        })();
+    }, [activeRightPanel]);
+
+    // 내가 보낸 친구 요청(PENDING) 로드 — 새로고침해도 "요청됨" 유지
+    useEffect(() => {
+        if (activeRightPanel !== 'friend') return;
+        (async () => {
+            try {
+                const { data } = await api.GET('/api/friends/requests/sent');
+                const list = Array.isArray(data) ? data : [];
+                setSentRequestUids(list.map((r: any) => r.uid).filter((x: any) => x != null));
+            } catch { /* 무시 */ }
         })();
     }, [activeRightPanel]);
 
@@ -237,7 +250,7 @@ export function FriendSidebar() {
 
                     {/* 기존 모달들 생략 없이 100% 유지 */}
                     <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="친구 추가">
-                        <UserSearchBox actionLabel="친구 요청" doneLabel="요청됨" doneIds={[...friends.map((f) => f.uid), ...addedIds]} onSelect={handleAddFriend} />
+                        <UserSearchBox actionLabel="친구 요청" doneLabel="요청됨" doneIds={[...friends.map((f) => f.uid), ...addedIds, ...sentRequestUids]} onSelect={handleAddFriend} />
                     </Modal>
 
                     <Modal isOpen={memoTarget !== null} onClose={() => setMemoTarget(null)} title={`${memoFriend?.name ?? ""}님 메모`}>

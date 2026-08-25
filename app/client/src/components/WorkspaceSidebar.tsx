@@ -56,6 +56,7 @@ export function WorkspaceSidebar({
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [invitedList, setInvitedList] = useState<SearchedUser[]>([]);
+  const [sentInviteUids, setSentInviteUids] = useState<number[]>([]);  // 내가 보낸 워크스페이스 초대(PENDING) 대상 uid
   const railRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({dragging: false, startY: 0, startScroll: 0});
   const [collapsedIds, setCollapsedIds] = useState<number[]>([]);
@@ -238,6 +239,22 @@ export function WorkspaceSidebar({
           console.error('워크스페이스 생성 실패:', e);
       }
   };
+
+  // 내가 보낸 워크스페이스 초대(PENDING) 로드 — 새로고침해도 "대기 중" 유지
+  useEffect(() => {
+    if (!showInviteModal || !currentWorkspace) return;
+    const wsId = currentWorkspace.id;
+    (async () => {
+      try {
+        const { data } = await api.GET('/api/invitations/sent');
+        const uids = ((data?.data ?? []) as any[])
+            .filter((v) => v.channelId == null && v.status === 'PENDING' && v.workspaceId === wsId)
+            .map((v) => v.inviteeId)
+            .filter((x) => x != null);
+        setSentInviteUids(uids);
+      } catch { /* 무시 */ }
+    })();
+  }, [showInviteModal, currentWorkspace?.id]);
 
   const rootChannels = channels.filter((c) => !c.parentId);
   const childrenOf = (parentId: number) => channels.filter((c) => c.parentId === parentId);
@@ -655,7 +672,7 @@ export function WorkspaceSidebar({
               placeholder="초대할 사용자의 닉네임"
               actionLabel="초대"
               doneLabel="대기 중"
-              doneIds={invitedList.map((u) => u.uid)}
+              doneIds={[...invitedList.map((u) => u.uid), ...sentInviteUids]}
               onSelect={handleInvite}
           />
 
