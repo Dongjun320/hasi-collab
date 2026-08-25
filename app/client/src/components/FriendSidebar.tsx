@@ -84,13 +84,24 @@ export function FriendSidebar() {
                 }
                 setLoadError('');
                 const list = Array.isArray(data) ? data : data ? [data] : [];
-                setFriends(list.map((f: any) => ({
+                const mapped = list.map((f: any) => ({
                     id: f.id,
                     uid: f.uid,
                     name: f.name ?? '',
                     statusMessage: f.statusMessage ?? undefined,
                     unreadCount: 0,
-                })));
+                }));
+                setFriends(mapped);
+                // 저장된 메모 로드 (친구별) — 도착하는 대로 반영
+                mapped.forEach(async (f) => {
+                    try {
+                        const { data: memo } = await api.GET('/api/users/{targetId}/memo', {
+                            params: { path: { targetId: f.uid } },
+                        });
+                        const content = (memo as any)?.content;
+                        if (content) setMemo(f.id, content);
+                    } catch { /* 메모 없음 등은 무시 */ }
+                });
             } catch (e) {
                 setLoadError('서버에 연결할 수 없습니다');
             }
@@ -104,8 +115,27 @@ export function FriendSidebar() {
     const openMemoModal = (id: number, current?: string) => {
         setMemoTarget(id); setMemoText(current ?? ""); setOpenMenuId(null);
     };
-    const handleSaveMemo = () => {
-        if (memoTarget !== null) setMemo(memoTarget, memoText); setMemoTarget(null);
+    const handleSaveMemo = async () => {
+        if (memoTarget !== null) {
+            const friend = friends.find((f) => f.id === memoTarget);
+            const content = memoText.trim();
+            setMemo(memoTarget, content);   // 로컬 즉시 반영
+            if (friend) {
+                try {
+                    if (content) {
+                        await api.PUT('/api/users/{targetId}/memo', {
+                            params: { path: { targetId: friend.uid } },
+                            body: { content },
+                        });
+                    } else {
+                        await api.DELETE('/api/users/{targetId}/memo', {
+                            params: { path: { targetId: friend.uid } },
+                        });
+                    }
+                } catch (e) { console.error('메모 저장 실패:', e); }
+            }
+        }
+        setMemoTarget(null);
     };
     const handleAddFriend = async (u: SearchedUser) => {
         try {
