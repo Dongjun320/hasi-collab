@@ -84,6 +84,22 @@ paths:
         '200':
           description: "변경 성공"
 
+  /api/users/me/language:
+    patch:
+      summary: "선호 언어 변경"
+      tags:
+        - User
+      operationId: updateLanguage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../components/UserRequestBodies.yaml#/components/schemas/LanguageUpdateRequest"
+      responses:
+        '200':
+          description: "변경 성공"
+
   /api/users/{targetId}/memo:
     put:
       summary: "유저 메모 작성/수정"

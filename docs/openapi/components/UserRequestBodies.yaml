@@ -23,6 +23,17 @@ components:
           nullable: true
           description: "새 상태 메시지"
 
+    LanguageUpdateRequest:
+      type: object
+      required:
+        - language
+      description: "선호 언어 변경 요청"
+      properties:
+        language:
+          type: string
+          maxLength: 8
+          description: "선호 언어 코드 (ko | ja)"
+
     MemoRequest:
       type: object
       required:

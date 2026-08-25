@@ -56,6 +56,10 @@ components:
           type: string
           nullable: true
           description: "상태 메시지"
+        language:
+          type: string
+          nullable: true
+          description: "선호 언어 (ko | ja)"
         createdAt:
           type: string
           format: date-time

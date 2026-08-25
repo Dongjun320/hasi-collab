@@ -54,6 +54,7 @@ public class UserService {
                 .email(user.getEmail())
                 .avatarUrl(user.getAvatarUrl())
                 .statusMessage(user.getStatusMessage())
+                .language(user.getLanguage())
                 .createdAt(user.getCreatedAt().atOffset(ZoneOffset.UTC))
                 .updatedAt(user.getUpdatedAt().atOffset(ZoneOffset.UTC));
     }
@@ -79,6 +80,15 @@ public class UserService {
                 .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
 
         user.updateStatusMessage(statusMessage);
+    }
+
+    @Transactional
+    public void updateLanguage(String language) {
+        Long uid = getCurrentUserId();
+        User user = userRepository.findById(uid)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+
+        user.updateLanguage(language);
     }
 
     @Transactional
