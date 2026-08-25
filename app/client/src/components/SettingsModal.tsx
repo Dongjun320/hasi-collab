@@ -1,5 +1,4 @@
 import { useEffect, useState, ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { BigModal } from "./BigModal";
 import { useUiStore } from "../store/uiStore";
@@ -145,7 +144,6 @@ export function SettingsModal() {
     const [notifs, setNotifs] = useState({ messages: true, mentions: true, replies: false });
 
     // ── ④ 회원탈퇴 ──
-    const navigate = useNavigate();
     const [withdrawOpen, setWithdrawOpen] = useState(false);
     const [withdrawPassword, setWithdrawPassword] = useState("");
     const [withdrawBusy, setWithdrawBusy] = useState(false);
@@ -162,7 +160,9 @@ export function SettingsModal() {
         setWithdrawPassword("");
         disconnectStomp();
         useAuthStore.getState().clear();
-        navigate("/");
+        // 라우터 밖(App의 전역 모달)에서 렌더되므로 useNavigate 대신 하드 리로드.
+        // 탈퇴 시 모든 in-memory 스토어/STOMP를 완전히 정리하는 목적에도 부합.
+        window.location.href = "/";
     };
 
     return (
