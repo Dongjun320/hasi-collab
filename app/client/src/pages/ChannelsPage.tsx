@@ -1,5 +1,5 @@
 import { useParams } from "react-router";
-import { useState, useEffect, useRef, Fragment } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import i18n, { tError } from "../i18n";
 import { Hash, Users, X } from "lucide-react";
@@ -201,59 +201,62 @@ export function ChannelsPage() {
   const scrollToBottom = (smooth = true) =>        // ← 기본값 smooth
       messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
 
-  // 채널 전환 시 위치지정/구분선 상태 초기화
+  // 진입 전 '마지막 읽은 지점'을 미리 확보 (hook이 '전부 읽음'으로 커서를 올리기 전에 조회).
+  // ref로 들고 있다가 아래 useLayoutEffect에서 동기적으로 위치를 잡는다 → 진입 시 스크롤 이동이 화면에 안 보임.
+  const lastReadIdRef = useRef<number | null>(null);
+
+  // 채널 전환 시 상태 초기화 + 읽음 커서 선조회
   useEffect(() => {
     positionedRef.current = false;
     prevLenRef.current = 0;
+    lastReadIdRef.current = null;
     setHasScrolled(false);
     setFirstUnreadId(null);
     setIsAtBottom(true);
-  }, [channelId]);
-
-  // ── 진입 시 최초 위치지정: 마지막 읽은 지점(첫 미읽음 메시지)으로 이동 + 구분선 스냅샷 ──
-  useEffect(() => {
-    if (positionedRef.current) return;
-    if (messages.length === 0) return;
-    positionedRef.current = true;
 
     let cancelled = false;
-    (async () => {
-      const token = useAuthStore.getState().accessToken;
-      let lastReadId = 0;
-      if (token) {
-        try {
-          // hook이 진입 시 '전부 읽음'으로 커서를 올리기 전에 조회 → 진입 전 마지막 읽은 지점을 확보
-          const states = await fetchChannelReadStates(channelId, token);
+    const token = useAuthStore.getState().accessToken;
+    if (!token) { lastReadIdRef.current = 0; return; }
+    fetchChannelReadStates(channelId, token)
+        .then((states) => {
+          if (cancelled) return;
           const mine = states.find((s) => s.userId === String(myUid));
-          lastReadId = mine?.lastReadMessageId ?? 0;
-        } catch { /* 조회 실패 시 전부 읽은 것으로 간주 → 하단으로 */ }
-      }
-      if (cancelled) return;
-
-      const firstUnread = messages.find((m) => m.id > lastReadId);
-      // 구분선은 첫 미읽음 앞에, 단 그 앞에 읽은 메시지가 있을 때만(맨 위면 표시 안 함)
-      setFirstUnreadId(firstUnread && firstUnread.id !== messages[0].id ? firstUnread.id : null);
-
-      requestAnimationFrame(() => {
-        const el = messagesContainerRef.current;
-        if (!el) return;
-        const node = firstUnread
-            ? el.querySelector<HTMLElement>(`[data-msgid="${firstUnread.id}"]`)
-            : null;
-        programmaticRef.current = true;
-        if (node) {
-          node.scrollIntoView({ block: "start", behavior: "auto" });
-          setIsAtBottom(false);
-        } else {
-          scrollToBottom(false);       // 미읽음 없음 → 즉시 하단
-          setIsAtBottom(true);
-        }
-        // 프로그램 스크롤로 인한 onScroll이 구분선을 지우지 않도록 잠깐 유지
-        setTimeout(() => { programmaticRef.current = false; }, 200);
-      });
-    })();
+          lastReadIdRef.current = mine?.lastReadMessageId ?? 0;
+        })
+        .catch(() => { if (!cancelled) lastReadIdRef.current = 0; });
     return () => { cancelled = true; };
-  }, [messages, channelId, myUid]);
+  }, [channelId, myUid]);
+
+  // ── 진입 시 최초 위치지정 (paint 전 동기 실행 → 스크롤 이동이 보이지 않음) ──
+  //   첫 미읽음 메시지로, 없으면 하단으로 즉시 이동. 구분선은 첫 미읽음 앞에 스냅샷.
+  useLayoutEffect(() => {
+    if (positionedRef.current) return;
+    if (messages.length === 0) return;
+    const el = messagesContainerRef.current;
+    if (!el) return;
+
+    positionedRef.current = true;
+    prevLenRef.current = messages.length;
+
+    const lastReadId = lastReadIdRef.current;   // 아직 미도착이면 null → 하단으로(플래시 없이)
+    const firstUnread = lastReadId == null ? undefined : messages.find((m) => m.id > lastReadId);
+
+    // 구분선은 첫 미읽음 앞에, 단 그 앞에 읽은 메시지가 있을 때만(맨 위면 표시 안 함)
+    setFirstUnreadId(firstUnread && firstUnread.id !== messages[0].id ? firstUnread.id : null);
+
+    programmaticRef.current = true;
+    const node = firstUnread ? el.querySelector<HTMLElement>(`[data-msgid="${firstUnread.id}"]`) : null;
+    if (node) {
+      // 첫 미읽음을 상단으로. 이후 구분선이 그 위에 삽입되며 자연스럽게 화면 최상단에 온다.
+      el.scrollTop = node.offsetTop;
+      setIsAtBottom(false);
+    } else {
+      el.scrollTop = el.scrollHeight;   // 미읽음 없음 → 하단
+      setIsAtBottom(true);
+    }
+    // 위치지정으로 인한 onScroll이 구분선을 지우지 않도록 잠깐 유지
+    setTimeout(() => { programmaticRef.current = false; }, 200);
+  }, [messages]);
 
   // 최초 로드 이후 '새 메시지'가 추가될 때만 하단 자동 스크롤 (최초 히스토리 로드는 위 위치지정이 담당)
   useEffect(() => {
