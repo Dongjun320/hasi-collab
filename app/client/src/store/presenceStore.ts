@@ -6,6 +6,7 @@
 // 온라인 표시는 전부 이 store를 통해서 함.
 
 import { create } from 'zustand'
+import i18n from '../i18n'
 
 interface PresenceState {
   onlineUserIds: Set<string>
@@ -46,4 +47,4 @@ export const usePresenceStore = create<PresenceState>((set, get) => ({
 
 // 온라인 점 표시용 공용 헬퍼 (FriendSidebar, ChannelsPage 등에서 공용)
 export const presenceDotColor = (online: boolean) => (online ? 'bg-green-400' : 'bg-gray-400')
-export const presenceLabel = (online: boolean) => (online ? '온라인' : '오프라인')
+export const presenceLabel = (online: boolean) => (online ? i18n.t('presence.online') : i18n.t('presence.offline'))

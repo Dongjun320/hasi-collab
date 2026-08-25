@@ -1,6 +1,8 @@
 import { MessageSquare, Hash } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function ThreadsPage() {
+  const { t } = useTranslation();
   const threads = [
     {
       id: 1,
@@ -38,7 +40,7 @@ export function ThreadsPage() {
     <div className="flex flex-col h-full bg-[#f8fdf9]">
       {/* 헤더 */}
       <div className="h-14 border-b border-gray-100 px-6 flex items-center bg-white">
-        <h1 className="text-xl font-bold text-[#2C3E50]">스레드</h1>
+        <h1 className="text-xl font-bold text-[#2C3E50]">{t("thread.title")}</h1>
       </div>
 
       {/* 스레드 리스트 */}
@@ -69,11 +71,11 @@ export function ThreadsPage() {
                     <div className="flex items-center gap-2 text-sm">
                       <div className="flex items-center gap-1 text-[#5CC87A]">
                         <MessageSquare size={16} />
-                        <span className="font-medium">{thread.replies}개 답글</span>
+                        <span className="font-medium">{t("thread.replyCount", { count: thread.replies })}</span>
                       </div>
                       <span className="text-gray-400">•</span>
                       <span className="text-gray-500">
-                        최근 답글: {thread.lastReply}
+                        {t("thread.lastReply", { time: thread.lastReply })}
                       </span>
                     </div>
                   </div>
@@ -86,10 +88,10 @@ export function ThreadsPage() {
             <div className="text-center">
               <MessageSquare size={48} className="text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-bold text-[#2C3E50] mb-2">
-                스레드가 없습니다
+                {t("thread.empty")}
               </h3>
               <p className="text-gray-600">
-                메시지에 답글을 달면 여기에 표시됩니다
+                {t("thread.emptyDesc")}
               </p>
             </div>
           </div>

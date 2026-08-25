@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from "react-i18next";
 import { useUserSearch, type SearchedUser } from "../hooks/useUserSearch";
 import { useAuthStore } from "../store/authStore";
 
@@ -17,12 +18,13 @@ interface UserSearchBoxProps {
 }
 
 export function UserSearchBox({
-    placeholder = "닉네임으로 검색",
+    placeholder,
     onSelect,
     actionLabel,
     doneIds = [],
-    doneLabel = "완료",
+    doneLabel,
 }: UserSearchBoxProps) {
+    const { t } = useTranslation();
     const myUid = useAuthStore((s) => s.user?.uid);
     const [query, setQuery] = useState("");
     const { result, loading, notFound, search } = useUserSearch();
@@ -36,7 +38,7 @@ export function UserSearchBox({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && !loading && search(query)}
-                    placeholder={placeholder}
+                    placeholder={placeholder ?? t("userSearch.placeholder")}
                     autoFocus
                     maxLength={50}
                     className="flex-1 px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]"
@@ -46,19 +48,19 @@ export function UserSearchBox({
                     disabled={!query.trim() || loading}
                     className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all"
                 >
-                    {loading ? "검색 중" : "검색"}
+                    {loading ? t("userSearch.searching") : t("userSearch.search")}
                 </button>
             </div>
 
             {notFound && (
                 <p className="text-xs text-gray-400 text-center py-4">
-                    해당 닉네임의 사용자를 찾을 수 없습니다
+                    {t("userSearch.notFound")}
                 </p>
             )}
 
             {result && ( result.uid === myUid && (
                 <p className="text-xs text-grey-400 text-center py-4">
-                    자기 자신은 선택할 수 없습니다
+                    {t("userSearch.cannotSelectSelf")}
                 </p>
                 ))}
             {result && ( result.uid !== myUid && (
@@ -77,7 +79,7 @@ export function UserSearchBox({
                             ? "bg-gray-100 text-gray-400 cursor-default"
                             : "bg-[#5CC87A] hover:bg-[#2E8B4F] text-white"}`}
                     >
-                        {done ? doneLabel : actionLabel}
+                        {done ? (doneLabel ?? t("userSearch.done")) : actionLabel}
                     </button>
                 </div>
             ))}

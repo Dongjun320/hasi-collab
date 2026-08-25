@@ -4,10 +4,12 @@
 // activeRightPanel === 'calendar' 일 때 펼쳐진다.
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
 
 export function CalendarSidebar() {
+  const { t } = useTranslation();
   const { activeRightPanel, closeRightPanel } = useUiStore();
   const open = activeRightPanel === "calendar";
 
@@ -17,7 +19,7 @@ export function CalendarSidebar() {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMon = new Date(year, month + 1, 0).getDate();
   const today = new Date();
-  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  const dayNames = t("calendar.weekdays", { returnObjects: true }) as string[];
 
   // TODO: 일정 API 연동 전 임시 데이터
   const upcomingEvents = [
@@ -31,7 +33,7 @@ export function CalendarSidebar() {
       <div className="app-chrome w-64 h-full bg-white border-l border-[#e8f8ed] flex flex-col">
         {/* 헤더 */}
         <div className="h-14 px-4 flex items-center justify-between border-b border-[#e8f8ed] flex-shrink-0">
-          <h2 className="font-bold text-[#2C3E50] text-sm">캘린더</h2>
+          <h2 className="font-bold text-[#2C3E50] text-sm">{t("calendar.title")}</h2>
           <button
             onClick={closeRightPanel}
             className="p-1 hover:bg-[#f0f9f4] rounded-md transition-all"
@@ -44,7 +46,7 @@ export function CalendarSidebar() {
         <div className="flex-1 overflow-y-auto p-4">
           {/* 월 네비게이션 */}
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-[#2C3E50]">{year}년 {month + 1}월</h2>
+            <h2 className="text-sm font-bold text-[#2C3E50]">{t("calendar.yearMonthNum", { y: year, m: month + 1 })}</h2>
             <div className="flex gap-0.5">
               <button
                 onClick={() => setCalendarDate(new Date(year, month - 1, 1))}
@@ -107,7 +109,7 @@ export function CalendarSidebar() {
           <div className="mt-5">
             <div className="flex items-center gap-1.5 mb-2">
               <span className="text-gray-400 text-xs">⏰</span>
-              <h3 className="text-xs font-bold text-[#2C3E50]">다가오는 일정</h3>
+              <h3 className="text-xs font-bold text-[#2C3E50]">{t("calendar.upcomingEvents")}</h3>
             </div>
             <div className="space-y-2">
               {upcomingEvents.map((ev) => (

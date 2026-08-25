@@ -340,7 +340,7 @@ export function ChannelsPage() {
                 onClick={() => { scrollToBottom(); setUnreadCount(0); }}
                 className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-[#5CC87A] text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg z-20"
             >
-              확인하지 못한 메시지 {unreadCount}건
+              {t("channel.unreadJump", { count: unreadCount })}
             </button>
         )}
       </div>
@@ -366,7 +366,7 @@ export function ChannelsPage() {
             disabled={!message.trim()}
             className="px-6 py-3 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all"
           >
-            전송
+            {t("channel.send")}
           </button>
         </div>
       </div>

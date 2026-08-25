@@ -1,4 +1,5 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { LayoutGrid, Home, Search, AlertCircle, X,} from "lucide-react";
 import { useState, useEffect } from "react";
 import { WorkspaceSidebar } from "../components/WorkspaceSidebar";
@@ -47,6 +48,7 @@ async function loadWorkspaceUnread(channelIds: number[]) {
 }
 
 export function WorkspaceLayout() {
+  const { t } = useTranslation();
   const {currentWorkspace, channelsByWorkspace, setWorkspaceChannels, addChannel, updateChannel, removeChannel,
       deleteWorkspace,
   } = useWorkspaceStore();
@@ -106,7 +108,7 @@ export function WorkspaceLayout() {
       });
       if (error || !data?.data?.id) {
         // CH_001 동일 이름 / CH_003 입력값 오류
-        setChannelError(errorMessageOf(error, '채널을 만들지 못했습니다'));
+        setChannelError(errorMessageOf(error, t('workspace.channelCreateFailed')));
         return;
       }
       const created = data.data;
@@ -120,7 +122,7 @@ export function WorkspaceLayout() {
       navigate(`/workspace/channels/${created.id}`);
     } catch (e) {
       console.error('채널 생성 실패:', e);
-      setChannelError('서버에 연결할 수 없습니다');
+      setChannelError(t('ui.serverError'));
     }
   };
 
@@ -134,14 +136,14 @@ export function WorkspaceLayout() {
       });
       if (error) {
         // CH_004 "하위 채널이 있어 삭제할 수 없습니다" — 사이드바에서 미리 막지만 서버 판단이 최종
-        setChannelError(errorMessageOf(error, '채널을 삭제하지 못했습니다'));
+        setChannelError(errorMessageOf(error, t('workspace.channelDeleteFailed')));
         return;
       }
       removeChannel(wsId, channelId);
       if (activeChannelId === channelId) navigate("/workspace");
     } catch (e) {
       console.error('채널 삭제 실패:', e);
-      setChannelError('서버에 연결할 수 없습니다');
+      setChannelError(t('ui.serverError'));
     }
   };
 
@@ -155,13 +157,13 @@ export function WorkspaceLayout() {
         body: { name: newName },
       });
       if (error) {
-        setChannelError(errorMessageOf(error, '채널 이름을 변경하지 못했습니다'));
+        setChannelError(errorMessageOf(error, t('workspace.channelRenameFailed')));
         return;
       }
       updateChannel(wsId, channelId, newName);
     } catch (e) {
       console.error('채널 이름 변경 실패:', e);
-      setChannelError('서버에 연결할 수 없습니다');
+      setChannelError(t('ui.serverError'));
     }
   };
 
@@ -257,7 +259,7 @@ export function WorkspaceLayout() {
               </div>
           )}
           <div className="flex-1" />
-          <Tooltip label="검색" side="bottom">
+          <Tooltip label={t("ui.search")} side="bottom">
             <button className="p-2 hover:bg-[#f0f9f4] rounded-xl transition-all">
               <Search size={18} className="text-[#5CC87A]" />
             </button>
@@ -272,7 +274,7 @@ export function WorkspaceLayout() {
             <p className="text-xs text-red-600 flex-1">{channelError}</p>
             <button
               onClick={() => setChannelError("")}
-              title="닫기"
+              title={t("ui.close")}
               className="p-1 hover:bg-red-100 rounded-md transition-all flex-shrink-0"
             >
               <X size={13} className="text-red-400" />
@@ -290,10 +292,10 @@ export function WorkspaceLayout() {
                   <LayoutGrid size={28} className="text-[#5CC87A]" />
                 </div>
                 <p className="text-sm font-semibold text-[#2C3E50]">
-                  참여 중인 워크스페이스가 없습니다
+                  {t("workspace.none")}
                 </p>
                 <p className="text-xs text-gray-400">
-                  왼쪽의 <span className="font-semibold text-[#5CC87A]">+</span> 버튼으로 워크스페이스를 만들어보세요
+                  {t("workspace.createHintPrefix")}<span className="font-semibold text-[#5CC87A]">+</span>{t("workspace.createHintSuffix")}
                 </p>
               </div>
           )}
@@ -307,7 +309,7 @@ export function WorkspaceLayout() {
       {/* ── 하단 작업표시줄 ── */}
       <BottomBar>
         {/* 좌측: 홈버튼 + 구분선 */}
-        <Tooltip label="홈" side="top" align="start">
+        <Tooltip label={t("workspace.home")} side="top" align="start">
           <button onClick={() => navigate("/WorkspaceHome")}
             className="w-11 h-11 rounded-xl flex items-center justify-center transition-all flex-shrink-0 text-white/60 hover:bg-white/10 hover:text-white">
             <Home size={19} />

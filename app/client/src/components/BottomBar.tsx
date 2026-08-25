@@ -1,5 +1,6 @@
 import { ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Bell, Users, Grid3x3, Settings, LogOut, Calendar, User, RefreshCw } from "lucide-react";
 import { WeatherWidget } from "./WeatherWidget";
 import { Tooltip } from "./Tooltip";
@@ -21,6 +22,7 @@ const badge = "absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full 
 const btn = "relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all";
 
 export function BottomBar({ children }: BottomBarProps) {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { activeRightPanel, toggleRightPanel, openModal } = useUiStore();
     const notifications = useNotificationStore((s) => s.notifications);
@@ -53,10 +55,10 @@ export function BottomBar({ children }: BottomBarProps) {
                     })));
                 }
             }
-            toast.success('새로고침 완료');
+            toast.success(t('bottomBar.refreshDone'));
         } catch (e) {
             console.error('새로고침 실패:', e);
-            toast.error('새로고침에 실패했습니다');
+            toast.error(t('bottomBar.refreshFailed'));
         } finally {
             setRefreshing(false);
         }
@@ -82,28 +84,28 @@ export function BottomBar({ children }: BottomBarProps) {
             <div className="h-8 w-[2px] bg-white/20 rounded-full mx-2 flex-shrink-0" />
 
             <div className="flex items-center gap-1 flex-shrink-0">
-                <Tooltip label="새로고침" side="top">
+                <Tooltip label={t('bottomBar.refresh')} side="top">
                     <button onClick={handleRefresh} disabled={refreshing}
                             className={`${btn} hover:bg-white/10 disabled:opacity-60`}>
                         <RefreshCw size={18} className={`text-white/70 ${refreshing ? "animate-spin" : ""}`} />
                     </button>
                 </Tooltip>
 
-                <Tooltip label="메뉴" side="top">
+                <Tooltip label={t('bottomBar.menu')} side="top">
                     <button onClick={() => setQuickOpen(!quickOpen)}
                             className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${quickOpen ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}>
                         <Grid3x3 size={19} className="text-white/70" />
                     </button>
                 </Tooltip>
 
-                <Tooltip label="캘린더" side="top">
+                <Tooltip label={t('bottomBar.calendar')} side="top">
                     <button onClick={() => toggleRightPanel("calendar")}
                             className={`${btn} ${activeRightPanel === "calendar" ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}>
                         <Calendar size={19} className="text-white/70" />
                     </button>
                 </Tooltip>
 
-                <Tooltip label="친구 목록" side="top">
+                <Tooltip label={t('bottomBar.friends')} side="top">
                     <button onClick={() => toggleRightPanel("friend")}
                             className={`${btn} ${activeRightPanel === "friend" ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}>
                         <Users size={19} className="text-white/70" />
@@ -113,7 +115,7 @@ export function BottomBar({ children }: BottomBarProps) {
                     </button>
                 </Tooltip>
 
-                <Tooltip label="알림" side="top">
+                <Tooltip label={t('bottomBar.notifications')} side="top">
                     <button onClick={() => toggleRightPanel("notification")}
                             className={`${btn} ${activeRightPanel === "notification" ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}>
                         <Bell size={19} className="text-white/70" />
@@ -123,10 +125,10 @@ export function BottomBar({ children }: BottomBarProps) {
                     </button>
                 </Tooltip>
 
-                <Tooltip label="내 프로필" side="top" align="end">
+                <Tooltip label={t('bottomBar.myProfile')} side="top" align="end">
                     <button onClick={() => openModal('profile')}
                             className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold hover:ring-2 hover:ring-[#5CC87A] hover:ring-offset-2 hover:ring-offset-[#1e3a28] transition-all ml-1">
-                        나
+                        {t('profile.meInitial')}
                     </button>
                 </Tooltip>
             </div>
@@ -141,20 +143,20 @@ export function BottomBar({ children }: BottomBarProps) {
                                 <div className="w-11 h-11 bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <Settings size={20} className="text-white" />
                                 </div>
-                                <span className="text-xs text-[#2C3E50] font-medium">설정</span>
+                                <span className="text-xs text-[#2C3E50] font-medium">{t('bottomBar.settings')}</span>
                             </button>
                             <button onClick={() => { openModal('profile'); setQuickOpen(false); }} className="flex flex-col items-center gap-2 p-3 hover:bg-[#f0f9f4] rounded-xl transition-all group">
                                 <div className="w-11 h-11 bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <User size={20} className="text-white" />
                                 </div>
-                                <span className="text-xs text-[#2C3E50] font-medium">프로필</span>
+                                <span className="text-xs text-[#2C3E50] font-medium">{t('bottomBar.profile')}</span>
                             </button>
                             <button onClick={() => { setLogoutConfirmOpen(true); setQuickOpen(false); }}
                                     className="flex flex-col items-center gap-2 p-3 hover:bg-red-50 rounded-xl transition-all group">
                                 <div className="w-11 h-11 bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <LogOut size={20} className="text-white" />
                                 </div>
-                                <span className="text-xs text-[#2C3E50] font-medium">로그아웃</span>
+                                <span className="text-xs text-[#2C3E50] font-medium">{t('bottomBar.logout')}</span>
                             </button>
                         </div>
                     </div>
@@ -168,16 +170,16 @@ export function BottomBar({ children }: BottomBarProps) {
                      onClick={() => setLogoutConfirmOpen(false)}>
                     <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl"
                          onClick={(e) => e.stopPropagation()}>
-                        <h4 className="font-bold text-[#2C3E50] mb-2">로그아웃</h4>
-                        <p className="text-sm text-gray-500 mb-5">로그아웃 하시겠습니까?</p>
+                        <h4 className="font-bold text-[#2C3E50] mb-2">{t('bottomBar.logout')}</h4>
+                        <p className="text-sm text-gray-500 mb-5">{t('bottomBar.logoutConfirm')}</p>
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setLogoutConfirmOpen(false)}
                                     className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">
-                                취소
+                                {t('common.cancel')}
                             </button>
                             <button onClick={handleLogout}
                                     className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all">
-                                로그아웃
+                                {t('bottomBar.logout')}
                             </button>
                         </div>
                     </div>
