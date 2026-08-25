@@ -360,3 +360,48 @@ paths:
             application/json:
               schema:
                 $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"
+
+  /api/workspaces/{workspaceId}/members/me/permissions:
+    get:
+      summary: "멤버의 현재 워크스페이스 권한 조회"
+      tags:
+        - Workspace
+      operationId: getUserWorkspacePermissions
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: "멤버의 현재 워크스페이스 권한 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/WorkspaceResponseBodies.yaml#/components/schemas/WorkspacePermissionsGetResponse"
+        '401':
+          description: "Unauthorized, 인증되지 않은 요청"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth003Error"
+        '403':
+          description: "Forbidden, 조회 권한 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Auth004Error"
+        '404':
+          description: "Not Found, 워크스페이스가 존재하지 않음"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/WS002Error"
+        '500':
+          description: "Internal Server Error, 서버 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "../components/ErrorResponseBodies.yaml#/components/schemas/Server001Error"

@@ -291,7 +291,10 @@ public class WorkspaceService {
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
 
-        if(!ownerId.equals(workspace.getOwnerId())) {
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, ownerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.MBR_008));
+
+        if(workspaceMember.getRole().name().equals("MEMBER")) {
             throw new ApiException(ErrorCode.AUTH_004);
         }
 
@@ -336,6 +339,33 @@ public class WorkspaceService {
             permissionData.setPermission(WorkspacePermissionData.PermissionEnum.fromValue(permission.getPermission().name()));
             permissionData.setAdminAllowed(permission.isAdminAllowed());
             data.add(permissionData);
+        }
+
+        return data;
+    }
+
+    public List<WorkspacePermissionData> getUserWorkspacePermissions(Long workspaceId) {
+        Long uid = getCurrentUserId();
+
+        // 워크스페이스가 존재하는지 확인
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ApiException(ErrorCode.WS_002));
+
+        // 워크스페이스에 소속한 멤버가 아니면 접근불가
+        WorkspaceMember workspaceMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, uid)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_004));
+
+        List<WorkspacePermission> permissions = workspacePermissionRepository.findByWorkspaceId(workspaceId);
+
+        List<WorkspacePermissionData> data = new ArrayList<>();
+
+        for (WorkspacePermission permission : permissions) {
+            if(permission.isAdminAllowed()) {
+                WorkspacePermissionData item = new WorkspacePermissionData();
+                item.setPermission(WorkspacePermissionData.PermissionEnum.fromValue(permission.getPermission().name()));
+                item.setAdminAllowed(permission.isAdminAllowed());
+                data.add(item);
+            }
         }
 
         return data;

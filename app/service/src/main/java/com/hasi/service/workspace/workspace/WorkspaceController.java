@@ -92,5 +92,15 @@ public class WorkspaceController implements WorkspaceApi {
         return ResponseEntity.ok(response);
     }
 
+    @Override
+    public ResponseEntity<WorkspacePermissionsGetResponse> getUserWorkspacePermissions(Long workspaceId) {
+        List<WorkspacePermissionData> data = workspaceService.getUserWorkspacePermissions(workspaceId);
+        WorkspacePermissionsGetResponse response = new WorkspacePermissionsGetResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        response.setError(null);
+
+        return ResponseEntity.ok(response);
+    }
 
 }

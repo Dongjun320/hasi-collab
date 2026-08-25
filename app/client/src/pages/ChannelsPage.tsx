@@ -1,5 +1,5 @@
 import { useParams } from "react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Hash, Users, X } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { useChannelMessage } from "../hooks/useChannelMessage";
@@ -9,6 +9,7 @@ import { api } from "../api/client"
 import { useMemberStore, type WorkspaceMember } from "../store/memberStore";
 import { usePresenceStore } from "../store/presenceStore";
 import { useWorkspacePresence } from "../hooks/usePresence";
+import { toast } from "../store/toastStore";
 
 // uid로 색을 고정 배정 (서버에 색 개념이 없어 화면용으로만 사용)
 const AVATAR_COLORS = [
@@ -17,6 +18,21 @@ const AVATAR_COLORS = [
 ];
 
 const colorOf = (uid: number) => AVATAR_COLORS[uid % AVATAR_COLORS.length];
+
+// 날짜 구분선용 — 같은 날인지 비교할 키(연-월-일)와 사람이 읽는 라벨
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+const dayKeyOf = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+};
+const dateLabelOf = (iso: string) => {
+  const d = new Date(iso);
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOf(new Date()) - startOf(d)) / 86_400_000);
+  if (diffDays === 0) return "오늘";
+  if (diffDays === 1) return "어제";
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`;
+};
 
 export function ChannelsPage() {
   const { channelId: channelIdParam } = useParams();
@@ -38,7 +54,8 @@ export function ChannelsPage() {
   useWorkspacePresence(currentWorkspace?.id ?? null, members.map((m) => m.userId));
 
   // 실시간 메시지 (히스토리 + STOMP)
-  const { messages, sendMessage } = useChannelMessage(channelId);
+  // isMember: true=참여, false=미참여(게이트 표시), null=로딩(채팅 영역 유지)
+  const { messages, sendMessage, isMember } = useChannelMessage(channelId);
 
 
   const loadMembers = async () => {
@@ -90,6 +107,57 @@ export function ChannelsPage() {
   const onlineCount = members.filter((m) => isOnline(m.userId)).length;
   const totalCount = members.length;
 
+  // ── 멤버 관리 (역할 변경 / 내보내기) ──
+  const myRole = currentWorkspace?.role;
+  const canManageMembers = myRole === "OWNER" || myRole === "ADMIN";
+  const [kickTarget, setKickTarget] = useState<WorkspaceMember | null>(null);
+
+  const changeMemberRole = async (m: WorkspaceMember) => {
+    if (!currentWorkspace) return;
+    const newRole = m.role === "ADMIN" ? "MEMBER" : "ADMIN";
+    const { error } = await api.PATCH('/api/workspaces/{workspaceId}/members/{userId}', {
+      params: { path: { workspaceId: currentWorkspace.id, userId: m.userId } },
+      body: { role: newRole },
+    });
+    if (error) { toast.error((error as any)?.error?.message ?? "역할 변경에 실패했습니다"); return; }
+    setMembers(members.map((x) => x.userId === m.userId ? { ...x, role: newRole } : x));
+    toast.success(newRole === "ADMIN" ? `${m.nickname}님을 관리자로 지정했습니다` : `${m.nickname}님의 관리자를 해제했습니다`);
+  };
+
+  const kickMember = async (m: WorkspaceMember) => {
+    if (!currentWorkspace) return;
+    const { error } = await api.DELETE('/api/workspaces/{workspaceId}/members/{userId}', {
+      params: { path: { workspaceId: currentWorkspace.id, userId: m.userId } },
+    });
+    if (error) { toast.error((error as any)?.error?.message ?? "내보내기에 실패했습니다"); return; }
+    setMembers(members.filter((x) => x.userId !== m.userId));
+    toast.success(`${m.nickname}님을 내보냈습니다`);
+    setKickTarget(null);
+  };
+
+  // 멤버 행 우측 관리 버튼 (오너/본인 대상엔 없음. 역할변경은 오너만, 내보내기는 오너/관리자)
+  const renderMemberActions = (member: WorkspaceMember) => {
+    if (!canManageMembers || member.role === "OWNER" || member.userId === myUid) return null;
+    return (
+        <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          {myRole === "OWNER" && (
+              <button
+                  onClick={() => changeMemberRole(member)}
+                  className="px-2 py-1 text-[11px] rounded-md bg-[#f0f9f4] text-[#2E8B4F] hover:bg-[#d4f4dd] transition-all"
+              >
+                {member.role === "ADMIN" ? "관리자 해제" : "관리자 지정"}
+              </button>
+          )}
+          <button
+              onClick={() => setKickTarget(member)}
+              className="px-2 py-1 text-[11px] rounded-md text-red-500 hover:bg-red-50 transition-all"
+          >
+            내보내기
+          </button>
+        </div>
+    );
+  };
+
   const handleSend = () => {
     const content = message.trim();
     if (!content) return;
@@ -134,17 +202,30 @@ export function ChannelsPage() {
         </button>
       </div>
 
+      {isMember !== false ? (
+        <>
       {/* 메시지 영역 */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4 relative" ref={messagesContainerRef} onScroll={handleScroll}>
-        {messages.map((msg) => {
+        {messages.map((msg, idx) => {
           const senderUid = Number(msg.sender);
           const isMine = senderUid === myUid;
           const name = nicknameOf(senderUid);
           const time = new Date(msg.createdAt).toLocaleTimeString("ko-KR", {
             hour: "numeric", minute: "2-digit",
           });
+          // 첫 메시지이거나, 이전 메시지와 날짜가 바뀌면 구분선을 먼저 그린다
+          const prev = messages[idx - 1];
+          const showDivider = !prev || dayKeyOf(prev.createdAt) !== dayKeyOf(msg.createdAt);
           return (
-              <div key={msg.id} className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`}>
+            <Fragment key={msg.id}>
+              {showDivider && (
+                <div className="flex items-center gap-3 my-2 select-none">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs font-medium text-gray-400 px-2">{dateLabelOf(msg.createdAt)}</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+              )}
+              <div className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`}>
                 <div className={`w-10 h-10 rounded-full ${colorOf(senderUid)} flex items-center justify-center text-white font-bold flex-shrink-0`}>
                   {name.charAt(0)}
                 </div>
@@ -158,6 +239,7 @@ export function ChannelsPage() {
                       : <p className="text-[#2C3E50]">{msg.content}</p>}
                 </div>
               </div>
+            </Fragment>
           );
         })}
         <div ref={messagesEndRef} />
@@ -196,6 +278,17 @@ export function ChannelsPage() {
           </button>
         </div>
       </div>
+        </>
+      ) : (
+        /* 미참여 채널 게이트 — 초대받아야 입장 */
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+          <div className="w-14 h-14 rounded-full bg-[#f0f9f4] flex items-center justify-center mb-4">
+            <Hash size={26} className="text-[#5CC87A]" />
+          </div>
+          <p className="text-[#2C3E50] font-bold mb-1">이 채널에 참여하지 않았습니다</p>
+          <p className="text-sm text-gray-400">채널에 참여하려면 초대를 받아야 합니다.</p>
+        </div>
+      )}
 
       {/* 멤버 리스트 모달 */}
       {isMemberListOpen && (
@@ -286,6 +379,7 @@ export function ChannelsPage() {
                                       {isOnline(member.userId) ? "온라인" : "오프라인"}
                                     </p>
                                   </div>
+                                  {renderMemberActions(member)}
                                 </div>
                             ))}
                           </div>
@@ -311,6 +405,7 @@ export function ChannelsPage() {
                               {ROLE_LABEL[member.role] ?? member.role} • {isOnline(member.userId) ? "온라인" : "오프라인"}
                             </p>
                           </div>
+                          {renderMemberActions(member)}
                         </div>
                     ))}
                   </div>
@@ -318,6 +413,22 @@ export function ChannelsPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* 멤버 내보내기 확인 */}
+      {kickTarget && (
+          <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={() => setKickTarget(null)}>
+            <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <h4 className="font-bold text-[#2C3E50] mb-2">멤버 내보내기</h4>
+              <p className="text-sm text-gray-500 mb-5">
+                <span className="font-semibold text-[#2C3E50]">{kickTarget.nickname}</span>님을 이 워크스페이스에서 내보낼까요?
+              </p>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setKickTarget(null)} className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">취소</button>
+                <button onClick={() => kickMember(kickTarget)} className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all">내보내기</button>
+              </div>
+            </div>
+          </div>
       )}
     </div>
   );

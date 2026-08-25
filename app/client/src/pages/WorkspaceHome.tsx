@@ -10,6 +10,8 @@ import { useFriendPresence } from "../hooks/usePresence";
 import { FriendSidebar } from "../components/FriendSidebar";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { NotificationSidebar } from "../components/NotificationSidebar";
+import { useNotificationStore, NOTIFICATION_TYPE } from "../store/notificationStore";
+import { useUiStore } from "../store/uiStore";
 import { CalendarSidebar } from "../components/CalendarSidebar";
 import { BottomBar } from "../components/BottomBar";
 import Toast from "../components/Toast";
@@ -21,7 +23,7 @@ export function WorkspaceHome() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user } = useAuthStore();
 
-  const { friends } = useFriendStore();
+  const { friends, fetchFriends } = useFriendStore();
   const onlineUserIds = usePresenceStore((s) => s.onlineUserIds);
   const isOnline = (id: number | string) => onlineUserIds.has(String(id));
   useFriendPresence(friends.map((f) => f.uid));
@@ -43,16 +45,16 @@ export function WorkspaceHome() {
   // (기존에는 WorkspaceSidebar에서만 호출해서, /workspace를 한 번 다녀와야 목록이 채워졌음)
   useEffect(() => {
     fetchWorkspaces();
+    // 친구 목록도 홈 진입 시 로드 → 친구 패널을 열지 않아도 온라인 친구 수가 채워짐
+    fetchFriends();
   }, []);
 
   // friendStore에서 가져옴 (오프라인 제외 = 온라인 친구)
   const onlineFriends = friends.filter((f) => isOnline(f.uid));
 
-  const recentActivities = [
-    { ws: "개", name: "개발팀",   text: "새 메시지 5개",   time: "5분 전",  color: "from-[#5CC87A] to-[#2E8B4F]" },
-    { ws: "디", name: "디자인팀", text: "파일이 업로드됨", time: "1시간 전", color: "from-[#A8E6B8] to-[#5CC87A]" },
-    { ws: "마", name: "마케팅팀", text: "미팅이 시작됨",   time: "2시간 전", color: "from-[#A8E6B8] to-[#FFE66D]" },
-  ];
+  // 최근 활동 = 알림(친구요청·초대·멘션·메시지) 최근 5개 재사용 (실시간 반영)
+  const recentNotifications = useNotificationStore((s) => s.notifications).slice(0, 5);
+  const toggleRightPanel = useUiStore((s) => s.toggleRightPanel);
 
 
   // 세계 시계
@@ -184,25 +186,29 @@ export function WorkspaceHome() {
                 <h2 className="text-sm font-bold text-[#2C3E50]">최근 활동</h2>
               </div>
               <div className="space-y-2">
-                {recentActivities.map((a, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => navigate("/workspace")}
-                    className="flex items-center gap-3 p-3 bg-[#f8fdf9] rounded-xl border border-[#e8f8ed] hover:border-[#5CC87A] transition-colors cursor-pointer"
-                  >
+                {recentNotifications.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center py-6">최근 소식이 없습니다</p>
+                ) : (
+                  recentNotifications.map((n) => (
                     <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                      style={{ background: `linear-gradient(to bottom right, ${a.color.includes("A8E6B8") ? "#A8E6B8" : a.color.includes("2E8B4F") ? "#5CC87A" : "#A8E6B8"}, ${a.color.includes("2E8B4F") ? "#2E8B4F" : a.color.includes("FFE66D") ? "#FFE66D" : "#5CC87A"})` }}
+                      key={n.id}
+                      onClick={() => toggleRightPanel("notification")}
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
+                        n.unread
+                          ? "bg-[#f0f9f4] border-[#d4f4dd] hover:border-[#5CC87A]"
+                          : "bg-[#f8fdf9] border-[#e8f8ed] hover:border-[#5CC87A]"
+                      }`}
                     >
-                      {a.ws}
+                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${NOTIFICATION_TYPE[n.type].dot}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm truncate ${n.unread ? "font-semibold text-[#2C3E50]" : "text-gray-500"}`}>
+                          {n.text}
+                        </p>
+                      </div>
+                      {n.time && <span className="text-xs text-gray-400 flex-shrink-0">{n.time}</span>}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-[#2C3E50]">{a.name}</p>
-                      <p className="text-xs text-gray-400">{a.text}</p>
-                    </div>
-                    <span className="text-xs text-gray-400 flex-shrink-0">{a.time}</span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 

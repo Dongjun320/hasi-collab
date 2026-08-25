@@ -23,6 +23,7 @@ export function FriendSidebar() {
     const [memoText, setMemoText] = useState("");
     const [showAddModal, setShowAddModal] = useState(false);
     const [addedIds, setAddedIds] = useState<number[]>([]);
+    const [sentRequestUids, setSentRequestUids] = useState<number[]>([]);  // 내가 보낸 친구요청(PENDING) 상대 uid
     const [loadError, setLoadError] = useState("");
     const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
@@ -84,16 +85,39 @@ export function FriendSidebar() {
                 }
                 setLoadError('');
                 const list = Array.isArray(data) ? data : data ? [data] : [];
-                setFriends(list.map((f: any) => ({
+                const mapped = list.map((f: any) => ({
                     id: f.id,
                     uid: f.uid,
                     name: f.name ?? '',
                     statusMessage: f.statusMessage ?? undefined,
                     unreadCount: 0,
-                })));
+                }));
+                setFriends(mapped);
+                // 저장된 메모 로드 (친구별) — 도착하는 대로 반영
+                mapped.forEach(async (f) => {
+                    try {
+                        const { data: memo } = await api.GET('/api/users/{targetId}/memo', {
+                            params: { path: { targetId: f.uid } },
+                        });
+                        const content = (memo as any)?.content;
+                        if (content) setMemo(f.id, content);
+                    } catch { /* 메모 없음 등은 무시 */ }
+                });
             } catch (e) {
                 setLoadError('서버에 연결할 수 없습니다');
             }
+        })();
+    }, [activeRightPanel]);
+
+    // 내가 보낸 친구 요청(PENDING) 로드 — 새로고침해도 "요청됨" 유지
+    useEffect(() => {
+        if (activeRightPanel !== 'friend') return;
+        (async () => {
+            try {
+                const { data } = await api.GET('/api/friends/requests/sent');
+                const list = Array.isArray(data) ? data : [];
+                setSentRequestUids(list.map((r: any) => r.uid).filter((x: any) => x != null));
+            } catch { /* 무시 */ }
         })();
     }, [activeRightPanel]);
 
@@ -104,8 +128,27 @@ export function FriendSidebar() {
     const openMemoModal = (id: number, current?: string) => {
         setMemoTarget(id); setMemoText(current ?? ""); setOpenMenuId(null);
     };
-    const handleSaveMemo = () => {
-        if (memoTarget !== null) setMemo(memoTarget, memoText); setMemoTarget(null);
+    const handleSaveMemo = async () => {
+        if (memoTarget !== null) {
+            const friend = friends.find((f) => f.id === memoTarget);
+            const content = memoText.trim();
+            setMemo(memoTarget, content);   // 로컬 즉시 반영
+            if (friend) {
+                try {
+                    if (content) {
+                        await api.PUT('/api/users/{targetId}/memo', {
+                            params: { path: { targetId: friend.uid } },
+                            body: { content },
+                        });
+                    } else {
+                        await api.DELETE('/api/users/{targetId}/memo', {
+                            params: { path: { targetId: friend.uid } },
+                        });
+                    }
+                } catch (e) { console.error('메모 저장 실패:', e); }
+            }
+        }
+        setMemoTarget(null);
     };
     const handleAddFriend = async (u: SearchedUser) => {
         try {
@@ -207,7 +250,7 @@ export function FriendSidebar() {
 
                     {/* 기존 모달들 생략 없이 100% 유지 */}
                     <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="친구 추가">
-                        <UserSearchBox actionLabel="친구 요청" doneLabel="요청됨" doneIds={[...friends.map((f) => f.uid), ...addedIds]} onSelect={handleAddFriend} />
+                        <UserSearchBox actionLabel="친구 요청" doneLabel="요청됨" doneIds={[...friends.map((f) => f.uid), ...addedIds, ...sentRequestUids]} onSelect={handleAddFriend} />
                     </Modal>
 
                     <Modal isOpen={memoTarget !== null} onClose={() => setMemoTarget(null)} title={`${memoFriend?.name ?? ""}님 메모`}>

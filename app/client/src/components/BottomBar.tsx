@@ -1,12 +1,15 @@
 import { ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Users, Grid3x3, Settings, LogOut, Calendar, User } from "lucide-react";
+import { Bell, Users, Grid3x3, Settings, LogOut, Calendar, User, RefreshCw } from "lucide-react";
 import { WeatherWidget } from "./WeatherWidget";
 import { Tooltip } from "./Tooltip";
 import { useUiStore } from "../store/uiStore";
 import { useNotificationStore } from "../store/notificationStore";
 import { useFriendStore } from "../store/friendStore";
+import { useWorkspaceStore } from "../store/workspaceStore";
+import { useMemberStore } from "../store/memberStore";
 import { useAuthStore } from "../store/authStore";
+import { toast } from "../store/toastStore";
 import { api } from "../api/client";
 import { disconnectStomp } from "../api/stomp";
 
@@ -25,6 +28,39 @@ export function BottomBar({ children }: BottomBarProps) {
     const { refreshToken, clear } = useAuthStore();
     const [quickOpen, setQuickOpen] = useState(false);
     const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+
+    // 실시간 대신 수동 새로고침 — 현재 컨텍스트의 목록을 다시 불러옴
+    const handleRefresh = async () => {
+        if (refreshing) return;
+        setRefreshing(true);
+        try {
+            const { fetchWorkspaces, fetchChannels, currentWorkspace } = useWorkspaceStore.getState();
+            const { fetchFriends } = useFriendStore.getState();
+            await Promise.all([
+                fetchWorkspaces(),
+                fetchFriends(),
+                currentWorkspace ? fetchChannels(currentWorkspace.id) : Promise.resolve(),
+            ]);
+            // 현재 워크스페이스 멤버 목록도 갱신
+            if (currentWorkspace) {
+                const { data } = await api.GET('/api/workspaces/{workspaceId}/members', {
+                    params: { path: { workspaceId: currentWorkspace.id } },
+                });
+                if (data?.data) {
+                    useMemberStore.getState().setMembers((data.data as any[]).map((m) => ({
+                        userId: m.userId, nickname: m.nickname ?? '', role: m.role ?? 'MEMBER',
+                    })));
+                }
+            }
+            toast.success('새로고침 완료');
+        } catch (e) {
+            console.error('새로고침 실패:', e);
+            toast.error('새로고침에 실패했습니다');
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     const unreadNotifications = notifications.filter((n) => n.unread).length;
     const totalUnread = friends.reduce((sum, f) => sum + f.unreadCount, 0);
@@ -46,6 +82,13 @@ export function BottomBar({ children }: BottomBarProps) {
             <div className="h-8 w-[2px] bg-white/20 rounded-full mx-2 flex-shrink-0" />
 
             <div className="flex items-center gap-1 flex-shrink-0">
+                <Tooltip label="새로고침" side="top">
+                    <button onClick={handleRefresh} disabled={refreshing}
+                            className={`${btn} hover:bg-white/10 disabled:opacity-60`}>
+                        <RefreshCw size={18} className={`text-white/70 ${refreshing ? "animate-spin" : ""}`} />
+                    </button>
+                </Tooltip>
+
                 <Tooltip label="메뉴" side="top">
                     <button onClick={() => setQuickOpen(!quickOpen)}
                             className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${quickOpen ? "bg-[#5CC87A]" : "hover:bg-white/10"}`}>
