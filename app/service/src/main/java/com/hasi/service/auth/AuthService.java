@@ -121,6 +121,7 @@ public class AuthService {
         UserData userData = new UserData()
                 .uid(user.getUid())
                 .nickname(user.getNickname())
+                .email(user.getEmail())
                 .createdAt(user.getCreatedAt().atOffset(ZoneOffset.UTC))
                 .updatedAt(user.getUpdatedAt().atOffset(ZoneOffset.UTC));
         return new LogInResponse()
@@ -139,6 +140,7 @@ public class AuthService {
         UserData userData = new UserData()
                 .uid(user.getUid())
                 .nickname(user.getNickname())
+                .email(user.getEmail())
                 .createdAt(user.getCreatedAt().atOffset(ZoneOffset.UTC))
                 .updatedAt(user.getUpdatedAt().atOffset(ZoneOffset.UTC));
         return new LogInResponse()
