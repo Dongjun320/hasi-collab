@@ -286,7 +286,8 @@
     "toastIconChanged": "サーバー画像を変更しました",
     "toastIconChangeFailed": "画像の変更に失敗しました",
     "toastIconRemoved": "サーバー画像を削除しました",
-    "toastIconRemoveFailed": "画像の削除に失敗しました"
+    "toastIconRemoveFailed": "画像の削除に失敗しました",
+    "deleteConfirmMsg": "本当にこのサーバーを削除しますか？この操作は元に戻せません。"
   },
   "kanban": {
     "colTodo": "未着手",

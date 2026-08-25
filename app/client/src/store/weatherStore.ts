@@ -6,6 +6,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import i18n from '../i18n'
 
 export interface WeatherData {
   temp: number      // 섭씨 (반올림)
@@ -53,7 +54,7 @@ export const useWeatherStore = create<WeatherState>()(
               const { latitude: lat, longitude: lon } = pos.coords
               const [wRes, gRes] = await Promise.all([
                 fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`),
-                fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ja`),
+                fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=${i18n.language === 'ja' ? 'ja' : 'ko'}`),
               ])
               const w = await wRes.json()
               const g = await gRes.json().catch(() => ({} as any))

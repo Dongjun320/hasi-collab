@@ -1,6 +1,8 @@
 package com.hasi.service.workspace.workspace;
 
 import com.hasi.collab.model.*;
+import com.hasi.service.auth.entity.User;
+import com.hasi.service.auth.repository.UserRepository;
 import com.hasi.service.common.ApiException;
 import com.hasi.service.common.ErrorCode;
 import com.hasi.service.user.FileStorageService;
@@ -46,6 +48,7 @@ public class WorkspaceService {
     private final WorkspacePermissionRepository workspacePermissionRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final FileStorageService fileStorageService;
+    private final UserRepository userRepository;
 
     @Transactional
     public WorkspaceData createWorkspace(WorkspaceCreateRequest request) {
@@ -73,11 +76,16 @@ public class WorkspaceService {
                 .build();
         workspaceMemberRepository.save(workspaceOwner);
 
+        // 기본 채널 이름은 생성자의 선호 언어에 따라 (ja면 お知らせ, 그 외 공지사항)
+        User creator = userRepository.findById(ownerId)
+                .orElseThrow(() -> new ApiException(ErrorCode.AUTH_001));
+        String defaultChannelName = "ja".equals(creator.getLanguage()) ? "お知らせ" : "공지사항";
+
         // Channel 엔티티 생성 및 저장
         Channel channel = Channel.builder()
                 .workspaceId(workspace.getId())
                 .parentId(null)
-                .name("공지사항")
+                .name(defaultChannelName)
                 .isPrivate(false)
                 .build();
 
