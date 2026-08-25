@@ -40,6 +40,13 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/me/language")
+    public ResponseEntity<Void> updateLanguage(
+            @Valid @RequestBody LanguageUpdateRequest request) {
+        userService.updateLanguage(request.getLanguage());
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> updateAvatar(@RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(userService.updateAvatar(file));

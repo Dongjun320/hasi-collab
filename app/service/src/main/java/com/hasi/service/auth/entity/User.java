@@ -36,6 +36,9 @@ public class User {
     @Column(name = "status_message", length = 100)
     private String statusMessage;
 
+    @Column(name = "language", length = 8)
+    private String language;   // 선호 언어 (ko | ja), null이면 클라이언트 기본값(ko)
+
     @Column(name = "position", length = 50)
     private String position;
 
@@ -72,6 +75,10 @@ public class User {
 
     public void updateStatusMessage(String statusMessage) {
         this.statusMessage = statusMessage;
+    }
+
+    public void updateLanguage(String language) {
+        this.language = language;
     }
 
     public void updateAvatarUrl(String avatarUrl) {

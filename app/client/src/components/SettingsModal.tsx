@@ -178,7 +178,11 @@ export function SettingsModal() {
                         {(["ko", "ja"] as Lang[]).map((lng) => (
                             <button
                                 key={lng}
-                                onClick={() => setLanguage(lng)}
+                                onClick={() => {
+                                    setLanguage(lng);   // 로컬 즉시 반영
+                                    // 서버에도 저장 (기기 바뀌어도 유지). 실패해도 로컬은 이미 적용됨
+                                    api.PATCH("/api/users/me/language", { body: { language: lng } });
+                                }}
                                 className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                                     i18n.language === lng
                                         ? "bg-[#5CC87A] text-white border-[#5CC87A]"

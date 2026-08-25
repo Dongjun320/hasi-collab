@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
+import { setLanguage } from '../i18n';
 
 export function RequireAuth({ children }: { children: JSX.Element }) {
     const navigate = useNavigate();
@@ -24,6 +25,8 @@ export function RequireAuth({ children }: { children: JSX.Element }) {
                         setIsNetworkError(true);
                     }
                 } else if (data) {
+                    // 서버에 저장된 선호 언어를 적용 (기기 바뀌어도 유지). 없으면 로컬 설정 유지
+                    if (data.language === 'ko' || data.language === 'ja') setLanguage(data.language);
                     setIsAuthenticated(true);
                 } else {
                     navigate('/');
