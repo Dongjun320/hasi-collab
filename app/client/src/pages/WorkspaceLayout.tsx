@@ -190,6 +190,27 @@ export function WorkspaceLayout() {
       }
   }
 
+  // 워크스페이스 나가기 (삭제와 동일하게 내 목록/캐시에서 제거 후 이동)
+  const handleLeaveWorkspace = async (workspaceId: number) => {
+      try {
+          const { error } = await api.DELETE('/api/workspaces/{workspaceId}/members/me', {
+              params: { path: { workspaceId } },
+          });
+          if (error) { console.error('워크스페이스 나가기 실패:', error); return; }
+      } catch (e) {
+          console.error('워크스페이스 나가기 실패:', e);
+          return;
+      }
+      deleteWorkspace(workspaceId);
+      const newCurrent = useWorkspaceStore.getState().currentWorkspace;
+      if (newCurrent) {
+          const ch = getDefaultChannelId(newCurrent.id);
+          navigate(ch ? `/workspace/channels/${ch}` : "/workspace");
+      } else {
+          navigate("/workspace");
+      }
+  }
+
 
       const getDefaultChannelId = (workspaceId: number): number | null =>
       lastChannelByWorkspace[workspaceId] ?? channelsByWorkspace[workspaceId]?.[0]?.id ?? null;
@@ -214,6 +235,7 @@ export function WorkspaceLayout() {
         onDeleteChannel={handleDeleteChannel}
         onRenameChannel={handleRenameChannel}
         onDeleteWorkspace={handleDeleteWorkspace}
+        onLeaveWorkspace={handleLeaveWorkspace}
         getDefaultChannelId={getDefaultChannelId}
       />
 

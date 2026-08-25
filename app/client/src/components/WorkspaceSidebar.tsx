@@ -24,11 +24,12 @@ interface WorkspaceSidebarProps {
   onDeleteChannel: (channelId: number) => void;
   onRenameChannel: (channelId: number, newName: string) => void;
   onDeleteWorkspace: (workspaceId: number) => void;
+  onLeaveWorkspace: (workspaceId: number) => void;
   getDefaultChannelId: (workspaceId: number) => number | null;
 }
 
 export function WorkspaceSidebar({
-  channels, activeChannelId, onSelectChannel, onAddChannel, onRenameChannel, onDeleteChannel, onDeleteWorkspace, getDefaultChannelId,
+  channels, activeChannelId, onSelectChannel, onAddChannel, onRenameChannel, onDeleteChannel, onDeleteWorkspace, onLeaveWorkspace, getDefaultChannelId,
 }: WorkspaceSidebarProps) {
   const navigate = useNavigate();
   const {isSidebarOpen, toggleSidebar} = useUiStore();
@@ -66,6 +67,11 @@ export function WorkspaceSidebar({
   const [channelInvitedIds, setChannelInvitedIds] = useState<Set<number>>(new Set());
   const [channelInviteBusy, setChannelInviteBusy] = useState<number | null>(null);
   const [channelInviteSearch, setChannelInviteSearch] = useState("");
+  // 소유권 이전 / 나가기
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferMembers, setTransferMembers] = useState<{ userId: number; nickname: string }[]>([]);
+  const [transferBusy, setTransferBusy] = useState<number | null>(null);
+  const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [childName, setChildName] = useState("");
   const [defaultChannelId, setDefaultChannelId] = useState<number | null>(null);
   const unreadByChannel = useChannelStore((s) => s.unreadByChannel);
@@ -125,6 +131,42 @@ export function WorkspaceSidebar({
       }
     })();
   }, [channelInviteFor, currentWorkspace?.id]);
+
+  // 소유권 이전 모달 열릴 때: 워크스페이스 멤버(오너=나 제외) 로드
+  useEffect(() => {
+    if (!transferOpen || !currentWorkspace) return;
+    const wsId = currentWorkspace.id;
+    (async () => {
+      try {
+        const { data } = await api.GET('/api/workspaces/{workspaceId}/members', { params: { path: { workspaceId: wsId } } });
+        setTransferMembers(((data?.data ?? []) as any[])
+            .filter((m) => m.role !== 'OWNER')   // 현재 오너(나) 제외
+            .map((m) => ({ userId: m.userId, nickname: m.nickname ?? '' })));
+      } catch (e) {
+        console.error('멤버 로드 실패:', e);
+      }
+    })();
+  }, [transferOpen, currentWorkspace?.id]);
+
+  const handleTransferOwnership = async (userId: number) => {
+    if (!currentWorkspace) return;
+    setTransferBusy(userId);
+    try {
+      const { error } = await api.POST('/api/workspaces/{workspaceId}/transfer-ownership', {
+        params: { path: { workspaceId: currentWorkspace.id } },
+        body: { newOwnerUserId: userId },
+      });
+      if (error) { toast.error((error as any)?.error?.message ?? '소유권 이전에 실패했습니다'); return; }
+      toast.success('소유권을 이전했습니다');
+      setTransferOpen(false);
+      setShowWorkspaceSettings(false);
+      await fetchWorkspaces();   // 내 역할(OWNER→일반) 갱신
+    } catch (e) {
+      toast.error('서버에 연결할 수 없습니다');
+    } finally {
+      setTransferBusy(null);
+    }
+  };
 
   const handleChannelInvite = async (userId: number) => {
     if (channelInviteFor == null || !currentWorkspace) return;
@@ -440,6 +482,19 @@ export function WorkspaceSidebar({
                 : <p className="text-xs text-gray-400">권한 설정은 오너만 변경할 수 있습니다.</p>}
           </div>
 
+          {/* 소유권 이전(오너) / 나가기(그 외) */}
+          <div className="border-t border-gray-100 pt-3">
+            {currentWorkspace?.role === "OWNER" ? (
+                <button onClick={() => setTransferOpen(true)} className="text-sm text-[#2E8B4F] hover:underline">
+                  소유권 이전
+                </button>
+            ) : (
+                <button onClick={() => setLeaveConfirm(true)} className="text-sm text-red-500 hover:underline">
+                  워크스페이스 나가기
+                </button>
+            )}
+          </div>
+
           <div className="flex gap-2 pt-2">
             <button
                 onClick={async () => {
@@ -484,6 +539,55 @@ export function WorkspaceSidebar({
               onClose={() => setShowPermissions(false)}
               workspaceId={currentWorkspace.id}
           />
+      )}
+
+      {/* ── 소유권 이전 모달 ── */}
+      <Modal isOpen={transferOpen} onClose={() => setTransferOpen(false)} title="소유권 이전">
+        <p className="text-xs text-gray-500 mb-3">소유권을 넘길 멤버를 선택하세요. 이전 후 회원님은 일반 멤버가 됩니다.</p>
+        <div className="flex flex-col gap-1 max-h-72 overflow-y-auto">
+          {transferMembers.length === 0 && (
+              <p className="text-xs text-gray-400 text-center py-4">이전할 멤버가 없습니다</p>
+          )}
+          {transferMembers.map((m) => (
+              <div key={m.userId} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#f8fdf9]">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                  {m.nickname.charAt(0)}
+                </div>
+                <span className="flex-1 text-sm text-[#2C3E50] truncate">{m.nickname}</span>
+                <button
+                    onClick={() => handleTransferOwnership(m.userId)}
+                    disabled={transferBusy === m.userId}
+                    className="px-3 py-1 text-xs bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:opacity-50 text-white rounded-lg flex-shrink-0"
+                >
+                  이전
+                </button>
+              </div>
+          ))}
+        </div>
+      </Modal>
+
+      {/* ── 워크스페이스 나가기 확인 ── */}
+      {leaveConfirm && currentWorkspace && (
+          <div className="fixed inset-0 z-[110] bg-black/40 flex items-center justify-center p-4" onClick={() => setLeaveConfirm(false)}>
+            <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <h4 className="font-bold text-[#2C3E50] mb-2">워크스페이스 나가기</h4>
+              <p className="text-sm text-gray-500 mb-5">정말 이 워크스페이스에서 나가시겠습니까?</p>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setLeaveConfirm(false)} className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">취소</button>
+                <button
+                    onClick={() => {
+                      const id = currentWorkspace.id;
+                      setLeaveConfirm(false);
+                      setShowWorkspaceSettings(false);
+                      onLeaveWorkspace(id);
+                    }}
+                    className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all"
+                >
+                  나가기
+                </button>
+              </div>
+            </div>
+          </div>
       )}
 
       {/* ── 채널 멤버 초대 모달 ── */}
