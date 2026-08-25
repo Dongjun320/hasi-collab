@@ -1,10 +1,13 @@
 import { useEffect, useState, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { BigModal } from "./BigModal";
 import { useUiStore } from "../store/uiStore";
+import { useAuthStore } from "../store/authStore";
 import { api } from "../api/client";
 import { toast } from "../store/toastStore";
 import { oauthAuthorizeUrl } from "../api/urls";
+import { disconnectStomp } from "../api/stomp";
 
 // 백엔드 SocialAccountResponse.provider enum과 1:1 (google | line | amazon | twitter)
 // X = twitter registrationId. 현재 백엔드는 google만 등록됨 — 나머지 3개는 registration 추가 후 동작(상현님 백엔드 담당).
@@ -142,11 +145,24 @@ export function SettingsModal() {
     const [notifs, setNotifs] = useState({ messages: true, mentions: true, replies: false });
 
     // ── ④ 회원탈퇴 ──
+    const navigate = useNavigate();
     const [withdrawOpen, setWithdrawOpen] = useState(false);
-    const handleWithdraw = () => {
-        // TODO: 계정 삭제 API 생기면 연결 (현재 백엔드 미구현 — UI만)
+    const [withdrawPassword, setWithdrawPassword] = useState("");
+    const [withdrawBusy, setWithdrawBusy] = useState(false);
+    const handleWithdraw = async () => {
+        if (!withdrawPassword) { toast.error("현재 비밀번호를 입력하세요"); return; }
+        setWithdrawBusy(true);
+        const { error } = await api.DELETE("/api/auth/withdraw", {
+            body: { currentPassword: withdrawPassword },
+        });
+        setWithdrawBusy(false);
+        if (error) { toast.error((error as any)?.error?.message ?? "회원탈퇴에 실패했습니다"); return; }
+        // 탈퇴 성공 → 로컬 세션 정리 후 로그인 화면으로
         setWithdrawOpen(false);
-        toast.error("회원탈퇴 기능은 준비 중입니다");
+        setWithdrawPassword("");
+        disconnectStomp();
+        useAuthStore.getState().clear();
+        navigate("/");
     };
 
     return (
@@ -269,15 +285,20 @@ export function SettingsModal() {
                     <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl"
                          onClick={(e) => e.stopPropagation()}>
                         <h4 className="font-bold text-[#2C3E50] mb-2">회원탈퇴</h4>
-                        <p className="text-sm text-gray-500 mb-5">정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+                        <p className="text-sm text-gray-500 mb-3">정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+                        <input type="password" autoComplete="current-password" value={withdrawPassword}
+                               onChange={(e) => setWithdrawPassword(e.target.value)}
+                               onKeyDown={(e) => { if (e.key === "Enter") handleWithdraw(); }}
+                               placeholder="현재 비밀번호 확인"
+                               className="w-full mb-5 px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-red-400 text-sm" />
                         <div className="flex justify-end gap-2">
-                            <button onClick={() => setWithdrawOpen(false)}
+                            <button onClick={() => { setWithdrawOpen(false); setWithdrawPassword(""); }}
                                     className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">
                                 취소
                             </button>
-                            <button onClick={handleWithdraw}
-                                    className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all">
-                                탈퇴
+                            <button onClick={handleWithdraw} disabled={withdrawBusy || !withdrawPassword}
+                                    className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-lg transition-all">
+                                {withdrawBusy ? "처리 중…" : "탈퇴"}
                             </button>
                         </div>
                     </div>
