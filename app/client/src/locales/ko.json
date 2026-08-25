@@ -286,7 +286,8 @@
     "toastIconChanged": "서버 이미지를 변경했습니다",
     "toastIconChangeFailed": "이미지 변경에 실패했습니다",
     "toastIconRemoved": "서버 이미지를 제거했습니다",
-    "toastIconRemoveFailed": "이미지 제거에 실패했습니다"
+    "toastIconRemoveFailed": "이미지 제거에 실패했습니다",
+    "deleteConfirmMsg": "정말로 이 서버를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
   },
   "kanban": {
     "colTodo": "할 일",

@@ -79,6 +79,7 @@ export function WorkspaceSidebar({
   const [transferMembers, setTransferMembers] = useState<{ userId: number; nickname: string }[]>([]);
   const [transferBusy, setTransferBusy] = useState<number | null>(null);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [childName, setChildName] = useState("");
   const [defaultChannelId, setDefaultChannelId] = useState<number | null>(null);
   const unreadByChannel = useChannelStore((s) => s.unreadByChannel);
@@ -620,11 +621,7 @@ export function WorkspaceSidebar({
               {t("common.save")}
             </button>
             <button
-                onClick={() => {
-                  if (!currentWorkspace) return;
-                  onDeleteWorkspace(currentWorkspace.id);
-                  setShowWorkspaceSettings(false);
-                }}
+                onClick={() => { if (currentWorkspace) setDeleteConfirm(true); }}
                 disabled={currentWorkspace?.role !== "OWNER"}
                 title={currentWorkspace?.role !== "OWNER" ? t("workspace.deleteOwnerOnly") : undefined}
                 className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-50"
@@ -687,6 +684,30 @@ export function WorkspaceSidebar({
                     className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all"
                 >
                   {t("workspace.leaveBtn")}
+                </button>
+              </div>
+            </div>
+          </div>
+      )}
+
+      {/* ── 서버 삭제 확인 ── */}
+      {deleteConfirm && currentWorkspace && (
+          <div className="fixed inset-0 z-[110] bg-black/40 flex items-center justify-center p-4" onClick={() => setDeleteConfirm(false)}>
+            <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <h4 className="font-bold text-[#2C3E50] mb-2">{t("workspace.deleteServer")}</h4>
+              <p className="text-sm text-gray-500 mb-5">{t("workspace.deleteConfirmMsg")}</p>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setDeleteConfirm(false)} className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">{t("common.cancel")}</button>
+                <button
+                    onClick={() => {
+                      const id = currentWorkspace.id;
+                      setDeleteConfirm(false);
+                      setShowWorkspaceSettings(false);
+                      onDeleteWorkspace(id);
+                    }}
+                    className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all"
+                >
+                  {t("workspace.deleteServer")}
                 </button>
               </div>
             </div>
