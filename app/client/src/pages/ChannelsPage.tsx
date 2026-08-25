@@ -54,10 +54,8 @@ export function ChannelsPage() {
   useWorkspacePresence(currentWorkspace?.id ?? null, members.map((m) => m.userId));
 
   // 실시간 메시지 (히스토리 + STOMP)
-  const channel = useChannelMessage(channelId);
-  const { messages, sendMessage } = channel;
-  // hook이 아직 isMember를 노출하지 않으면 참여중으로 간주 (PM 반영 전 안전)
-  const isMember = (channel as { isMember?: boolean }).isMember ?? true;
+  // isMember: true=참여, false=미참여(게이트 표시), null=로딩(채팅 영역 유지)
+  const { messages, sendMessage, isMember } = useChannelMessage(channelId);
 
 
   const loadMembers = async () => {
@@ -204,7 +202,7 @@ export function ChannelsPage() {
         </button>
       </div>
 
-      {isMember ? (
+      {isMember !== false ? (
         <>
       {/* 메시지 영역 */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4 relative" ref={messagesContainerRef} onScroll={handleScroll}>
