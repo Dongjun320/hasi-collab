@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { api } from "../api/client";
@@ -26,6 +27,7 @@ const isInRange = (dateStr: string, t: Task) => {
 };
 
 export function CalendarPage() {
+  const { t } = useTranslation();
   const { currentWorkspace } = useWorkspaceStore();
   const [currentDate, setCurrentDate] = useState(new Date());   // 오늘 기준으로 시작
   const [boards, setBoards] = useState<Board[]>([]);
@@ -65,8 +67,8 @@ export function CalendarPage() {
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
 
-  const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
-  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  const monthNames = t("calendar.months", { returnObjects: true }) as string[];
+  const dayNames = t("calendar.weekdays", { returnObjects: true }) as string[];
 
   const days = [];
   for (let i = 0; i < firstDay; i++) days.push(null);
@@ -92,7 +94,7 @@ export function CalendarPage() {
     .slice(0, 10);
 
   if (!currentWorkspace) {
-    return <div className="flex items-center justify-center h-full text-gray-400 text-sm">워크스페이스를 먼저 선택해주세요</div>;
+    return <div className="flex items-center justify-center h-full text-gray-400 text-sm">{t("ui.selectWorkspaceFirst")}</div>;
   }
 
   return (
@@ -101,13 +103,13 @@ export function CalendarPage() {
       <div className="flex-1 flex flex-col">
         {/* 헤더 */}
         <div className="h-14 border-b border-gray-100 px-6 flex items-center justify-between bg-white flex-shrink-0">
-          <h1 className="text-xl font-bold text-[#2C3E50]">캘린더</h1>
+          <h1 className="text-xl font-bold text-[#2C3E50]">{t("calendar.title")}</h1>
           <div className="flex items-center gap-2">
             <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-lg">
               <ChevronLeft size={18} />
             </button>
             <span className="font-medium text-[#2C3E50] min-w-[120px] text-center">
-              {currentDate.getFullYear()}년 {monthNames[currentDate.getMonth()]}
+              {t("calendar.yearMonth", { y: currentDate.getFullYear(), m: monthNames[currentDate.getMonth()] })}
             </span>
             <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-lg">
               <ChevronRight size={18} />
@@ -116,7 +118,7 @@ export function CalendarPage() {
               onClick={goToday}
               className="ml-2 px-3 py-1.5 text-xs font-medium text-[#5CC87A] border border-[#5CC87A] rounded-lg hover:bg-[#f0f9f4] transition-colors"
             >
-              오늘
+              {t("calendar.today")}
             </button>
           </div>
         </div>
@@ -171,7 +173,7 @@ export function CalendarPage() {
                             </div>
                           ))}
                           {dayTasks.length > 3 && (
-                            <div className="text-[10px] text-gray-400 px-1">+{dayTasks.length - 3}개 더보기</div>
+                            <div className="text-[10px] text-gray-400 px-1">{t("calendar.moreCount", { count: dayTasks.length - 3 })}</div>
                           )}
                         </div>
                       </>
@@ -188,11 +190,11 @@ export function CalendarPage() {
       <div className="w-80 border-l border-gray-200 bg-white p-6 overflow-y-auto">
         <h2 className="font-bold text-[#2C3E50] mb-4 flex items-center gap-2">
           <Clock size={18} className="text-[#5CC87A]" />
-          다가오는 마감일
+          {t("calendar.upcomingDeadlines")}
         </h2>
-        {loading && <p className="text-xs text-gray-400">불러오는 중...</p>}
+        {loading && <p className="text-xs text-gray-400">{t("ui.loading")}</p>}
         {!loading && upcoming.length === 0 && (
-          <p className="text-xs text-gray-400">예정된 마감일이 없습니다</p>
+          <p className="text-xs text-gray-400">{t("calendar.noDeadlines")}</p>
         )}
         <div className="space-y-3">
           {upcoming.map((t) => (

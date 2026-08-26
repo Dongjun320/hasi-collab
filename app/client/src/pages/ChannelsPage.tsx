@@ -1,5 +1,7 @@
 import { useParams } from "react-router";
-import { useState, useEffect, useRef, Fragment } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, Fragment } from "react";
+import { useTranslation } from "react-i18next";
+import i18n, { tError } from "../i18n";
 import { Hash, Users, X } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { useChannelMessage } from "../hooks/useChannelMessage";
@@ -10,6 +12,7 @@ import { useMemberStore, type WorkspaceMember } from "../store/memberStore";
 import { usePresenceStore } from "../store/presenceStore";
 import { useWorkspacePresence } from "../hooks/usePresence";
 import { toast } from "../store/toastStore";
+import { fetchChannelReadStates } from "../api/messenger";
 
 // uid로 색을 고정 배정 (서버에 색 개념이 없어 화면용으로만 사용)
 const AVATAR_COLORS = [
@@ -20,7 +23,6 @@ const AVATAR_COLORS = [
 const colorOf = (uid: number) => AVATAR_COLORS[uid % AVATAR_COLORS.length];
 
 // 날짜 구분선용 — 같은 날인지 비교할 키(연-월-일)와 사람이 읽는 라벨
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const dayKeyOf = (iso: string) => {
   const d = new Date(iso);
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -29,12 +31,14 @@ const dateLabelOf = (iso: string) => {
   const d = new Date(iso);
   const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diffDays = Math.round((startOf(new Date()) - startOf(d)) / 86_400_000);
-  if (diffDays === 0) return "오늘";
-  if (diffDays === 1) return "어제";
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEKDAYS[d.getDay()]})`;
+  if (diffDays === 0) return i18n.t("channel.today");
+  if (diffDays === 1) return i18n.t("channel.yesterday");
+  const weekdays = i18n.t("home.weekdays", { returnObjects: true }) as string[];
+  return i18n.t("channel.dateFull", { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate(), wd: weekdays[d.getDay()] });
 };
 
 export function ChannelsPage() {
+  const { t } = useTranslation();
   const { channelId: channelIdParam } = useParams();
   const channelId = Number(channelIdParam);
   const [isMemberListOpen, setIsMemberListOpen] = useState(false);
@@ -46,6 +50,13 @@ export function ChannelsPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  // ── 진입 시 마지막 읽은 위치 복원 + '여기까지 읽음' 구분선 ──
+  const [firstUnreadId, setFirstUnreadId] = useState<number | null>(null); // 구분선/스크롤 앵커 (진입 시 스냅샷 후 고정)
+  const [hasScrolled, setHasScrolled] = useState(false);                   // 사용자가 스크롤하면 구분선 숨김(일시적)
+  const positionedRef = useRef(false);                                     // 채널당 최초 위치지정 1회
+  const prevLenRef = useRef(0);                                            // 새 메시지 추가 감지 (최초 로드와 구분)
+  const programmaticRef = useRef(false);                                   // 프로그램 스크롤을 사용자 스크롤과 구분
+  const [membersLoaded, setMembersLoaded] = useState(false);              // 멤버 로드 전 '사용자N' 폴백 방지
   const myUid = useAuthStore((s) => s.user?.uid);
   const { currentWorkspace } = useWorkspaceStore();
   const { members, setMembers } = useMemberStore();
@@ -72,13 +83,24 @@ export function ChannelsPage() {
       })));
     } catch (e) {
       console.error('멤버 조회 실패:', e);
+    } finally {
+      // 성공/실패 무관하게 로드 시도 완료 → 이 시점부터는 폴백('사용자N')을 표시해도 됨
+      setMembersLoaded(true);
     }
   };
 
-  useEffect(() => { loadMembers(); }, [currentWorkspace?.id]);
+  // 워크스페이스가 바뀌면 멤버를 다시 불러온다. 로드 완료 전에는 폴백을 감춰 '사용자N' 깜빡임/잔존을 막는다.
+  useEffect(() => {
+    setMembersLoaded(false);
+    loadMembers();
+  }, [currentWorkspace?.id]);
 
-  const nicknameOf = (uid: number) =>
-      members.find((m) => m.userId === uid)?.nickname ?? `사용자 ${uid}`;
+  const nicknameOf = (uid: number) => {
+    const found = members.find((m) => m.userId === uid);
+    if (found) return found.nickname;
+    // 아직 멤버 목록이 로드되기 전이면 폴백('사용자N') 대신 공백 → 로드되면 자동 재렌더로 실명 표시
+    return membersLoaded ? t("channel.userFallback", { uid }) : "";
+  };
 
 
   const getSortedMembers = () => {
@@ -92,7 +114,7 @@ export function ChannelsPage() {
 
   // 역할별 보기용 그룹 (owner → admin → member 순)
   const ROLE_LABEL: Record<string, string> = {
-    OWNER: "소유자", ADMIN: "관리자", MEMBER: "멤버",
+    OWNER: t("channel.roleOwner"), ADMIN: t("channel.roleAdmin"), MEMBER: t("channel.roleMember"),
   };
   const ROLE_ORDER = ["OWNER", "ADMIN", "MEMBER"];
 
@@ -119,9 +141,9 @@ export function ChannelsPage() {
       params: { path: { workspaceId: currentWorkspace.id, userId: m.userId } },
       body: { role: newRole },
     });
-    if (error) { toast.error((error as any)?.error?.message ?? "역할 변경에 실패했습니다"); return; }
+    if (error) { toast.error(tError((error as any)?.error?.code, t("channel.toastRoleChangeFailed"))); return; }
     setMembers(members.map((x) => x.userId === m.userId ? { ...x, role: newRole } : x));
-    toast.success(newRole === "ADMIN" ? `${m.nickname}님을 관리자로 지정했습니다` : `${m.nickname}님의 관리자를 해제했습니다`);
+    toast.success(newRole === "ADMIN" ? t("channel.toastPromoted", { name: m.nickname }) : t("channel.toastDemoted", { name: m.nickname }));
   };
 
   const kickMember = async (m: WorkspaceMember) => {
@@ -129,9 +151,9 @@ export function ChannelsPage() {
     const { error } = await api.DELETE('/api/workspaces/{workspaceId}/members/{userId}', {
       params: { path: { workspaceId: currentWorkspace.id, userId: m.userId } },
     });
-    if (error) { toast.error((error as any)?.error?.message ?? "내보내기에 실패했습니다"); return; }
+    if (error) { toast.error(tError((error as any)?.error?.code, t("channel.toastKickFailed"))); return; }
     setMembers(members.filter((x) => x.userId !== m.userId));
-    toast.success(`${m.nickname}님을 내보냈습니다`);
+    toast.success(t("channel.toastKicked", { name: m.nickname }));
     setKickTarget(null);
   };
 
@@ -145,14 +167,14 @@ export function ChannelsPage() {
                   onClick={() => changeMemberRole(member)}
                   className="px-2 py-1 text-[11px] rounded-md bg-[#f0f9f4] text-[#2E8B4F] hover:bg-[#d4f4dd] transition-all"
               >
-                {member.role === "ADMIN" ? "관리자 해제" : "관리자 지정"}
+                {member.role === "ADMIN" ? t("channel.demoteAdmin") : t("channel.promoteAdmin")}
               </button>
           )}
           <button
               onClick={() => setKickTarget(member)}
               className="px-2 py-1 text-[11px] rounded-md text-red-500 hover:bg-red-50 transition-all"
           >
-            내보내기
+            {t("channel.kick")}
           </button>
         </div>
     );
@@ -171,17 +193,80 @@ export function ChannelsPage() {
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
     setIsAtBottom(atBottom);
     if (atBottom) setUnreadCount(0);
+    // 사용자가 실제로 스크롤하면 '여기까지 읽음' 구분선을 숨긴다(일시적).
+    // 진입 시 프로그램 스크롤(scrollIntoView)로 인한 onScroll은 제외.
+    if (!programmaticRef.current) setHasScrolled(true);
   };
 
   const scrollToBottom = (smooth = true) =>        // ← 기본값 smooth
       messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
 
-  useEffect(() => {
-    if (messages.length === 0) return;
-    const last = messages[messages.length - 1];
-    const isMine = Number(last.sender) === myUid; // 기존 isMine 판별과 동일한 기준
+  // 진입 전 '마지막 읽은 지점'을 미리 확보 (hook이 '전부 읽음'으로 커서를 올리기 전에 조회).
+  // ref로 들고 있다가 아래 useLayoutEffect에서 동기적으로 위치를 잡는다 → 진입 시 스크롤 이동이 화면에 안 보임.
+  const lastReadIdRef = useRef<number | null>(null);
 
-    if (isMine || isAtBottom) scrollToBottom();     // isAtBottom 기본 true → smooth 스크롤
+  // 채널 전환 시 상태 초기화 + 읽음 커서 선조회
+  useEffect(() => {
+    positionedRef.current = false;
+    prevLenRef.current = 0;
+    lastReadIdRef.current = null;
+    setHasScrolled(false);
+    setFirstUnreadId(null);
+    setIsAtBottom(true);
+
+    let cancelled = false;
+    const token = useAuthStore.getState().accessToken;
+    if (!token) { lastReadIdRef.current = 0; return; }
+    fetchChannelReadStates(channelId, token)
+        .then((states) => {
+          if (cancelled) return;
+          const mine = states.find((s) => s.userId === String(myUid));
+          lastReadIdRef.current = mine?.lastReadMessageId ?? 0;
+        })
+        .catch(() => { if (!cancelled) lastReadIdRef.current = 0; });
+    return () => { cancelled = true; };
+  }, [channelId, myUid]);
+
+  // ── 진입 시 최초 위치지정 (paint 전 동기 실행 → 스크롤 이동이 보이지 않음) ──
+  //   첫 미읽음 메시지로, 없으면 하단으로 즉시 이동. 구분선은 첫 미읽음 앞에 스냅샷.
+  useLayoutEffect(() => {
+    if (positionedRef.current) return;
+    if (messages.length === 0) return;
+    const el = messagesContainerRef.current;
+    if (!el) return;
+
+    positionedRef.current = true;
+    prevLenRef.current = messages.length;
+
+    const lastReadId = lastReadIdRef.current;   // 아직 미도착이면 null → 하단으로(플래시 없이)
+    const firstUnread = lastReadId == null ? undefined : messages.find((m) => m.id > lastReadId);
+
+    // 구분선은 첫 미읽음 앞에, 단 그 앞에 읽은 메시지가 있을 때만(맨 위면 표시 안 함)
+    setFirstUnreadId(firstUnread && firstUnread.id !== messages[0].id ? firstUnread.id : null);
+
+    programmaticRef.current = true;
+    const node = firstUnread ? el.querySelector<HTMLElement>(`[data-msgid="${firstUnread.id}"]`) : null;
+    if (node) {
+      // 첫 미읽음을 상단으로. 이후 구분선이 그 위에 삽입되며 자연스럽게 화면 최상단에 온다.
+      el.scrollTop = node.offsetTop;
+      setIsAtBottom(false);
+    } else {
+      el.scrollTop = el.scrollHeight;   // 미읽음 없음 → 하단
+      setIsAtBottom(true);
+    }
+    // 위치지정으로 인한 onScroll이 구분선을 지우지 않도록 잠깐 유지
+    setTimeout(() => { programmaticRef.current = false; }, 200);
+  }, [messages]);
+
+  // 최초 로드 이후 '새 메시지'가 추가될 때만 하단 자동 스크롤 (최초 히스토리 로드는 위 위치지정이 담당)
+  useEffect(() => {
+    const prev = prevLenRef.current;
+    prevLenRef.current = messages.length;
+    if (prev === 0) return;                 // 최초 히스토리 로드 → 건너뜀
+    if (messages.length <= prev) return;    // 새로 추가된 경우만
+    const last = messages[messages.length - 1];
+    const isMine = Number(last.sender) === myUid;
+    if (isMine || isAtBottom) scrollToBottom();
   }, [messages]);
 
   return (
@@ -197,8 +282,8 @@ export function ChannelsPage() {
           className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-all text-sm text-gray-600"
         >
           <Users size={16} />
-          <span>멤버 {totalCount}명</span>
-          <span className="text-green-500">• {onlineCount}명 온라인</span>
+          <span>{t("channel.memberCount", { count: totalCount })}</span>
+          <span className="text-green-500">• {t("channel.onlineCount", { count: onlineCount })}</span>
         </button>
       </div>
 
@@ -225,7 +310,14 @@ export function ChannelsPage() {
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>
               )}
-              <div className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`}>
+              {firstUnreadId === msg.id && !hasScrolled && (
+                <div className="flex items-center gap-3 my-2 select-none" data-readmarker>
+                  <div className="flex-1 h-px bg-[#5CC87A]/50" />
+                  <span className="text-[11px] font-semibold text-[#5CC87A] px-2 whitespace-nowrap">{t("channel.readUpToHere")}</span>
+                  <div className="flex-1 h-px bg-[#5CC87A]/50" />
+                </div>
+              )}
+              <div data-msgid={msg.id} className={`flex gap-3 ${isMine ? "flex-row-reverse" : ""}`}>
                 <div className={`w-10 h-10 rounded-full ${colorOf(senderUid)} flex items-center justify-center text-white font-bold flex-shrink-0`}>
                   {name.charAt(0)}
                 </div>
@@ -235,7 +327,7 @@ export function ChannelsPage() {
                     <span className="text-xs text-gray-400">{time}</span>
                   </div>
                   {msg.isDeleted
-                      ? <p className="text-gray-400 italic text-sm">삭제된 메시지입니다</p>
+                      ? <p className="text-gray-400 italic text-sm">{t("channel.deletedMessage")}</p>
                       : <p className="text-[#2C3E50]">{msg.content}</p>}
                 </div>
               </div>
@@ -248,7 +340,7 @@ export function ChannelsPage() {
                 onClick={() => { scrollToBottom(); setUnreadCount(0); }}
                 className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-[#5CC87A] text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg z-20"
             >
-              확인하지 못한 메시지 {unreadCount}건
+              {t("channel.unreadJump", { count: unreadCount })}
             </button>
         )}
       </div>
@@ -266,7 +358,7 @@ export function ChannelsPage() {
                 handleSend();
               }
             }}
-            placeholder={`# ${channelName}에 메시지 보내기...`}
+            placeholder={t("channel.messagePlaceholder", { channel: channelName })}
             className="flex-1 px-4 py-3 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A] focus:ring-2 focus:ring-[#A8E6B8]/20 transition-all"
           />
           <button
@@ -274,7 +366,7 @@ export function ChannelsPage() {
             disabled={!message.trim()}
             className="px-6 py-3 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all"
           >
-            전송
+            {t("channel.send")}
           </button>
         </div>
       </div>
@@ -285,8 +377,8 @@ export function ChannelsPage() {
           <div className="w-14 h-14 rounded-full bg-[#f0f9f4] flex items-center justify-center mb-4">
             <Hash size={26} className="text-[#5CC87A]" />
           </div>
-          <p className="text-[#2C3E50] font-bold mb-1">이 채널에 참여하지 않았습니다</p>
-          <p className="text-sm text-gray-400">채널에 참여하려면 초대를 받아야 합니다.</p>
+          <p className="text-[#2C3E50] font-bold mb-1">{t("channel.notMember")}</p>
+          <p className="text-sm text-gray-400">{t("channel.notMemberDesc")}</p>
         </div>
       )}
 
@@ -304,7 +396,7 @@ export function ChannelsPage() {
             {/* 헤더 */}
             <div className="p-4 border-b border-[#d4f4dd]">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-[#2C3E50]">멤버</h3>
+                <h3 className="font-bold text-[#2C3E50]">{t("channel.members")}</h3>
                 <button
                   onClick={() => setIsMemberListOpen(false)}
                   className="p-1 hover:bg-[#f0f9f4] rounded transition-all"
@@ -323,7 +415,7 @@ export function ChannelsPage() {
                       : "bg-[#f0f9f4] text-[#5CC87A] hover:bg-[#d4f4dd]"
                   }`}
                 >
-                  전체
+                  {t("channel.sortAll")}
                 </button>
                 <button
                   onClick={() => setMemberSortType("role")}
@@ -333,7 +425,7 @@ export function ChannelsPage() {
                       : "bg-[#f0f9f4] text-[#5CC87A] hover:bg-[#d4f4dd]"
                   }`}
                 >
-                  역할별
+                  {t("channel.sortRole")}
                 </button>
                 <button
                   onClick={() => setMemberSortType("online")}
@@ -343,7 +435,7 @@ export function ChannelsPage() {
                       : "bg-[#f0f9f4] text-[#5CC87A] hover:bg-[#d4f4dd]"
                   }`}
                 >
-                  온라인
+                  {t("channel.sortOnline")}
                 </button>
               </div>
             </div>
@@ -351,7 +443,7 @@ export function ChannelsPage() {
             {/* 멤버 리스트 */}
             <div className="flex-1 overflow-y-auto p-4">
               {members.length === 0 && (
-                  <p className="text-xs text-gray-400 text-center mt-6">멤버가 없습니다</p>
+                  <p className="text-xs text-gray-400 text-center mt-6">{t("channel.noMembers")}</p>
               )}
 
               {memberSortType === "role" && groupedMembers ? (
@@ -376,7 +468,7 @@ export function ChannelsPage() {
                                   <div className="flex-1">
                                     <p className="text-sm font-medium text-[#2C3E50]">{member.nickname}</p>
                                     <p className="text-xs text-gray-500">
-                                      {isOnline(member.userId) ? "온라인" : "오프라인"}
+                                      {isOnline(member.userId) ? t("channel.online") : t("channel.offline")}
                                     </p>
                                   </div>
                                   {renderMemberActions(member)}
@@ -402,7 +494,7 @@ export function ChannelsPage() {
                           <div className="flex-1">
                             <p className="text-sm font-medium text-[#2C3E50]">{member.nickname}</p>
                             <p className="text-xs text-gray-500">
-                              {ROLE_LABEL[member.role] ?? member.role} • {isOnline(member.userId) ? "온라인" : "오프라인"}
+                              {ROLE_LABEL[member.role] ?? member.role} • {isOnline(member.userId) ? t("channel.online") : t("channel.offline")}
                             </p>
                           </div>
                           {renderMemberActions(member)}
@@ -419,13 +511,13 @@ export function ChannelsPage() {
       {kickTarget && (
           <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" onClick={() => setKickTarget(null)}>
             <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h4 className="font-bold text-[#2C3E50] mb-2">멤버 내보내기</h4>
+              <h4 className="font-bold text-[#2C3E50] mb-2">{t("channel.kickTitle")}</h4>
               <p className="text-sm text-gray-500 mb-5">
-                <span className="font-semibold text-[#2C3E50]">{kickTarget.nickname}</span>님을 이 워크스페이스에서 내보낼까요?
+                {t("channel.kickConfirm", { name: kickTarget.nickname })}
               </p>
               <div className="flex justify-end gap-2">
-                <button onClick={() => setKickTarget(null)} className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">취소</button>
-                <button onClick={() => kickMember(kickTarget)} className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all">내보내기</button>
+                <button onClick={() => setKickTarget(null)} className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">{t("common.cancel")}</button>
+                <button onClick={() => kickMember(kickTarget)} className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all">{t("channel.kick")}</button>
               </div>
             </div>
           </div>

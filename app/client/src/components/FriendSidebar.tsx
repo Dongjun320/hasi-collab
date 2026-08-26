@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { X, MoreHorizontal, Trash2, UserPlus, StickyNote } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
 import { useFriendStore } from "../store/friendStore";
@@ -12,6 +13,7 @@ import { DmConversation } from "./DmConversation";
 
 export function FriendSidebar() {
     const { activeRightPanel, closeRightPanel, activeDmPeerId, setActiveDmPeerId } = useUiStore();
+    const { t } = useTranslation();
 
     const { friends, setFriends, removeFriend, setMemo } = useFriendStore();
     const onlineUserIds = usePresenceStore((s) => s.onlineUserIds);
@@ -80,7 +82,7 @@ export function FriendSidebar() {
             try {
                 const { data, error } = await api.GET('/api/friends');
                 if (error) {
-                    setLoadError('친구 목록을 불러오지 못했습니다');
+                    setLoadError(t('friend.loadError'));
                     return;
                 }
                 setLoadError('');
@@ -178,15 +180,15 @@ export function FriendSidebar() {
                     {/* 헤더 */}
                     <div className="h-14 px-4 flex items-center justify-between border-b border-[#e8f8ed] flex-shrink-0">
                         <h2 className="font-bold text-[#2C3E50] text-sm">
-                            친구 <span className="text-[#5CC87A]">· {onlineCount}명 온라인</span>
+                            {t('friend.title')} <span className="text-[#5CC87A]">· {t('friend.onlineCount', { count: onlineCount })}</span>
                         </h2>
                         <div className="flex items-center gap-1 flex-shrink-0">
-                            <Tooltip label="친구 추가" side="bottom">
+                            <Tooltip label={t('friend.add')} side="bottom">
                                 <button onClick={() => { setAddedIds([]); setShowAddModal(true); }} className="p-1 hover:bg-[#f0f9f4] rounded-md transition-all">
                                     <UserPlus size={16} className="text-[#5CC87A]" />
                                 </button>
                             </Tooltip>
-                            <Tooltip label="친구 목록 닫기" side="bottom" align="end">
+                            <Tooltip label={t('friend.closeList')} side="bottom" align="end">
                                 <button onClick={closeRightPanel} className="p-1 hover:bg-[#f0f9f4] rounded-md transition-all">
                                     <X size={16} className="text-gray-400" />
                                 </button>
@@ -197,7 +199,7 @@ export function FriendSidebar() {
                     {/* 친구 목록 */}
                     <div className="flex-1 overflow-y-auto p-2">
                         {loadError && <p className="text-xs text-red-500 text-center mt-6">{loadError}</p>}
-                        {!loadError && friends.length === 0 && <p className="text-xs text-gray-400 text-center mt-6">친구가 없습니다</p>}
+                        {!loadError && friends.length === 0 && <p className="text-xs text-gray-400 text-center mt-6">{t('friend.noFriends')}</p>}
 
                         {friends.map((f) => (
                             <div key={f.id} className="relative group flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#f0f9f4] transition-all">
@@ -206,7 +208,7 @@ export function FriendSidebar() {
                                 <div
                                     className="relative flex-shrink-0 cursor-pointer"
                                     onClick={(e) => handleAvatarClick(e, f)}
-                                    title="프로필 보기"
+                                    title={t('friend.viewProfile')}
                                 >
                                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#A8E6B8] to-[#5CC87A] flex items-center justify-center text-white text-sm font-bold shadow-sm hover:shadow-md transition-shadow">
                                         {f.avatar ?? f.name.charAt(0)}
@@ -238,8 +240,8 @@ export function FriendSidebar() {
                                 {openMenuId === f.id && (
                                     <>
                                         <div className="absolute right-2 top-full mt-0.5 w-32 bg-white rounded-xl shadow-xl border border-[#d4f4dd] py-1 z-50">
-                                            <button onClick={() => openMemoModal(f.id, f.memo)} className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-[#f0f9f4]"><StickyNote size={13} /> 메모</button>
-                                            <button onClick={() => askDelete(f.id, f.name)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50"><Trash2 size={13} /> 친구 삭제</button>
+                                            <button onClick={() => openMemoModal(f.id, f.memo)} className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-[#f0f9f4]"><StickyNote size={13} /> {t('friend.memo')}</button>
+                                            <button onClick={() => askDelete(f.id, f.name)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50"><Trash2 size={13} /> {t('friend.delete')}</button>
                                         </div>
                                         <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
                                     </>
@@ -249,25 +251,25 @@ export function FriendSidebar() {
                     </div>
 
                     {/* 기존 모달들 생략 없이 100% 유지 */}
-                    <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="친구 추가">
-                        <UserSearchBox actionLabel="친구 요청" doneLabel="요청됨" doneIds={[...friends.map((f) => f.uid), ...addedIds, ...sentRequestUids]} onSelect={handleAddFriend} />
+                    <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title={t('friend.add')}>
+                        <UserSearchBox actionLabel={t('friend.requestAction')} doneLabel={t('friend.requested')} doneIds={[...friends.map((f) => f.uid), ...addedIds, ...sentRequestUids]} onSelect={handleAddFriend} />
                     </Modal>
 
-                    <Modal isOpen={memoTarget !== null} onClose={() => setMemoTarget(null)} title={`${memoFriend?.name ?? ""}님 메모`}>
-                        <input autoFocus value={memoText} onChange={(e) => setMemoText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSaveMemo()} placeholder="예) 디자인팀 팀장" className="w-full px-3 py-2 border border-[#d4f4dd] rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]" />
-                        <p className="text-[11px] text-gray-400 mt-2">메모는 나에게만 보이며, 상태 메시지 대신 표시됩니다.</p>
+                    <Modal isOpen={memoTarget !== null} onClose={() => setMemoTarget(null)} title={t('friend.memoTitle', { name: memoFriend?.name ?? "" })}>
+                        <input autoFocus value={memoText} onChange={(e) => setMemoText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSaveMemo()} placeholder={t('friend.memoPlaceholder')} className="w-full px-3 py-2 border border-[#d4f4dd] rounded-lg text-sm focus:outline-none focus:border-[#5CC87A]" />
+                        <p className="text-[11px] text-gray-400 mt-2">{t('friend.memoHint')}</p>
                         <div className="flex justify-end gap-2 mt-4">
-                            <button onClick={() => setMemoTarget(null)} className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">취소</button>
-                            <button onClick={handleSaveMemo} className="px-3 py-1.5 text-sm bg-[#5CC87A] text-white rounded-lg hover:bg-[#4ab869] transition-colors">저장</button>
+                            <button onClick={() => setMemoTarget(null)} className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">{t('common.cancel')}</button>
+                            <button onClick={handleSaveMemo} className="px-3 py-1.5 text-sm bg-[#5CC87A] text-white rounded-lg hover:bg-[#4ab869] transition-colors">{t('common.save')}</button>
                         </div>
                     </Modal>
 
-                    <Modal isOpen={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title="친구 삭제">
-                        <p className="text-sm text-[#2C3E50]"><span className="font-semibold">{deleteTarget?.name}</span>님을 친구 목록에서 삭제할까요?</p>
-                        <p className="text-[11px] text-gray-400 mt-2">상대방의 친구 목록에서도 삭제됩니다.</p>
+                    <Modal isOpen={deleteTarget !== null} onClose={() => setDeleteTarget(null)} title={t('friend.delete')}>
+                        <p className="text-sm text-[#2C3E50]">{t('friend.deleteConfirm', { name: deleteTarget?.name ?? "" })}</p>
+                        <p className="text-[11px] text-gray-400 mt-2">{t('friend.deleteNote')}</p>
                         <div className="flex justify-end gap-2 mt-4">
-                            <button onClick={() => setDeleteTarget(null)} className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">취소</button>
-                            <button onClick={confirmDelete} className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">삭제</button>
+                            <button onClick={() => setDeleteTarget(null)} className="px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">{t('common.cancel')}</button>
+                            <button onClick={confirmDelete} className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">{t('common.delete')}</button>
                         </div>
                     </Modal>
                 </div>
@@ -296,7 +298,7 @@ export function FriendSidebar() {
                                 </span>
                             ) : (
                                 <span className="text-[10px] text-gray-400 font-medium tracking-wide truncate">
-                                    {profileDetails.department || '부서미상'} | {profileDetails.email || '이메일 없음'}
+                                    {profileDetails.department || t('friend.noDeptShort')} | {profileDetails.email || t('friend.noEmail')}
                                 </span>
                             )}
                         </div>

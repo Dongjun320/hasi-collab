@@ -93,6 +93,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         colors: DEFAULT_COLORS[i % DEFAULT_COLORS.length],
         unread: false,
         role: w.role,
+        iconUrl: w.iconUrl ?? null,
       }))
       set({ workspaces: mapped, wsError: '' })
     } catch (e) {

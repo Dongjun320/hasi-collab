@@ -6,6 +6,7 @@
 // GET/PATCH /api/workspaces/{id}/permissions 는 오너 전용이라, 이 모달도 오너에게만 연다.
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../api/client";
 import { toast } from "../store/toastStore";
 
@@ -15,31 +16,32 @@ type PermKey =
     | "CREATE_CHANNEL" | "EDIT_CHANNEL" | "DELETE_CHANNEL"
     | "INVITE_CHANNEL_MEMBER" | "REMOVE_CHANNEL_MEMBER" | "EDIT_CHANNEL_MEMBER_ROLE";
 
-const PERMISSION_GROUPS: { title: string; items: [PermKey, string][] }[] = [
+// title/label은 i18n 키 (permission 네임스페이스). 렌더에서 t()로 변환.
+const PERMISSION_GROUPS: { titleKey: string; items: [PermKey, string][] }[] = [
     {
-        title: "워크스페이스",
+        titleKey: "groupWorkspace",
         items: [
-            ["EDIT_WORKSPACE", "워크스페이스 설정 수정"],
-            ["DELETE_WORKSPACE", "워크스페이스 삭제"],
+            ["EDIT_WORKSPACE", "permEditWorkspace"],
+            ["DELETE_WORKSPACE", "permDeleteWorkspace"],
         ],
     },
     {
-        title: "멤버 관리",
+        titleKey: "groupMember",
         items: [
-            ["INVITE_WORKSPACE_MEMBER", "워크스페이스 초대"],
-            ["REMOVE_WORKSPACE_MEMBER", "워크스페이스 추방"],
-            ["EDIT_WORKSPACE_MEMBER_ROLE", "멤버 역할 수정"],
+            ["INVITE_WORKSPACE_MEMBER", "permInviteWorkspaceMember"],
+            ["REMOVE_WORKSPACE_MEMBER", "permRemoveWorkspaceMember"],
+            ["EDIT_WORKSPACE_MEMBER_ROLE", "permEditWorkspaceMemberRole"],
         ],
     },
     {
-        title: "채널",
+        titleKey: "groupChannel",
         items: [
-            ["CREATE_CHANNEL", "채널 생성"],
-            ["EDIT_CHANNEL", "채널 설정 수정"],
-            ["DELETE_CHANNEL", "채널 삭제"],
-            ["INVITE_CHANNEL_MEMBER", "채널 초대"],
-            ["REMOVE_CHANNEL_MEMBER", "채널 추방"],
-            ["EDIT_CHANNEL_MEMBER_ROLE", "채널 멤버 역할 수정"],
+            ["CREATE_CHANNEL", "permCreateChannel"],
+            ["EDIT_CHANNEL", "permEditChannel"],
+            ["DELETE_CHANNEL", "permDeleteChannel"],
+            ["INVITE_CHANNEL_MEMBER", "permInviteChannelMember"],
+            ["REMOVE_CHANNEL_MEMBER", "permRemoveChannelMember"],
+            ["EDIT_CHANNEL_MEMBER_ROLE", "permEditChannelMemberRole"],
         ],
     },
 ];
@@ -51,6 +53,7 @@ interface Props {
 }
 
 export function WorkspacePermissionsModal({ isOpen, onClose, workspaceId }: Props) {
+    const { t } = useTranslation();
     const [flags, setFlags] = useState<Partial<Record<PermKey, boolean>>>({});
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
@@ -89,8 +92,8 @@ export function WorkspacePermissionsModal({ isOpen, onClose, workspaceId }: Prop
             body: { permissions },
         });
         setSaving(false);
-        if (error) { toast.error("권한 저장에 실패했습니다"); return; }
-        toast.success("권한을 저장했습니다");
+        if (error) { toast.error(t("permission.saveFailed")); return; }
+        toast.success(t("permission.saved"));
         onClose();
     };
 
@@ -110,31 +113,31 @@ export function WorkspacePermissionsModal({ isOpen, onClose, workspaceId }: Prop
             >
                 {/* 헤더 */}
                 <div className="flex justify-between items-center px-6 py-5 border-b border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-800">권한 설정</h2>
+                    <h2 className="text-lg font-bold text-gray-800">{t("permission.title")}</h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
                 </div>
 
                 {/* 본문 */}
                 <div className="px-6 py-4 overflow-y-auto">
-                    {loading && <p className="text-sm text-gray-400 py-8 text-center">불러오는 중…</p>}
-                    {loadError && <p className="text-sm text-red-500 py-8 text-center">권한을 불러오지 못했습니다.</p>}
+                    {loading && <p className="text-sm text-gray-400 py-8 text-center">{t("ui.loading")}</p>}
+                    {loadError && <p className="text-sm text-red-500 py-8 text-center">{t("permission.loadFailed")}</p>}
 
                     {!loading && !loadError && (
                         <>
                             {/* 열 헤더 */}
                             <div className="flex items-center pb-2 border-b border-gray-100 text-xs text-gray-400">
-                                <span className="flex-1">권한</span>
+                                <span className="flex-1">{t("permission.colPermission")}</span>
                                 <span className={col}>Owner</span>
                                 <span className={`${col} font-bold text-gray-700`}>Admin</span>
                                 <span className={col}>Member</span>
                             </div>
 
                             {PERMISSION_GROUPS.map((group) => (
-                                <div key={group.title} className="pt-3">
-                                    <p className="text-sm text-gray-400 mb-1">{group.title}</p>
-                                    {group.items.map(([key, label]) => (
+                                <div key={group.titleKey} className="pt-3">
+                                    <p className="text-sm text-gray-400 mb-1">{t(`permission.${group.titleKey}`)}</p>
+                                    {group.items.map(([key, labelKey]) => (
                                         <div key={key} className="flex items-center py-2 border-b border-gray-50 last:border-0">
-                                            <span className="flex-1 text-sm text-[#2C3E50]">{label}</span>
+                                            <span className="flex-1 text-sm text-[#2C3E50]">{t(`permission.${labelKey}`)}</span>
                                             {/* Owner: 항상 허용 (읽기 전용) */}
                                             <span className={col}>
                                                 <input type="checkbox" checked disabled className="accent-[#5CC87A] cursor-not-allowed opacity-60" />
@@ -145,7 +148,7 @@ export function WorkspacePermissionsModal({ isOpen, onClose, workspaceId }: Prop
                                                     type="checkbox"
                                                     checked={!!flags[key]}
                                                     onChange={() => toggle(key)}
-                                                    aria-label={`${label} — Admin 허용`}
+                                                    aria-label={t("permission.adminAllow", { label: t(`permission.${labelKey}`) })}
                                                     className="accent-[#5CC87A] cursor-pointer w-4 h-4"
                                                 />
                                             </span>
@@ -168,14 +171,14 @@ export function WorkspacePermissionsModal({ isOpen, onClose, workspaceId }: Prop
                         disabled={saving}
                         className="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-600 font-medium rounded-lg text-sm"
                     >
-                        취소
+                        {t("common.cancel")}
                     </button>
                     <button
                         onClick={save}
                         disabled={saving || loading || loadError}
                         className="px-5 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:text-gray-400 text-white font-medium rounded-lg text-sm"
                     >
-                        {saving ? "저장 중…" : "저장"}
+                        {saving ? t("permission.saving") : t("common.save")}
                     </button>
                 </div>
             </div>

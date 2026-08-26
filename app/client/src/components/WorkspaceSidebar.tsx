@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Hash, Plus, X,
   PanelLeftClose, PanelLeftOpen, Settings, UserPlus,
@@ -14,6 +15,10 @@ import { UserSearchBox, type SearchedUser } from "./UserSearchBox";
 import { useChannelStore } from "../store/channelStore";
 import { WorkspacePermissionsModal } from "./WorkspacePermissionsModal";
 import { toast } from "../store/toastStore";
+import { useAuthStore } from "../store/authStore";
+
+// 아바타와 동일 패턴: 개발은 vite 프록시(/api→service), 배포는 VITE_API_BASE_URL
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 
 interface WorkspaceSidebarProps {
@@ -31,6 +36,7 @@ interface WorkspaceSidebarProps {
 export function WorkspaceSidebar({
   channels, activeChannelId, onSelectChannel, onAddChannel, onRenameChannel, onDeleteChannel, onDeleteWorkspace, onLeaveWorkspace, getDefaultChannelId,
 }: WorkspaceSidebarProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const {isSidebarOpen, toggleSidebar} = useUiStore();
   const {
@@ -73,6 +79,7 @@ export function WorkspaceSidebar({
   const [transferMembers, setTransferMembers] = useState<{ userId: number; nickname: string }[]>([]);
   const [transferBusy, setTransferBusy] = useState<number | null>(null);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [childName, setChildName] = useState("");
   const [defaultChannelId, setDefaultChannelId] = useState<number | null>(null);
   const unreadByChannel = useChannelStore((s) => s.unreadByChannel);
@@ -101,14 +108,14 @@ export function WorkspaceSidebar({
       if (error || !data?.success) {
         // 서버가 한국어 메시지를 내려줌 (MBR_001 없는 닉네임 / MBR_002 이미 멤버 등)
         const msg = (error as any)?.error?.message;
-        setInviteError(msg ?? "초대에 실패했습니다.");
+        setInviteError(msg ?? t("workspace.errInviteFailed"));
         return;
       }
 
       setInvitedList((prev) => [...prev, user]);
     } catch (e) {
       console.error("초대 요청 실패:", e);
-      setInviteError("서버에 연결할 수 없습니다.");
+      setInviteError(t("workspace.errCannotConnect"));
     }
   }
 
@@ -157,13 +164,13 @@ export function WorkspaceSidebar({
         params: { path: { workspaceId: currentWorkspace.id } },
         body: { newOwnerUserId: userId },
       });
-      if (error) { toast.error((error as any)?.error?.message ?? '소유권 이전에 실패했습니다'); return; }
-      toast.success('소유권을 이전했습니다');
+      if (error) { toast.error((error as any)?.error?.message ?? t('workspace.toastTransferFailed')); return; }
+      toast.success(t('workspace.toastTransferred'));
       setTransferOpen(false);
       setShowWorkspaceSettings(false);
       await fetchWorkspaces();   // 내 역할(OWNER→일반) 갱신
     } catch (e) {
-      toast.error('서버에 연결할 수 없습니다');
+      toast.error(t('ui.serverError'));
     } finally {
       setTransferBusy(null);
     }
@@ -177,11 +184,11 @@ export function WorkspaceSidebar({
         params: { path: { workspaceId: currentWorkspace.id, channelId: channelInviteFor } },
         body: { inviteeIds: [userId] },
       });
-      if (error) { toast.error((error as any)?.error?.message ?? '초대에 실패했습니다'); return; }
+      if (error) { toast.error((error as any)?.error?.message ?? t('workspace.toastInviteFailed')); return; }
       setChannelInvitedIds((prev) => new Set(prev).add(userId));
-      toast.success('초대를 보냈습니다');
+      toast.success(t('workspace.toastInviteSent'));
     } catch (e) {
-      toast.error('서버에 연결할 수 없습니다');
+      toast.error(t('ui.serverError'));
     } finally {
       setChannelInviteBusy(null);
     }
@@ -192,12 +199,63 @@ export function WorkspaceSidebar({
   };
   const [editName, setEditName] = useState("");
 
+  // ── 서버(워크스페이스) 이미지 업로드/삭제 — 프로필 아바타와 동일 패턴 ──
+  const [iconBusy, setIconBusy] = useState(false);
+
+  const handleIconChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";   // 같은 파일 재선택 가능하도록
+    if (!file || !currentWorkspace) return;
+    if (!file.type.startsWith("image/")) { toast.error(t("profile.toastImageOnly")); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(t("profile.toastMaxSize")); return; }
+    setIconBusy(true);
+    try {
+      const token = useAuthStore.getState().accessToken;
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`${API_BASE}/api/workspaces/${currentWorkspace.id}/icon`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: form,
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const url = (await res.text()).trim();
+      updateWorkspace({ ...currentWorkspace, iconUrl: url });
+      toast.success(t("workspace.toastIconChanged"));
+    } catch (err) {
+      console.error("서버 이미지 업로드 실패:", err);
+      toast.error(t("workspace.toastIconChangeFailed"));
+    } finally {
+      setIconBusy(false);
+    }
+  };
+
+  const handleIconDelete = async () => {
+    if (!currentWorkspace) return;
+    setIconBusy(true);
+    try {
+      const token = useAuthStore.getState().accessToken;
+      const res = await fetch(`${API_BASE}/api/workspaces/${currentWorkspace.id}/icon/delete`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      updateWorkspace({ ...currentWorkspace, iconUrl: null });
+      toast.success(t("workspace.toastIconRemoved"));
+    } catch (err) {
+      console.error("서버 이미지 삭제 실패:", err);
+      toast.error(t("workspace.toastIconRemoveFailed"));
+    } finally {
+      setIconBusy(false);
+    }
+  };
+
   const handleAddChannel = () => {
     const name = newChannelName.trim();
     if (!name) return;
     // 같은 레벨(최상위) 채널 이름 중복 차단 (대소문자·공백 무시)
     const dup = channels.some((c) => !c.parentId && c.name.trim().toLowerCase() === name.toLowerCase());
-    if (dup) { toast.error("같은 이름의 채널이 이미 있습니다"); return; }
+    if (dup) { toast.error(t("workspace.toastDupChannel")); return; }
     onAddChannel(name);
     setNewChannelName("");
     setShowNewInput(false);
@@ -269,7 +327,7 @@ export function WorkspaceSidebar({
     if (!name) return;
     // 같은 부모 아래 하위 채널 이름 중복 차단 (대소문자·공백 무시)
     const dup = childrenOf(parentId).some((c) => c.name.trim().toLowerCase() === name.toLowerCase());
-    if (dup) { toast.error("같은 이름의 하위 채널이 이미 있습니다"); return; }
+    if (dup) { toast.error(t("workspace.toastDupChildChannel")); return; }
     onAddChannel(name, parentId);
     setChildName("");
     setAddingChildOf(null);
@@ -360,7 +418,7 @@ export function WorkspaceSidebar({
                         setCollapsedIds((prev) => prev.filter((x) => x !== ch.id));
                         setChannelMenuOpenId(null);
                     }}
-                    title={addingChildOf === ch.id ? "하위 채널 추가 취소" : "하위 채널 추가"}
+                    title={addingChildOf === ch.id ? t("workspace.cancelAddChild") : t("workspace.addChild")}
                     className={`absolute ${isDefault ? "right-7" : "right-[3.25rem]"} top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20`}
                 >
                     <Plus size={12} className="text-white/70" />
@@ -373,7 +431,7 @@ export function WorkspaceSidebar({
           {isRoot && !isDefault && (
               <button
                   onClick={() => setChannelInviteFor(ch.id)}
-                  title="멤버 초대"
+                  title={t("workspace.memberInvite")}
                   className="absolute right-7 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover/channel:opacity-100 hover:bg-white/20"
               >
                 <UserPlus size={12} className="text-white/70" />
@@ -402,17 +460,17 @@ export function WorkspaceSidebar({
                     }}
                     className="w-full text-left px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
                 >
-                  이름 변경
+                  {t("workspace.rename")}
                 </button>
                 {/* 백엔드가 CH_004로 거부하는 케이스 — 누르기 전에 이유를 보여줌 */}
                   <button
                       disabled={hasKids || isDefault}
-                      title={isDefault ? "기본 채널은 삭제할 수 없습니다"
-                          : hasKids ? "하위 채널을 먼저 삭제해야 합니다" : undefined}
+                      title={isDefault ? t("workspace.defaultNoDelete")
+                          : hasKids ? t("workspace.deleteChildFirst") : undefined}
                       onClick={() => { onDeleteChannel(ch.id); setChannelMenuOpenId(null); }}
                       className="w-full text-left px-3 py-1.5 text-xs text-white/80 hover:bg-white/10 disabled:text-white/25 disabled:cursor-not-allowed"
                   >
-                      삭제
+                      {t("common.delete")}
                   </button>
               </div>
           )}
@@ -426,7 +484,7 @@ export function WorkspaceSidebar({
       <Modal
         isOpen={showNewWorkspaceInput}
         onClose={() => setShowNewWorkspaceInput(false)}
-        title="새 워크스페이스"
+        title={t("workspace.new")}
       >
         <div className="flex flex-col gap-3">
           <input
@@ -434,7 +492,7 @@ export function WorkspaceSidebar({
             value={newWorkspaceName}
             onChange={(e) => setNewWorkspaceName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAddWorkspace()}
-            placeholder="워크스페이스 이름"
+            placeholder={t("workspace.namePlaceholder")}
             autoFocus
             className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A]"
           />
@@ -443,7 +501,7 @@ export function WorkspaceSidebar({
             disabled={!newWorkspaceName.trim()}
             className="px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all"
           >
-          만들기
+          {t("workspace.createBtn")}
           </button>
        </div>
       </Modal>
@@ -452,11 +510,40 @@ export function WorkspaceSidebar({
       <Modal
           isOpen={showWorkspaceSettings}
           onClose={() => setShowWorkspaceSettings(false)}
-          title="서버 설정"
+          title={t("workspace.serverSettings")}
       >
         <div className="flex flex-col gap-4">
+          {/* 서버 이미지 (오너만) */}
+          {currentWorkspace?.role === "OWNER" && (
+            <div>
+              <label className="text-xs text-gray-500 font-medium mb-1 block">{t("workspace.serverIcon")}</label>
+              <div className="flex items-center gap-3">
+                <div
+                    className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center text-white font-bold text-xl flex-shrink-0"
+                    style={currentWorkspace?.iconUrl ? undefined : { background: `linear-gradient(to bottom right, ${currentWorkspace?.colors?.[0] ?? "#A8E6B8"}, ${currentWorkspace?.colors?.[1] ?? "#5CC87A"})` }}
+                >
+                  {currentWorkspace?.iconUrl
+                      ? <img src={currentWorkspace.iconUrl} alt="" className="w-full h-full object-cover" />
+                      : (currentWorkspace?.avatar ?? "?")}
+                </div>
+                <div className="flex gap-2">
+                  <label className={`px-3 py-1.5 text-sm rounded-lg cursor-pointer transition-all ${iconBusy ? "bg-gray-100 text-gray-400 cursor-default" : "bg-[#5CC87A] hover:bg-[#2E8B4F] text-white"}`}>
+                    {iconBusy ? t("workspace.iconProcessing") : t("workspace.iconChange")}
+                    <input type="file" accept="image/*" className="hidden" disabled={iconBusy} onChange={handleIconChange} />
+                  </label>
+                  {currentWorkspace?.iconUrl && (
+                      <button onClick={handleIconDelete} disabled={iconBusy}
+                              className="px-3 py-1.5 text-sm border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50 rounded-lg transition-all">
+                        {t("workspace.iconRemove")}
+                      </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
-            <label className="text-xs text-gray-500 font-medium">서버 이름</label>
+            <label className="text-xs text-gray-500 font-medium">{t("workspace.serverName")}</label>
             <input
                 type="text"
                 value={editName}
@@ -466,7 +553,7 @@ export function WorkspaceSidebar({
           </div>
 
           <div>
-            <label className="text-xs text-gray-500 font-medium mb-1 block">서버 색상</label>
+            <label className="text-xs text-gray-500 font-medium mb-1 block">{t("workspace.serverColor")}</label>
             <div className="flex gap-2">
               {[
                 ["#A8E6B8", "#5CC87A"],
@@ -494,20 +581,20 @@ export function WorkspaceSidebar({
                     onClick={() => setShowPermissions(true)}
                     className="w-full px-4 py-2 border border-gray-200 hover:bg-gray-50 text-[#2C3E50] font-medium rounded-lg transition-all text-sm"
                   >
-                    권한 설정
+                    {t("permission.title")}
                   </button>
-                : <p className="text-xs text-gray-400">권한 설정은 오너만 변경할 수 있습니다.</p>}
+                : <p className="text-xs text-gray-400">{t("workspace.permOwnerOnly")}</p>}
           </div>
 
           {/* 소유권 이전(오너) / 나가기(그 외) */}
           <div className="border-t border-gray-100 pt-3">
             {currentWorkspace?.role === "OWNER" ? (
                 <button onClick={() => setTransferOpen(true)} className="text-sm text-[#2E8B4F] hover:underline">
-                  소유권 이전
+                  {t("workspace.transferOwnership")}
                 </button>
             ) : (
                 <button onClick={() => setLeaveConfirm(true)} className="text-sm text-red-500 hover:underline">
-                  워크스페이스 나가기
+                  {t("workspace.leave")}
                 </button>
             )}
           </div>
@@ -524,26 +611,22 @@ export function WorkspaceSidebar({
                     params: { path: { workspaceId: currentWorkspace.id } },
                     body: { name },
                   });
-                  if (error) { toast.error((error as any)?.error?.message ?? '서버 설정 저장에 실패했습니다'); return; }
+                  if (error) { toast.error((error as any)?.error?.message ?? t('workspace.serverSaveFailed')); return; }
                   updateWorkspace({ ...currentWorkspace, name, avatar: name.charAt(0) });
-                  toast.success('서버 설정을 저장했습니다');
+                  toast.success(t('workspace.serverSaved'));
                   setShowWorkspaceSettings(false);
                 }}
                 className="flex-1 px-4 py-2 bg-[#5CC87A] hover:bg-[#2E8B4F] text-white font-medium rounded-lg transition-all"
             >
-              저장
+              {t("common.save")}
             </button>
             <button
-                onClick={() => {
-                  if (!currentWorkspace) return;
-                  onDeleteWorkspace(currentWorkspace.id);
-                  setShowWorkspaceSettings(false);
-                }}
+                onClick={() => { if (currentWorkspace) setDeleteConfirm(true); }}
                 disabled={currentWorkspace?.role !== "OWNER"}
-                title={currentWorkspace?.role !== "OWNER" ? "오너만 서버를 삭제할 수 있습니다" : undefined}
+                title={currentWorkspace?.role !== "OWNER" ? t("workspace.deleteOwnerOnly") : undefined}
                 className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-50"
             >
-              서버 삭제
+              {t("workspace.deleteServer")}
             </button>
           </div>
         </div>
@@ -559,11 +642,11 @@ export function WorkspaceSidebar({
       )}
 
       {/* ── 소유권 이전 모달 ── */}
-      <Modal isOpen={transferOpen} onClose={() => setTransferOpen(false)} title="소유권 이전">
-        <p className="text-xs text-gray-500 mb-3">소유권을 넘길 멤버를 선택하세요. 이전 후 회원님은 일반 멤버가 됩니다.</p>
+      <Modal isOpen={transferOpen} onClose={() => setTransferOpen(false)} title={t("workspace.transferOwnership")}>
+        <p className="text-xs text-gray-500 mb-3">{t("workspace.transferDesc")}</p>
         <div className="flex flex-col gap-1 max-h-72 overflow-y-auto">
           {transferMembers.length === 0 && (
-              <p className="text-xs text-gray-400 text-center py-4">이전할 멤버가 없습니다</p>
+              <p className="text-xs text-gray-400 text-center py-4">{t("workspace.noTransferTarget")}</p>
           )}
           {transferMembers.map((m) => (
               <div key={m.userId} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#f8fdf9]">
@@ -576,7 +659,7 @@ export function WorkspaceSidebar({
                     disabled={transferBusy === m.userId}
                     className="px-3 py-1 text-xs bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:opacity-50 text-white rounded-lg flex-shrink-0"
                 >
-                  이전
+                  {t("workspace.transferBtn")}
                 </button>
               </div>
           ))}
@@ -587,10 +670,10 @@ export function WorkspaceSidebar({
       {leaveConfirm && currentWorkspace && (
           <div className="fixed inset-0 z-[110] bg-black/40 flex items-center justify-center p-4" onClick={() => setLeaveConfirm(false)}>
             <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h4 className="font-bold text-[#2C3E50] mb-2">워크스페이스 나가기</h4>
-              <p className="text-sm text-gray-500 mb-5">정말 이 워크스페이스에서 나가시겠습니까?</p>
+              <h4 className="font-bold text-[#2C3E50] mb-2">{t("workspace.leave")}</h4>
+              <p className="text-sm text-gray-500 mb-5">{t("workspace.leaveConfirm")}</p>
               <div className="flex justify-end gap-2">
-                <button onClick={() => setLeaveConfirm(false)} className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">취소</button>
+                <button onClick={() => setLeaveConfirm(false)} className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">{t("common.cancel")}</button>
                 <button
                     onClick={() => {
                       const id = currentWorkspace.id;
@@ -600,7 +683,31 @@ export function WorkspaceSidebar({
                     }}
                     className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all"
                 >
-                  나가기
+                  {t("workspace.leaveBtn")}
+                </button>
+              </div>
+            </div>
+          </div>
+      )}
+
+      {/* ── 서버 삭제 확인 ── */}
+      {deleteConfirm && currentWorkspace && (
+          <div className="fixed inset-0 z-[110] bg-black/40 flex items-center justify-center p-4" onClick={() => setDeleteConfirm(false)}>
+            <div className="bg-white w-full max-w-xs rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <h4 className="font-bold text-[#2C3E50] mb-2">{t("workspace.deleteServer")}</h4>
+              <p className="text-sm text-gray-500 mb-5">{t("workspace.deleteConfirmMsg")}</p>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setDeleteConfirm(false)} className="px-4 py-2 text-sm border border-gray-200 hover:bg-gray-50 rounded-lg transition-all">{t("common.cancel")}</button>
+                <button
+                    onClick={() => {
+                      const id = currentWorkspace.id;
+                      setDeleteConfirm(false);
+                      setShowWorkspaceSettings(false);
+                      onDeleteWorkspace(id);
+                    }}
+                    className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all"
+                >
+                  {t("workspace.deleteServer")}
                 </button>
               </div>
             </div>
@@ -611,24 +718,24 @@ export function WorkspaceSidebar({
       <Modal
           isOpen={channelInviteFor != null}
           onClose={() => setChannelInviteFor(null)}
-          title="채널에 멤버 초대"
+          title={t("workspace.channelInviteTitle")}
       >
         <div className="flex flex-col gap-2">
           <input
               type="text"
               value={channelInviteSearch}
               onChange={(e) => setChannelInviteSearch(e.target.value)}
-              placeholder="멤버 검색"
+              placeholder={t("workspace.memberSearch")}
               autoFocus
               className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-[#5CC87A] text-sm"
           />
           <div className="flex flex-col gap-1 max-h-72 overflow-y-auto">
           {wsMembers.length === 0 && (
-              <p className="text-xs text-gray-400 text-center py-4">초대할 멤버가 없습니다</p>
+              <p className="text-xs text-gray-400 text-center py-4">{t("workspace.noInviteMember")}</p>
           )}
           {wsMembers.length > 0
             && wsMembers.filter((m) => m.nickname.toLowerCase().includes(channelInviteSearch.trim().toLowerCase())).length === 0 && (
-              <p className="text-xs text-gray-400 text-center py-4">검색 결과가 없습니다</p>
+              <p className="text-xs text-gray-400 text-center py-4">{t("workspace.noSearchResult")}</p>
           )}
           {wsMembers
             .filter((m) => m.nickname.toLowerCase().includes(channelInviteSearch.trim().toLowerCase()))
@@ -642,16 +749,16 @@ export function WorkspaceSidebar({
                   </div>
                   <span className="flex-1 text-sm text-[#2C3E50] truncate">{m.nickname}</span>
                   {inChannel ? (
-                      <span className="text-xs text-gray-400 flex-shrink-0">참여 중</span>
+                      <span className="text-xs text-gray-400 flex-shrink-0">{t("workspace.inChannel")}</span>
                   ) : invited ? (
-                      <span className="text-xs text-[#5CC87A] flex-shrink-0">초대함</span>
+                      <span className="text-xs text-[#5CC87A] flex-shrink-0">{t("workspace.invited")}</span>
                   ) : (
                       <button
                           onClick={() => handleChannelInvite(m.userId)}
                           disabled={channelInviteBusy === m.userId}
                           className="px-3 py-1 text-xs bg-[#5CC87A] hover:bg-[#2E8B4F] disabled:opacity-50 text-white rounded-lg flex-shrink-0"
                       >
-                        초대
+                        {t("workspace.inviteBtn")}
                       </button>
                   )}
                 </div>
@@ -665,13 +772,13 @@ export function WorkspaceSidebar({
       <Modal
           isOpen={showInviteModal}
           onClose={() => setShowInviteModal(false)}
-          title="인원 추가"
+          title={t("workspace.addPeople")}
       >
         <div className="flex flex-col gap-3">
           <UserSearchBox
-              placeholder="초대할 사용자의 닉네임"
-              actionLabel="초대"
-              doneLabel="대기 중"
+              placeholder={t("workspace.invitePlaceholder")}
+              actionLabel={t("workspace.inviteBtn")}
+              doneLabel={t("workspace.pending")}
               doneIds={[...invitedList.map((u) => u.uid), ...sentInviteUids]}
               onSelect={handleInvite}
           />
@@ -683,7 +790,7 @@ export function WorkspaceSidebar({
           {/* 이번에 보낸 초대 */}
           {invitedList.length > 0 && (
               <div className="border-t border-gray-100 pt-3">
-                <p className="text-xs text-gray-400 mb-2">초대를 보냈습니다</p>
+                <p className="text-xs text-gray-400 mb-2">{t("workspace.toastInviteSent")}</p>
                 <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
                   {invitedList.map((u) => (
                       <div key={u.uid} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[#f8fdf9]">
@@ -691,7 +798,7 @@ export function WorkspaceSidebar({
                           {u.nickname.charAt(0)}
                         </div>
                         <span className="text-sm text-[#2C3E50]">{u.nickname}</span>
-                        <span className="ml-auto text-xs text-gray-400">대기 중</span>
+                        <span className="ml-auto text-xs text-gray-400">{t("workspace.pending")}</span>
                       </div>
                   ))}
                 </div>
@@ -728,16 +835,20 @@ export function WorkspaceSidebar({
                 <button
                   onClick={() => {
                     setWorkspace(ws);
-                    navigate(`/workspace/channels/${getDefaultChannelId(ws.id)}`);
+                    // 채널이 아직 로드 안 됐으면 null → /workspace/channels/null(=NaN) 진입 방지
+                    const ch = getDefaultChannelId(ws.id);
+                    navigate(ch ? `/workspace/channels/${ch}` : "/workspace");
                   }}
                   className="relative group flex-shrink-0"
                 >
                   <div
-                    className={`w-11 h-11 flex items-center justify-center text-white font-bold text-base shadow-md transition-all duration-200
+                    className={`w-11 h-11 flex items-center justify-center text-white font-bold text-base shadow-md overflow-hidden transition-all duration-200
                       ${active ? "rounded-xl" : "rounded-[22px] group-hover:rounded-xl"}`}
-                    style={{ background: `linear-gradient(to bottom right, ${ws.colors[0]}, ${ws.colors[1]})` }}
+                    style={ws.iconUrl ? undefined : { background: `linear-gradient(to bottom right, ${ws.colors[0]}, ${ws.colors[1]})` }}
                   >
-                    {ws.avatar}
+                    {ws.iconUrl
+                      ? <img src={ws.iconUrl} alt="" className="w-full h-full object-cover" />
+                      : ws.avatar}
                   </div>
                   {active && (
                     <div className="absolute -left-[14px] top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
@@ -755,7 +866,7 @@ export function WorkspaceSidebar({
               </Tooltip>
             );
           })}
-          <Tooltip label="새 워크스페이스" side="right">
+          <Tooltip label={t("workspace.new")} side="right">
             <button
               onClick={()=>setShowNewWorkspaceInput(true)}
               className="w-11 h-11 rounded-full bg-white/10 hover:bg-[#5CC87A] flex items-center justify-center transition-all duration-200 group flex-shrink-0"
@@ -765,7 +876,7 @@ export function WorkspaceSidebar({
           </Tooltip>
         </div>
 
-        <Tooltip label={isSidebarOpen ? "채널 목록 접기" : "채널 목록 펼치기"} side="right">
+        <Tooltip label={isSidebarOpen ? t("workspace.collapseChannels") : t("workspace.expandChannels")} side="right">
           <button
             onClick={toggleSidebar}
             className="w-11 h-11 rounded-2xl hover:bg-white/10 flex items-center justify-center transition-all flex-shrink-0"
@@ -785,11 +896,11 @@ export function WorkspaceSidebar({
         <div className="w-56 flex flex-col h-full">
           <div className="h-14 px-4 flex items-center justify-between border-b border-white/10 flex-shrink-0">
             <h2 className="text-white font-bold text-sm truncate">
-              {currentWorkspace?.name ?? (wsLoading ? "불러오는 중..." : "워크스페이스 없음")}
+              {currentWorkspace?.name ?? (wsLoading ? t("ui.loading") : t("workspace.noWorkspace"))}
             </h2>
             {currentWorkspace && (
               <div className="flex items-center gap-1 flex-shrink-0">
-                <Tooltip label="인원 추가" side="bottom">
+                <Tooltip label={t("workspace.addPeople")} side="bottom">
                   <button
                     onClick={() => {
                       setInviteError("");
@@ -801,7 +912,7 @@ export function WorkspaceSidebar({
                     <UserPlus size={14} className="text-white/50" />
                   </button>
                 </Tooltip>
-                <Tooltip label="서버 설정" side="bottom" align="end">
+                <Tooltip label={t("workspace.serverSettings")} side="bottom" align="end">
                   <button
                     onClick={() => {
                       setEditName(currentWorkspace.name);
@@ -819,7 +930,7 @@ export function WorkspaceSidebar({
           <div className="flex-1 overflow-y-auto p-3">
               {/* ── 기능 (고정: 삭제 불가, 이름변경은 추후) ── */}
               <div className="px-1 mb-1.5">
-                  <span className="text-white/40 text-xs font-semibold uppercase tracking-wide">기능</span>
+                  <span className="text-white/40 text-xs font-semibold uppercase tracking-wide">{t("workspace.features")}</span>
               </div>
               <div className="space-y-0.5 mb-3">
                   <button
@@ -827,19 +938,19 @@ export function WorkspaceSidebar({
                       className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-white/70 hover:bg-white/10 hover:text-white transition-all text-sm"
                   >
                       <LayoutGrid size={14} className="text-[#5CC87A] flex-shrink-0" />
-                      <span className="truncate">칸반</span>
+                      <span className="truncate">{t("workspace.kanban")}</span>
                   </button>
                   <button
                       onClick={() => navigate('/workspace/calendar')}
                       className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-white/70 hover:bg-white/10 hover:text-white transition-all text-sm"
                   >
                       <Calendar size={14} className="text-[#5CC87A] flex-shrink-0" />
-                      <span className="truncate">캘린더</span>
+                      <span className="truncate">{t("calendar.title")}</span>
                   </button>
               </div>
             <div className="flex items-center justify-between px-1 mb-1.5">
-              <span className="text-white/40 text-xs font-semibold uppercase tracking-wide">채널</span>
-              <Tooltip label="새 채널" side="bottom" align="end">
+              <span className="text-white/40 text-xs font-semibold uppercase tracking-wide">{t("permission.groupChannel")}</span>
+              <Tooltip label={t("workspace.newChannel")} side="bottom" align="end">
                 <button
                   onClick={() => setShowNewInput(!showNewInput)}
                   className="p-1 hover:bg-white/10 rounded-md transition-all"
@@ -860,7 +971,7 @@ export function WorkspaceSidebar({
                     if (e.key === "Enter") handleAddChannel();
                     if (e.key === "Escape") setShowNewInput(false);
                   }}
-                  placeholder="채널 이름"
+                  placeholder={t("workspace.channelNamePlaceholder")}
                   autoFocus
                   className="flex-1 bg-white/10 text-white placeholder-white/30 text-xs px-2 py-1 rounded-md outline-none focus:bg-white/15 transition-all min-w-0"
                 />
@@ -903,7 +1014,7 @@ export function WorkspaceSidebar({
                                     if (e.key === "Enter") handleAddChild(ch.id);
                                     if (e.key === "Escape") { setAddingChildOf(null); setChildName(""); }
                                   }}
-                                  placeholder="하위 채널 이름"
+                                  placeholder={t("workspace.childChannelNamePlaceholder")}
                                   autoFocus
                                   className="flex-1 bg-white/10 text-white text-sm px-2 py-1 rounded-md outline-none focus:bg-white/15 min-w-0"
                               />
