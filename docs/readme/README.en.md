@@ -313,6 +313,6 @@ MAIL_PASSWORD=
 | Team lead · API design · state management | Kim Dongjun |
 | Authentication backend · social login | Kim Jihwan |
 | Workspace · member · channel backend | Park Jongseo |
-| Real-time messaging · infrastructure | Jung Jinwoo |
+| Real-time messaging · infrastructure | Jeong Jinwoo |
 | Authentication frontend · design system | Park Gyutae |
 | Home · notifications · friends frontend | Kim Sanghyun |
